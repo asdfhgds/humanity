@@ -1,0 +1,55 @@
+[project]
+name = "humanity"
+version = "0.1.0"
+description = "Autonomous Global Human Events Intelligence Platform"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.27.0",
+    "feedparser>=6.0.11",
+    "beautifulsoup4>=4.12.2",
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.3.0",
+    "rapidfuzz>=3.8.0",
+    "python-dateutil>=2.9.0",
+    "pyyaml>=6.0.1",
+    "tenacity>=8.2.3",
+    "google-generativeai>=0.7.0",
+    "tavily-python>=0.3.0",
+    "python-slugify>=8.0.0",
+    "pytest>=8.2.0",
+    "pytest-mock>=3.12.0",
+    "pytest-asyncio>=0.23.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.5.0",
+    "mypy>=1.10.0",
+    "black>=24.3.0",
+]
+
+[build-system]
+requires = ["setuptools>=69.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+exclude = ["web*", "data*", "config*", "tests*", "docs*", "scripts*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false

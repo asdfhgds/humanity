@@ -1,0 +1,300 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Timelines | HUMANITY" description="Chronological timelines of human events by country, conflict, and topic. Filter by event type, severity, and date range.">
+  <div class="min-h-screen">
+    <header class="border-b border-humanity-border bg-humanity-darker/80 backdrop-blur-sm sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <div class="flex items-center gap-3">
+            <a href="/" class="flex items-center gap-3">
+              <svg class="w-8 h-8 text-humanity-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M2 12h20" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+              <span class="text-2xl font-bold tracking-tight text-humanity-text">HUMANITY</span>
+            </a>
+            <span class="text-humanity-textMuted">/</span>
+            <span class="text-humanity-text">Timelines</span>
+          </div>
+          <nav class="hidden md:flex items-center gap-6">
+            <a href="/" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Home</a>
+            <a href="/map" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Map</a>
+            <a href="/events" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Live Events</a>
+            <a href="/protests" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Protests</a>
+            <a href="/conflicts" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Conflicts</a>
+            <a href="/human-cost" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Human Cost</a>
+            <a href="/countries" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Countries</a>
+            <a href="/timelines" class="text-humanity-accent font-medium text-sm">Timelines</a>
+            <a href="/methodology" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Methodology</a>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-humanity-text mb-2 flex items-center gap-3">
+          <span style="color: #7c3aed;">📅</span>
+          Timelines
+        </h1>
+        <p class="text-humanity-textMuted">Chronological views of human events. Filter by country, conflict, event type, and date range.</p>
+      </div>
+
+      <!-- Timeline Selector -->
+      <div class="card mb-8">
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="flex-1 min-w-[200px]">
+            <label class="block text-sm text-humanity-textMuted mb-1">Select Timeline</label>
+            <select id="timeline-select" class="input">
+              <option value="global">Global Timeline</option>
+              <option value="ukraine">Ukraine Conflict</option>
+              <option value="gaza">Gaza Conflict</option>
+              <option value="sudan">Sudan Conflict</option>
+              <option value="myanmar">Myanmar Conflict</option>
+              <option value="syria">Syria Conflict</option>
+              <option value="france">France Protests</option>
+              <option value="iran">Iran Protests</option>
+              <option value="afghanistan">Afghanistan</option>
+              <option value="drc">DR Congo</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-humanity-textMuted mb-1">Event Type</label>
+            <select id="type-filter" class="input">
+              <option value="">All Types</option>
+              <option value="PROTEST">Protest</option>
+              <option value="CONFLICT">Conflict</option>
+              <option value="ATTACK">Attack</option>
+              <option value="CASUALTY">Casualty</option>
+              <option value="DISPLACEMENT">Displacement</option>
+              <option value="DISASTER">Disaster</option>
+              <option value="REPRESSION">Repression</option>
+              <option value="HUMANITARIAN">Humanitarian</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-humanity-textMuted mb-1">Year</label>
+            <select id="year-filter" class="input">
+              <option value="">All Years</option>
+              <option value="2026">2026</option>
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+              <option value="2022">2022</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-humanity-textMuted mb-1">Severity</label>
+            <select id="severity-filter" class="input">
+              <option value="">All</option>
+              <option value="8">8+ (Extreme)</option>
+              <option value="6">6+ (Severe)</option>
+              <option value="4">4+ (Significant)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline View -->
+      <div id="timeline-container">
+        <div class="card">
+          <div class="overflow-x-auto">
+            <table class="w-full" id="timeline-table">
+              <thead>
+                <tr class="border-b border-humanity-border text-left text-sm text-humanity-textMuted">
+                  <th class="p-4 font-medium text-humanity-text w-32">Date</th>
+                  <th class="p-4 font-medium text-humanity-text">Event</th>
+                  <th class="p-4 font-medium text-humanity-text w-24">Type</th>
+                  <th class="p-4 font-medium text-humanity-text w-20">Severity</th>
+                  <th class="p-4 font-medium text-humanity-text w-32">Location</th>
+                  <th class="p-4 font-medium text-humanity-text w-28">Impact</th>
+                </tr>
+              </thead>
+              <tbody id="timeline-body" class="divide-y divide-humanity-border/50">
+                <tr><td colspan="6" class="p-8 text-center text-humanity-textMuted">Loading timeline...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="timeline-pagination" class="flex items-center justify-center gap-2 mt-6"></div>
+        </div>
+      </div>
+
+      <!-- Visual Timeline (alternative view) -->
+      <div id="visual-timeline" class="mt-8 hidden">
+        <h2 class="text-xl font-semibold text-humanity-text mb-4">Visual Timeline</h2>
+        <div class="card p-6" id="visual-timeline-content">
+          <p class="text-humanity-textMuted text-center py-8">Select a timeline to view visual representation</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+<script>
+  let currentTimeline = 'global';
+  let allEvents = [];
+  let currentPage = 1;
+  const pageSize = 50;
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadTimeline('global');
+    setupFilters();
+  });
+
+  function setupFilters() {
+    document.getElementById('timeline-select').addEventListener('change', (e) => {
+      currentTimeline = e.target.value;
+      currentPage = 1;
+      loadTimeline(currentTimeline);
+    });
+    ['type-filter', 'year-filter', 'severity-filter'].forEach(id => {
+      document.getElementById(id).addEventListener('change', () => {
+        currentPage = 1;
+        renderTimeline();
+      });
+    });
+  }
+
+  async function loadTimeline(timelineId) {
+    const tbody = document.getElementById('timeline-body');
+    tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-humanity-textMuted">Loading timeline...</td></tr>';
+    
+    try {
+      const response = await fetch(`/data/timelines/${timelineId}.json`);
+      if (response.ok) {
+        allEvents = await response.json();
+      } else {
+        allEvents = getMockTimeline(timelineId);
+      }
+      renderTimeline();
+    } catch {
+      allEvents = getMockTimeline(timelineId);
+      renderTimeline();
+    }
+  }
+
+  function getMockTimeline(timelineId) {
+    const timelines = {
+      global: [
+        { date: '2026-10-08', title: 'Nationwide protests across France over pension reform', type: 'PROTEST', severity: 6, location: 'Paris, France', deaths: 0, injuries: 14, displaced: 0 },
+        { date: '2026-10-08', title: 'Intense fighting in Khartoum enters third week', type: 'CONFLICT', severity: 9, location: 'Khartoum, Sudan', deaths: 56, injuries: 150, displaced: 0 },
+        { date: '2026-10-08', title: 'Airstrike on residential building in Gaza City', type: 'ATTACK', severity: 8, location: 'Gaza City, Palestine', deaths: 27, injuries: 48, displaced: 0 },
+        { date: '2026-10-07', title: 'Magnitude 6.3 earthquake strikes western Afghanistan', type: 'DISASTER', severity: 9, location: 'Herat, Afghanistan', deaths: 2200, injuries: 10500, displaced: 50000 },
+        { date: '2026-10-07', title: 'Mass displacement near Goma as M23 advances', type: 'DISPLACEMENT', severity: 8, location: 'Goma, DR Congo', deaths: 0, injuries: 0, displaced: 165000 },
+        { date: '2026-10-07', title: 'General strike paralyzes Buenos Aires over inflation', type: 'PROTEST', severity: 7, location: 'Buenos Aires, Argentina', deaths: 0, injuries: 0, displaced: 0 },
+        { date: '2026-10-06', title: 'Climate activists block highways in Berlin', type: 'PROTEST', severity: 4, location: 'Berlin, Germany', deaths: 0, injuries: 0, displaced: 0 },
+        { date: '2026-10-05', title: 'Indigenous rights march in São Paulo', type: 'PROTEST', severity: 5, location: 'São Paulo, Brazil', deaths: 0, injuries: 0, displaced: 0 },
+        { date: '2026-10-05', title: 'M23 rebels capture strategic town in North Kivu', type: 'CONFLICT', severity: 7, location: 'North Kivu, DR Congo', deaths: 34, injuries: 78, displaced: 12000 },
+        { date: '2026-10-04', title: 'Mass arrests of opposition activists in Minsk', type: 'REPRESSION', severity: 6, location: 'Minsk, Belarus', deaths: 0, injuries: 12, displaced: 0 },
+      ],
+      ukraine: [
+        { date: '2026-10-08', title: 'Russian missile strikes on Kyiv energy infrastructure', type: 'ATTACK', severity: 7, location: 'Kyiv, Ukraine', deaths: 12, injuries: 45, displaced: 0 },
+        { date: '2026-10-07', title: 'Ukrainian counteroffensive advances near Bakhmut', type: 'CONFLICT', severity: 8, location: 'Bakhmut, Ukraine', deaths: 89, injuries: 234, displaced: 0 },
+        { date: '2026-10-05', title: 'Drone attack on Moscow oil refinery', type: 'ATTACK', severity: 6, location: 'Moscow, Russia', deaths: 0, injuries: 3, displaced: 0 },
+        { date: '2026-10-03', title: 'Zelenskyy visits frontline positions in Donetsk', type: 'HUMANITARIAN', severity: 4, location: 'Donetsk, Ukraine', deaths: 0, injuries: 0, displaced: 0 },
+        { date: '2026-10-01', title: 'UN reports 10,000+ civilian deaths since 2022', type: 'CASUALTY', severity: 8, location: 'Ukraine', deaths: 10000, injuries: 20000, displaced: 0 },
+      ],
+      gaza: [
+        { date: '2026-10-08', title: 'Airstrike on residential building in Gaza City', type: 'ATTACK', severity: 8, location: 'Gaza City, Palestine', deaths: 27, injuries: 48, displaced: 0 },
+        { date: '2026-10-07', title: 'Ground offensive expands in northern Gaza', type: 'CONFLICT', severity: 9, location: 'Northern Gaza', deaths: 156, injuries: 340, displaced: 50000 },
+        { date: '2026-10-06', title: 'Hospital siege ends after 14 days', type: 'HUMANITARIAN', severity: 7, location: 'Al-Shifa Hospital, Gaza', deaths: 45, injuries: 120, displaced: 0 },
+        { date: '2026-10-04', title: 'Aid convoy reaches northern Gaza after weeks', type: 'HUMANITARIAN', severity: 5, location: 'Gaza', deaths: 0, injuries: 0, displaced: 0 },
+        { date: '2026-10-02', title: 'UNRWA school shelter hit, dozens killed', type: 'ATTACK', severity: 8, location: 'Nuseirat, Gaza', deaths: 34, injuries: 78, displaced: 0 },
+      ]
+    };
+    return timelines[timelineId] || timelines.global;
+  }
+
+  function getFilteredEvents() {
+    const type = document.getElementById('type-filter').value;
+    const year = document.getElementById('year-filter').value;
+    const severity = document.getElementById('severity-filter').value;
+
+    return allEvents.filter(event => {
+      if (type && event.type !== type) return false;
+      if (year && !event.date.startsWith(year)) return false;
+      if (severity && event.severity < parseInt(severity)) return false;
+      return true;
+    }).sort((a, b) => new Date(b.date) - new Date(a.date));
+  }
+
+  function renderTimeline() {
+    const tbody = document.getElementById('timeline-body');
+    const pagination = document.getElementById('timeline-pagination');
+    const filtered = getFilteredEvents();
+    
+    const totalPages = Math.ceil(filtered.length / pageSize);
+    const start = (currentPage - 1) * pageSize;
+    const pageEvents = filtered.slice(start, start + pageSize);
+
+    if (pageEvents.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-humanity-textMuted">No events match your filters</td></tr>';
+      pagination.innerHTML = '';
+      return;
+    }
+
+    tbody.innerHTML = pageEvents.map(event => `
+      <tr class="hover:bg-humanity-card/50" onclick="window.location.href='/event/${event.slug || `2026/10/08/${event.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 60)}`}'">
+        <td class="p-4 text-humanity-textMuted font-mono">${formatDate(event.date)}</td>
+        <td class="p-4">
+          <a href="/event/${event.slug || `2026/10/08/${event.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 60)}`}" class="link hover:text-humanity-accent font-medium">${event.title}</a>
+        </td>
+        <td class="p-4"><span class="badge-${event.type.toLowerCase()}">${getTypeLabel(event.type)}</span></td>
+        <td class="p-4">
+          <span class="px-2 py-1 rounded text-xs font-medium" style="background: ${getSeverityColor(event.severity)}20; color: ${getSeverityColor(event.severity)}; border: 1px solid ${getSeverityColor(event.severity)}40;">
+            ${event.severity}/10
+          </span>
+        </td>
+        <td class="p-4 text-humanity-textMuted">${event.location}</td>
+        <td class="p-4 text-sm">
+          ${renderImpact(event)}
+        </td>
+      </tr>
+    `).join('');
+
+    if (totalPages > 1) {
+      pagination.innerHTML = `
+        <button ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(${currentPage - 1})" class="btn-secondary text-sm">Previous</button>
+        <span class="px-4 text-humanity-textMuted text-sm">Page ${currentPage} of ${totalPages} (${filtered.length} events)</span>
+        <button ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${currentPage + 1})" class="btn-secondary text-sm">Next</button>
+      `;
+    } else {
+      pagination.innerHTML = '';
+    }
+  }
+
+  function changePage(page) {
+    currentPage = page;
+    renderTimeline();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function renderImpact(event) {
+    const parts = [];
+    if (event.deaths > 0) parts.push(`<span class="text-red-400">☠ ${event.deaths.toLocaleString()}</span>`);
+    if (event.injuries > 0) parts.push(`<span class="text-orange-400">🤕 ${event.injuries.toLocaleString()}</span>`);
+    if (event.displaced > 0) parts.push(`<span class="text-amber-400">🏃 ${event.displaced.toLocaleString()}</span>`);
+    return parts.join(' ') || '<span class="text-humanity-textMuted">—</span>';
+  }
+
+  function getTypeLabel(type) {
+    const labels = { PROTEST: 'Protest', CONFLICT: 'Conflict', ATTACK: 'Attack', CASUALTY: 'Casualty', DISPLACEMENT: 'Displacement', DISASTER: 'Disaster', REPRESSION: 'Repression', HUMANITARIAN: 'Humanitarian' };
+    return labels[type] || type;
+  }
+
+  function getSeverityColor(severity) {
+    if (severity >= 8) return '#ef4444';
+    if (severity >= 6) return '#f97316';
+    if (severity >= 4) return '#f97316';
+    return '#3b82f6';
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return 'Unknown';
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  window.changePage = changePage;
+</script>

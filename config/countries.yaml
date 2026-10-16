@@ -1,0 +1,1075 @@
+# HUMANITY Country Registry
+# ISO 3166-1 alpha-2 codes with metadata
+
+countries:
+  - code: "AF"
+    name: "Afghanistan"
+    region: "South Asia"
+    subregion: "Southern Asia"
+    priority: 8
+    conflict_zones: ["afghanistan"]
+    monitored: true
+
+  - code: "AL"
+    name: "Albania"
+    region: "Europe"
+    subregion: "Southern Europe"
+    priority: 3
+    monitored: true
+
+  - code: "DZ"
+    name: "Algeria"
+    region: "Africa"
+    subregion: "Northern Africa"
+    priority: 5
+    monitored: true
+
+  - code: "AD"
+    name: "Andorra"
+    region: "Europe"
+    subregion: "Southern Europe"
+    priority: 1
+    monitored: true
+
+  - code: "AO"
+    name: "Angola"
+    region: "Africa"
+    subregion: "Middle Africa"
+    priority: 4
+    monitored: true
+
+  - code: "AR"
+    name: "Argentina"
+    region: "Americas"
+    subregion: "South America"
+    priority: 5
+    monitored: true
+
+  - code: "AM"
+    name: "Armenia"
+    region: "Asia"
+    subregion: "Western Asia"
+    priority: 6
+    conflict_zones: ["nagorno-karabakh"]
+    monitored: true
+
+  - code: "AU"
+    name: "Australia"
+    region: "Oceania"
+    subregion: "Australia and New Zealand"
+    priority: 4
+    monitored: true
+
+  - code: "AT"
+    name: "Austria"
+    region: "Europe"
+    subregion: "Western Europe"
+    priority: 3
+    monitored: true
+
+  - code: "AZ"
+    name: "Azerbaijan"
+    region: "Asia"
+    subregion: "Western Asia"
+    priority: 6
+    conflict_zones: ["nagorno-karabakh"]
+    monitored: true
+
+  - code: "BD"
+    name: "Bangladesh"
+    region: "Asia"
+    subregion: "Southern Asia"
+    priority: 5
+    monitored: true
+
+  - code: "BY"
+    name: "Belarus"
+    region: "Europe"
+    subregion: "Eastern Europe"
+    priority: 7
+    monitored: true
+
+  - code: "BE"
+    name: "Belgium"
+    region: "Europe"
+    subregion: "Western Europe"
+    priority: 3
+    monitored: true
+
+  - code: "BO"
+    name: "Bolivia"
+    region: "Americas"
+    subregion: "South America"
+    priority: 4
+    monitored: true
+
+  - code: "BA"
+    name: "Bosnia and Herzegovina"
+    region: "Europe"
+    subregion: "Southern Europe"
+    priority: 4
+    monitored: true
+
+  - code: "BR"
+    name: "Brazil"
+    region: "Americas"
+    subregion: "South America"
+    priority: 6
+    monitored: true
+
+  - code: "BG"
+    name: "Bulgaria"
+    region: "Europe"
+    subregion: "Eastern Europe"
+    priority: 3
+    monitored: true
+
+  - code: "BF"
+    name: "Burkina Faso"
+    region: "Africa"
+    subregion: "Western Africa"
+    priority: 7
+    conflict_zones: ["sahel"]
+    monitored: true
+
+  - code: "BI"
+    name: "Burundi"
+    region: "Africa"
+    subregion: "Eastern Africa"
+    priority: 5
+    monitored: true
+
+  - code: "KH"
+    name: "Cambodia"
+    region: "Asia"
+    subregion: "South-Eastern Asia"
+    priority: 4
+    monitored: true
+
+  - code: "CM"
+    name: "Cameroon"
+    region: "Africa"
+    subregion: "Middle Africa"
+    priority: 6
+    conflict_zones: ["anglophone-crisis"]
+    monitored: true
+
+  - code: "CA"
+    name: "Canada"
+    region: "Americas"
+    subregion: "Northern America"
+    priority: 4
+    monitored: true
+
+  - code: "CF"
+    name: "Central African Republic"
+    region: "Africa"
+    subregion: "Middle Africa"
+    priority: 7
+    conflict_zones: ["car"]
+    monitored: true
+
+  - code: "TD"
+    name: "Chad"
+    region: "Africa"
+    subregion: "Middle Africa"
+    priority: 6
+    conflict_zones: ["sahel"]
+    monitored: true
+
+  - code: "CL"
+    name: "Chile"
+    region: "Americas"
+    subregion: "South America"
+    priority: 4
+    monitored: true
+
+  - code: "CN"
+    name: "China"
+    region: "Asia"
+    subregion: "Eastern Asia"
+    priority: 8
+    monitored: true
+
+  - code: "CO"
+    name: "Colombia"
+    region: "Americas"
+    subregion: "South America"
+    priority: 7
+    conflict_zones: ["colombia"]
+    monitored: true
+
+  - code: "CG"
+    name: "Congo"
+    region: "Africa"
+    subregion: "Middle Africa"
+    priority: 4
+    monitored: true
+
+  - code: "CD"
+    name: "Democratic Republic of the Congo"
+    region: "Africa"
+    subregion: "Middle Africa"
+    priority: 8
+    conflict_zones: ["drc", "kivu", "itisuri"]
+    monitored: true
+
+  - code: "CR"
+    name: "Costa Rica"
+    region: "Americas"
+    subregion: "Central America"
+    priority: 2
+    monitored: true
+
+  - code: "CI"
+    name: "Côte d'Ivoire"
+    region: "Africa"
+    subregion: "Western Africa"
+    priority: 4
+    monitored: true
+
+  - code: "HR"
+    name: "Croatia"
+    region: "Europe"
+    subregion: "Southern Europe"
+    priority: 3
+    monitored: true
+
+  - code: "CU"
+    name: "Cuba"
+    region: "Americas"
+    subregion: "Caribbean"
+    priority: 4
+    monitored: true
+
+  - code: "CY"
+    name: "Cyprus"
+    region: "Europe"
+    subregion: "Western Asia"
+    priority: 4
+    monitored: true
+
+  - code: "CZ"
+    name: "Czechia"
+    region: "Europe"
+    subregion: "Eastern Europe"
+    priority: 3
+    monitored: true
+
+  - code: "DK"
+    name: "Denmark"
+    region: "Europe"
+    subregion: "Northern Europe"
+    priority: 3
+    monitored: true
+
+  - code: "DO"
+    name: "Dominican Republic"
+    region: "Americas"
+    subregion: "Caribbean"
+    priority: 3
+    monitored: true
+
+  - code: "EC"
+    name: "Ecuador"
+    region: "Americas"
+    subregion: "South America"
+    priority: 5
+    monitored: true
+
+  - code: "EG"
+    name: "Egypt"
+    region: "Africa"
+    subregion: "Northern Africa"
+    priority: 7
+    monitored: true
+
+  - code: "SV"
+    name: "El Salvador"
+    region: "Americas"
+    subregion: "Central America"
+    priority: 4
+    monitored: true
+
+  - code: "EE"
+    name: "Estonia"
+    region: "Europe"
+    subregion: "Northern Europe"
+    priority: 3
+    monitored: true
+
+  - code: "SZ"
+    name: "Eswatini"
+    region: "Africa"
+    subregion: "Southern Africa"
+    priority: 2
+    monitored: true
+
+  - code: "ET"
+    name: "Ethiopia"
+    region: "Africa"
+    subregion: "Eastern Africa"
+    priority: 8
+    conflict_zones: ["ethiopia", "tigray", "amhara", "oromia"]
+    monitored: true
+
+  - code: "FI"
+    name: "Finland"
+    region: "Europe"
+    subregion: "Northern Europe"
+    priority: 3
+    monitored: true
+
+  - code: "FR"
+    name: "France"
+    region: "Europe"
+    subregion: "Western Europe"
+    priority: 6
+    monitored: true
+
+  - code: "GA"
+    name: "Gabon"
+    region: "Africa"
+    subregion: "Middle Africa"
+    priority: 3
+    monitored: true
+
+  - code: "GM"
+    name: "Gambia"
+    region: "Africa"
+    subregion: "Western Africa"
+    priority: 2
+    monitored: true
+
+  - code: "GE"
+    name: "Georgia"
+    region: "Asia"
+    subregion: "Western Asia"
+    priority: 6
+    conflict_zones: ["georgia", "abkhazia", "south-ossetia"]
+    monitored: true
+
+  - code: "DE"
+    name: "Germany"
+    region: "Europe"
+    subregion: "Western Europe"
+    priority: 5
+    monitored: true
+
+  - code: "GH"
+    name: "Ghana"
+    region: "Africa"
+    subregion: "Western Africa"
+    priority: 3
+    monitored: true
+
+  - code: "GR"
+    name: "Greece"
+    region: "Europe"
+    subregion: "Southern Europe"
+    priority: 4
+    monitored: true
+
+  - code: "GT"
+    name: "Guatemala"
+    region: "Americas"
+    subregion: "Central America"
+    priority: 4
+    monitored: true
+
+  - code: "GN"
+    name: "Guinea"
+    region: "Africa"
+    subregion: "Western Africa"
+    priority: 4
+    monitored: true
+
+  - code: "GW"
+    name: "Guinea-Bissau"
+    region: "Africa"
+    subregion: "Western Africa"
+    priority: 3
+    monitored: true
+
+  - code: "HT"
+    name: "Haiti"
+    region: "Americas"
+    subregion: "Caribbean"
+    priority: 7
+    monitored: true
+
+  - code: "HN"
+    name: "Honduras"
+    region: "Americas"
+    subregion: "Central America"
+    priority: 4
+    monitored: true
+
+  - code: "HU"
+    name: "Hungary"
+    region: "Europe"
+    subregion: "Eastern Europe"
+    priority: 3
+    monitored: true
+
+  - code: "IS"
+    name: "Iceland"
+    region: "Europe"
+    subregion: "Northern Europe"
+    priority: 2
+    monitored: true
+
+  - code: "IN"
+    name: "India"
+    region: "Asia"
+    subregion: "Southern Asia"
+    priority: 7
+    monitored: true
+
+  - code: "ID"
+    name: "Indonesia"
+    region: "Asia"
+    subregion: "South-Eastern Asia"
+    priority: 5
+    monitored: true
+
+  - code: "IR"
+    name: "Iran"
+    region: "Asia"
+    subregion: "Western Asia"
+    priority: 8
+    monitored: true
+
+  - code: "IQ"
+    name: "Iraq"
+    region: "Asia"
+    subregion: "Western Asia"
+    priority: 8
+    conflict_zones: ["iraq"]
+    monitored: true
+
+  - code: "IE"
+    name: "Ireland"
+    region: "Europe"
+    subregion: "Northern Europe"
+    priority: 3
+    monitored: true
+
+  - code: "IL"
+    name: "Israel"
+    region: "Asia"
+    subregion: "Western Asia"
+    priority: 9
+    conflict_zones: ["gaza", "west-bank", "israel-lebanon", "syria-israel"]
+    monitored: true
+
+  - code: "IT"
+    name: "Italy"
+    region: "Europe"
+    subregion: "Southern Europe"
+    priority: 4
+    monitored: true
+
+  - code: "JM"
+    name: "Jamaica"
+    region: "Americas"
+    subregion: "Caribbean"
+    priority: 2
+    monitored: true
+
+  - code: "JP"
+    name: "Japan"
+    region: "Asia"
+    subregion: "Eastern Asia"
+    priority: 4
+    monitored: true
+
+  - code: "JO"
+    name: "Jordan"
+    region: "Asia"
+    subregion: "Western Asia"
+    priority: 5
+    monitored: true
+
+  - code: "KZ"
+    name: "Kazakhstan"
+    region: "Asia"
+    subregion: "Central Asia"
+    priority: 4
+    monitored: true
+
+  - code: "KE"
+    name: "Kenya"
+    region: "Africa"
+    subregion: "Eastern Africa"
+    priority: 5
+    monitored: true
+
+  - code: "KP"
+    name: "North Korea"
+    region: "Asia"
+    subregion: "Eastern Asia"
+    priority: 7
+    monitored: true
+
+  - code: "KR"
+    name: "South Korea"
+    region: "Asia"
+    subregion: "Eastern Asia"
+    priority: 6
+    monitored: true
+
+  - code: "XK"
+    name: "Kosovo"
+    region: "Europe"
+    subregion: "Southern Europe"
+    priority: 5
+    monitored: true
+
+  - code: "KW"
+    name: "Kuwait"
+    region: "Asia"
+    subregion: "Western Asia"
+    priority: 3
+    monitored: true
+
+  - code: "KG"
+    name: "Kyrgyzstan"
+    region: "Asia"
+    subregion: "Central Asia"
+    priority: 4
+    monitored: true
+
+  - code: "LA"
+    name: "Laos"
+    region: "Asia"
+    subregion: "South-Eastern Asia"
+    priority: 3
+    monitored: true
+
+  - code: "LV"
+    name: "Latvia"
+    region: "Europe"
+    subregion: "Northern Europe"
+    priority: 3
+    monitored: true
+
+  - code: "LB"
+    name: "Lebanon"
+    region: "Asia"
+    subregion: "Western Asia"
+    priority: 8
+    conflict_zones: ["lebanon", "israel-lebanon"]
+    monitored: true
+
+  - code: "LY"
+    name: "Libya"
+    region: "Africa"
+    subregion: "Northern Africa"
+    priority: 7
+    conflict_zones: ["libya"]
+    monitored: true
+
+  - code: "LT"
+    name: "Lithuania"
+    region: "Europe"
+    subregion: "Northern Europe"
+    priority: 3
+    monitored: true
+
+  - code: "MG"
+    name: "Madagascar"
+    region: "Africa"
+    subregion: "Eastern Africa"
+    priority: 3
+    monitored: true
+
+  - code: "MW"
+    name: "Malawi"
+    region: "Africa"
+    subregion: "Eastern Africa"
+    priority: 3
+    monitored: true
+
+  - code: "MY"
+    name: "Malaysia"
+    region: "Asia"
+    subregion: "South-Eastern Asia"
+    priority: 4
+    monitored: true
+
+  - code: "ML"
+    name: "Mali"
+    region: "Africa"
+    subregion: "Western Africa"
+    priority: 7
+    conflict_zones: ["sahel", "mali"]
+    monitored: true
+
+  - code: "MX"
+    name: "Mexico"
+    region: "Americas"
+    subregion: "Central America"
+    priority: 7
+    monitored: true
+
+  - code: "MD"
+    name: "Moldova"
+    region: "Europe"
+    subregion: "Eastern Europe"
+    priority: 5
+    monitored: true
+
+  - code: "MN"
+    name: "Mongolia"
+    region: "Asia"
+    subregion: "Eastern Asia"
+    priority: 2
+    monitored: true
+
+  - code: "ME"
+    name: "Montenegro"
+    region: "Europe"
+    subregion: "Southern Europe"
+    priority: 2
+    monitored: true
+
+  - code: "MA"
+    name: "Morocco"
+    region: "Africa"
+    subregion: "Northern Africa"
+    priority: 5
+    monitored: true
+
+  - code: "MZ"
+    name: "Mozambique"
+    region: "Africa"
+    subregion: "Eastern Africa"
+    priority: 5
+    conflict_zones: ["mozambique"]
+    monitored: true
+
+  - code: "MM"
+    name: "Myanmar"
+    region: "Asia"
+    subregion: "South-Eastern Asia"
+    priority: 9
+    conflict_zones: ["myanmar"]
+    monitored: true
+
+  - code: "NA"
+    name: "Namibia"
+    region: "Africa"
+    subregion: "Southern Africa"
+    priority: 2
+    monitored: true
+
+  - code: "NP"
+    name: "Nepal"
+    region: "Asia"
+    subregion: "Southern Asia"
+    priority: 3
+    monitored: true
+
+  - code: "NL"
+    name: "Netherlands"
+    region: "Europe"
+    subregion: "Western Europe"
+    priority: 3
+    monitored: true
+
+  - code: "NZ"
+    name: "New Zealand"
+    region: "Oceania"
+    subregion: "Australia and New Zealand"
+    priority: 2
+    monitored: true
+
+  - code: "NI"
+    name: "Nicaragua"
+    region: "Americas"
+    subregion: "Central America"
+    priority: 4
+    monitored: true
+
+  - code: "NE"
+    name: "Niger"
+    region: "Africa"
+    subregion: "Western Africa"
+    priority: 6
+    conflict_zones: ["sahel"]
+    monitored: true
+
+  - code: "NG"
+    name: "Nigeria"
+    region: "Africa"
+    subregion: "Western Africa"
+    priority: 8
+    conflict_zones: ["nigeria", "boko-haram", "banditry"]
+    monitored: true
+
+  - code: "MK"
+    name: "North Macedonia"
+    region: "Europe"
+    subregion: "Southern Europe"
+    priority: 2
+    monitored: true
+
+  - code: "NO"
+    name: "Norway"
+    region: "Europe"
+    subregion: "Northern Europe"
+    priority: 3
+    monitored: true
+
+  - code: "OM"
+    name: "Oman"
+    region: "Asia"
+    subregion: "Western Asia"
+    priority: 2
+    monitored: true
+
+  - code: "PK"
+    name: "Pakistan"
+    region: "Asia"
+    subregion: "Southern Asia"
+    priority: 8
+    conflict_zones: ["pakistan", "balochistan", "kpk"]
+    monitored: true
+
+  - code: "PA"
+    name: "Panama"
+    region: "Americas"
+    subregion: "Central America"
+    priority: 2
+    monitored: true
+
+  - code: "PY"
+    name: "Paraguay"
+    region: "Americas"
+    subregion: "South America"
+    priority: 2
+    monitored: true
+
+  - code: "PE"
+    name: "Peru"
+    region: "Americas"
+    subregion: "South America"
+    priority: 4
+    monitored: true
+
+  - code: "PH"
+    name: "Philippines"
+    region: "Asia"
+    subregion: "South-Eastern Asia"
+    priority: 6
+    monitored: true
+
+  - code: "PL"
+    name: "Poland"
+    region: "Europe"
+    subregion: "Eastern Europe"
+    priority: 4
+    monitored: true
+
+  - code: "PT"
+    name: "Portugal"
+    region: "Europe"
+    subregion: "Southern Europe"
+    priority: 3
+    monitored: true
+
+  - code: "QA"
+    name: "Qatar"
+    region: "Asia"
+    subregion: "Western Asia"
+    priority: 3
+    monitored: true
+
+  - code: "RO"
+    name: "Romania"
+    region: "Europe"
+    subregion: "Eastern Europe"
+    priority: 3
+    monitored: true
+
+  - code: "RU"
+    name: "Russia"
+    region: "Europe"
+    subregion: "Eastern Europe"
+    priority: 9
+    conflict_zones: ["ukraine", "russia-ukraine", "caucasus"]
+    monitored: true
+
+  - code: "RW"
+    name: "Rwanda"
+    region: "Africa"
+    subregion: "Eastern Africa"
+    priority: 4
+    monitored: true
+
+  - code: "SA"
+    name: "Saudi Arabia"
+    region: "Asia"
+    subregion: "Western Asia"
+    priority: 6
+    monitored: true
+
+  - code: "SN"
+    name: "Senegal"
+    region: "Africa"
+    subregion: "Western Africa"
+    priority: 3
+    monitored: true
+
+  - code: "RS"
+    name: "Serbia"
+    region: "Europe"
+    subregion: "Southern Europe"
+    priority: 4
+    monitored: true
+
+  - code: "SL"
+    name: "Sierra Leone"
+    region: "Africa"
+    subregion: "Western Africa"
+    priority: 3
+    monitored: true
+
+  - code: "SG"
+    name: "Singapore"
+    region: "Asia"
+    subregion: "South-Eastern Asia"
+    priority: 3
+    monitored: true
+
+  - code: "SK"
+    name: "Slovakia"
+    region: "Europe"
+    subregion: "Eastern Europe"
+    priority: 2
+    monitored: true
+
+  - code: "SI"
+    name: "Slovenia"
+    region: "Europe"
+    subregion: "Southern Europe"
+    priority: 2
+    monitored: true
+
+  - code: "SO"
+    name: "Somalia"
+    region: "Africa"
+    subregion: "Eastern Africa"
+    priority: 8
+    conflict_zones: ["somalia"]
+    monitored: true
+
+  - code: "ZA"
+    name: "South Africa"
+    region: "Africa"
+    subregion: "Southern Africa"
+    priority: 5
+    monitored: true
+
+  - code: "SS"
+    name: "South Sudan"
+    region: "Africa"
+    subregion: "Eastern Africa"
+    priority: 8
+    conflict_zones: ["south-sudan"]
+    monitored: true
+
+  - code: "ES"
+    name: "Spain"
+    region: "Europe"
+    subregion: "Southern Europe"
+    priority: 5
+    monitored: true
+
+  - code: "LK"
+    name: "Sri Lanka"
+    region: "Asia"
+    subregion: "Southern Asia"
+    priority: 4
+    monitored: true
+
+  - code: "SD"
+    name: "Sudan"
+    region: "Africa"
+    subregion: "Northern Africa"
+    priority: 9
+    conflict_zones: ["sudan", "darfur"]
+    monitored: true
+
+  - code: "SE"
+    name: "Sweden"
+    region: "Europe"
+    subregion: "Northern Europe"
+    priority: 3
+    monitored: true
+
+  - code: "CH"
+    name: "Switzerland"
+    region: "Europe"
+    subregion: "Western Europe"
+    priority: 3
+    monitored: true
+
+  - code: "SY"
+    name: "Syria"
+    region: "Asia"
+    subregion: "Western Asia"
+    priority: 9
+    conflict_zones: ["syria", "idlib"]
+    monitored: true
+
+  - code: "TW"
+    name: "Taiwan"
+    region: "Asia"
+    subregion: "Eastern Asia"
+    priority: 6
+    monitored: true
+
+  - code: "TJ"
+    name: "Tajikistan"
+    region: "Asia"
+    subregion: "Central Asia"
+    priority: 3
+    monitored: true
+
+  - code: "TZ"
+    name: "Tanzania"
+    region: "Africa"
+    subregion: "Eastern Africa"
+    priority: 3
+    monitored: true
+
+  - code: "TH"
+    name: "Thailand"
+    region: "Asia"
+    subregion: "South-Eastern Asia"
+    priority: 4
+    monitored: true
+
+  - code: "TL"
+    name: "Timor-Leste"
+    region: "Asia"
+    subregion: "South-Eastern Asia"
+    priority: 2
+    monitored: true
+
+  - code: "TG"
+    name: "Togo"
+    region: "Africa"
+    subregion: "Western Africa"
+    priority: 2
+    monitored: true
+
+  - code: "TN"
+    name: "Tunisia"
+    region: "Africa"
+    subregion: "Northern Africa"
+    priority: 4
+    monitored: true
+
+  - code: "TR"
+    name: "Turkey"
+    region: "Asia"
+    subregion: "Western Asia"
+    priority: 7
+    conflict_zones: ["turkey-syria", "turkey-pkk"]
+    monitored: true
+
+  - code: "TM"
+    name: "Turkmenistan"
+    region: "Asia"
+    subregion: "Central Asia"
+    priority: 2
+    monitored: true
+
+  - code: "UG"
+    name: "Uganda"
+    region: "Africa"
+    subregion: "Eastern Africa"
+    priority: 4
+    monitored: true
+
+  - code: "UA"
+    name: "Ukraine"
+    region: "Europe"
+    subregion: "Eastern Europe"
+    priority: 10
+    conflict_zones: ["ukraine", "donbas", "crimea"]
+    monitored: true
+
+  - code: "AE"
+    name: "United Arab Emirates"
+    region: "Asia"
+    subregion: "Western Asia"
+    priority: 4
+    monitored: true
+
+  - code: "GB"
+    name: "United Kingdom"
+    region: "Europe"
+    subregion: "Northern Europe"
+    priority: 6
+    monitored: true
+
+  - code: "US"
+    name: "United States"
+    region: "Americas"
+    subregion: "Northern America"
+    priority: 7
+    monitored: true
+
+  - code: "UY"
+    name: "Uruguay"
+    region: "Americas"
+    subregion: "South America"
+    priority: 2
+    monitored: true
+
+  - code: "UZ"
+    name: "Uzbekistan"
+    region: "Asia"
+    subregion: "Central Asia"
+    priority: 3
+    monitored: true
+
+  - code: "VE"
+    name: "Venezuela"
+    region: "Americas"
+    subregion: "South America"
+    priority: 6
+    monitored: true
+
+  - code: "VN"
+    name: "Vietnam"
+    region: "Asia"
+    subregion: "South-Eastern Asia"
+    priority: 4
+    monitored: true
+
+  - code: "YE"
+    name: "Yemen"
+    region: "Asia"
+    subregion: "Western Asia"
+    priority: 9
+    conflict_zones: ["yemen"]
+    monitored: true
+
+  - code: "ZM"
+    name: "Zambia"
+    region: "Africa"
+    subregion: "Eastern Africa"
+    priority: 3
+    monitored: true
+
+  - code: "ZW"
+    name: "Zimbabwe"
+    region: "Africa"
+    subregion: "Eastern Africa"
+    priority: 4
+    monitored: true

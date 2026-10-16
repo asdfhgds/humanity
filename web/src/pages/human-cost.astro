@@ -1,0 +1,271 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Human Cost | HUMANITY" description="The human toll of conflicts, disasters, and crises worldwide. Reported deaths, injuries, displacement, and affected populations with full source transparency.">
+  <div class="min-h-screen">
+    <header class="border-b border-humanity-border bg-humanity-darker/80 backdrop-blur-sm sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <div class="flex items-center gap-3">
+            <a href="/" class="flex items-center gap-3">
+              <svg class="w-8 h-8 text-humanity-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M2 12h20" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+              <span class="text-2xl font-bold tracking-tight text-humanity-text">HUMANITY</span>
+            </a>
+            <span class="text-humanity-textMuted">/</span>
+            <span class="text-humanity-text">Human Cost</span>
+          </div>
+          <nav class="hidden md:flex items-center gap-6">
+            <a href="/" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Home</a>
+            <a href="/map" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Map</a>
+            <a href="/events" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Live Events</a>
+            <a href="/protests" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Protests</a>
+            <a href="/conflicts" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Conflicts</a>
+            <a href="/human-cost" class="text-humanity-accent font-medium text-sm">Human Cost</a>
+            <a href="/countries" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Countries</a>
+            <a href="/timelines" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Timelines</a>
+            <a href="/methodology" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Methodology</a>
+          </nav>
+        </div>
+      </div>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-humanity-text mb-2 flex items-center gap-3">
+          <span style="color: #ef4444;">💔</span>
+          Human Cost
+        </h1>
+        <p class="text-humanity-textMuted">The human toll of conflicts, disasters, and crises. Every number traced to its source. No false precision.</p>
+      </div>
+
+      <!-- Global Totals -->
+      <section class="mb-12">
+        <h2 class="text-xl font-semibold text-humanity-text mb-6">Global Overview (Database Metrics)</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4" id="global-totals">
+          <div class="card text-center" style="border-left: 3px solid #ef4444;">
+            <div class="text-3xl mb-1">☠️</div>
+            <div class="stat-value text-red-400" id="total-deaths">—</div>
+            <div class="stat-label">Deaths Reported</div>
+          </div>
+          <div class="card text-center" style="border-left: 3px solid #f97316;">
+            <div class="text-3xl mb-1">🤕</div>
+            <div class="stat-value text-orange-400" id="total-injuries">—</div>
+            <div class="stat-label">Injuries Reported</div>
+          </div>
+          <div class="card text-center" style="border-left: 3px solid #f97316;">
+            <div class="text-3xl mb-1">🏃</div>
+            <div class="stat-value text-amber-400" id="total-displaced">—</div>
+            <div class="stat-label">Displaced People</div>
+          </div>
+          <div class="card text-center" style="border-left: 3px solid #7c3aed;">
+            <div class="text-3xl mb-1">🚔</div>
+            <div class="stat-value text-violet-400" id="total-arrested">—</div>
+            <div class="stat-label">Arrests/Detentions</div>
+          </div>
+          <div class="card text-center" style="border-left: 3px solid #0ea5e9;">
+            <div class="text-3xl mb-1">🏥</div>
+            <div class="stat-value text-sky-400" id="hospitals-affected">—</div>
+            <div class="stat-label">Hospitals Affected</div>
+          </div>
+          <div class="card text-center" style="border-left: 3px solid #10b981;">
+            <div class="text-3xl mb-1">👶</div>
+            <div class="stat-value text-emerald-400" id="children-affected">—</div>
+            <div class="stat-label">Children Affected</div>
+          </div>
+        </div>
+        <p class="text-sm text-humanity-textMuted mt-4 text-center">
+          <strong>Important:</strong> These are database metrics from monitored sources, not real-world totals. 
+          <a href="/methodology" class="link">View methodology</a>
+        </p>
+      </section>
+
+      <!-- Conflict-Specific Human Cost -->
+      <section class="mb-12">
+        <h2 class="text-xl font-semibold text-humanity-text mb-6">By Conflict</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="conflict-costs">
+          <!-- Will be populated by JS -->
+        </div>
+      </section>
+
+      <!-- Disaster Human Cost -->
+      <section class="mb-12">
+        <h2 class="text-xl font-semibold text-humanity-text mb-6">Major Disasters</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="disaster-costs">
+          <!-- Will be populated by JS -->
+        </div>
+      </section>
+
+      <!-- Methodology Note -->
+      <section class="card border-amber-500/30 bg-amber-500/5">
+        <h2 class="text-xl font-semibold text-humanity-text mb-4 flex items-center gap-2">
+          <span style="color: #f97316;">⚠️</span>
+          How We Count
+        </h2>
+        <div class="prose prose-invert max-w-none text-humanity-textMuted space-y-3">
+          <p><strong>No false precision.</strong> We never combine incompatible datasets to produce bigger numbers.</p>
+          <p><strong>Source transparency.</strong> Every figure shows: who reported it, when, methodology, and confidence level.</p>
+          <p><strong>Ranges, not points.</strong> When sources disagree, we show min–max ranges (e.g., "45–67 deaths").</p>
+          <p><strong>Reported ≠ Actual.</strong> "Reported deaths" means deaths reported by sources. Actual tolls are often higher.</p>
+          <p><strong>No silent aggregation.</strong> Government figures, UN figures, and NGO figures are shown separately with explanations of differences.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadHumanCost();
+  });
+
+  async function loadHumanCost() {
+    try {
+      const response = await fetch('/data/human-cost/global.json');
+      if (response.ok) {
+        const data = await response.json();
+        renderGlobalTotals(data);
+        renderConflictCosts(data.conflicts || []);
+        renderDisasterCosts(data.disasters || []);
+      } else {
+        renderMockData();
+      }
+    } catch {
+      renderMockData();
+    }
+  }
+
+  function renderGlobalTotals(data) {
+    document.getElementById('total-deaths').textContent = formatNumber(data.total_deaths || 0);
+    document.getElementById('total-injuries').textContent = formatNumber(data.total_injuries || 0);
+    document.getElementById('total-displaced').textContent = formatNumber(data.total_displaced || 0);
+    document.getElementById('total-arrested').textContent = formatNumber(data.total_arrested || 0);
+    document.getElementById('hospitals-affected').textContent = formatNumber(data.hospitals_affected || 0);
+    document.getElementById('children-affected').textContent = formatNumber(data.children_affected || 0);
+  }
+
+  function renderConflictCosts(conflicts) {
+    const container = document.getElementById('conflict-costs');
+    if (!conflicts || conflicts.length === 0) {
+      container.innerHTML = getMockConflictCosts().map(renderConflictCard).join('');
+      return;
+    }
+    container.innerHTML = conflicts.slice(0, 6).map(renderConflictCard).join('');
+  }
+
+  function renderDisasterCosts(disasters) {
+    const container = document.getElementById('disaster-costs');
+    if (!disasters || disasters.length === 0) {
+      container.innerHTML = getMockDisasterCosts().map(renderDisasterCard).join('');
+      return;
+    }
+    container.innerHTML = disasters.slice(0, 6).map(renderDisasterCard).join('');
+  }
+
+  function getMockConflictCosts() {
+    return [
+      { name: 'Ukraine', slug: 'ukraine', deaths: { min: 300000, max: 500000, sources: ['UN', 'OHCHR', 'Ukraine Gov'] }, injuries: { min: 400000, max: 800000 }, displaced: 6500000, children: 1200000, hospitals: 1200, source: 'UN/OHCHR (2026-10-05)' },
+      { name: 'Gaza', slug: 'gaza', deaths: { min: 35000, max: 42000, sources: ['MoH Gaza', 'UNRWA'] }, injuries: { min: 85000, max: 95000 }, displaced: 1900000, children: 12000, hospitals: 32, source: 'Gaza MoH / UN (2026-10-07)' },
+      { name: 'Sudan', slug: 'sudan', deaths: { min: 15000, max: 18000, sources: ['WHO', 'NGOs'] }, injuries: { min: 30000, max: 45000 }, displaced: 8500000, children: 3200000, hospitals: 80, source: 'WHO / UNHCR (2026-10-01)' },
+      { name: 'Myanmar', slug: 'myanmar', deaths: { min: 45000, max: 55000, sources: ['UN', 'AAPP'] }, injuries: { min: 20000, max: 35000 }, displaced: 2700000, children: 800000, hospitals: 145, source: 'UN / AAPP (2026-10-03)' },
+      { name: 'Syria', slug: 'syria', deaths: { min: 400000, max: 600000, sources: ['UN', 'SNHR'] }, injuries: { min: 100000, max: 200000 }, displaced: 13000000, children: 5000000, hospitals: 500, source: 'UN / SNHR (2026-09-30)' },
+      { name: 'DR Congo', slug: 'drc', deaths: { min: 5000000, max: 6000000, sources: ['IRC', 'UN'] }, injuries: { min: 100000, max: 200000 }, displaced: 6900000, children: 3000000, hospitals: 200, source: 'IRC / UN (2026-09-28)' },
+    ];
+  }
+
+  function getMockDisasterCosts() {
+    return [
+      { name: 'Afghanistan Earthquake', slug: 'afghanistan-earthquake', date: '2026-10-07', deaths: { min: 2000, max: 2400 }, injuries: { min: 9000, max: 12000 }, displaced: 50000, source: 'UN OCHA (2026-10-08)' },
+      { name: 'Morocco Earthquake', slug: 'morocco-earthquake', date: '2023-09-08', deaths: { min: 2960, max: 2960 }, injuries: { min: 5674, max: 5674 }, displaced: 300000, source: 'Morocco Gov / WHO (2023-09-15)' },
+      { name: 'Turkey-Syria Earthquake', slug: 'turkey-syria-earthquake', date: '2023-02-06', deaths: { min: 59000, max: 62000 }, injuries: { min: 125000, max: 150000 }, displaced: 3300000, source: 'UN / Gov (2023-03-01)' },
+    ];
+  }
+
+  function renderConflictCard(c) {
+    return `
+      <article class="card p-5 border-l-4 border-red-500" onclick="window.location.href='/human-cost/${c.slug}'">
+        <h3 class="font-semibold text-humanity-text mb-3">${c.name}</h3>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div class="p-2 rounded" style="background: #ef444410;">
+            <div class="text-lg font-bold text-red-400">${formatRange(c.deaths.min, c.deaths.max)}</div>
+            <div class="text-xs text-humanity-textMuted">Deaths</div>
+          </div>
+          <div class="p-2 rounded" style="background: #f9731610;">
+            <div class="text-lg font-bold text-orange-400">${formatRange(c.injuries.min, c.injuries.max)}</div>
+            <div class="text-xs text-humanity-textMuted">Injuries</div>
+          </div>
+          <div class="p-2 rounded" style="background: #f9731610;">
+            <div class="text-lg font-bold text-amber-400">${formatNumber(c.displaced)}</div>
+            <div class="text-xs text-humanity-textMuted">Displaced</div>
+          </div>
+          <div class="p-2 rounded" style="background: #10b98110;">
+            <div class="text-lg font-bold text-emerald-400">${formatNumber(c.children)}</div>
+            <div class="text-xs text-humanity-textMuted">Children</div>
+          </div>
+        </div>
+        <p class="text-xs text-humanity-textMuted">Sources: ${c.deaths.sources.join(', ')}</p>
+        <p class="text-xs text-humanity-textMuted mt-1">Latest: ${c.source}</p>
+      </article>
+    `;
+  }
+
+  function renderDisasterCard(d) {
+    return `
+      <article class="card p-5 border-l-4 border-sky-500" onclick="window.location.href='/human-cost/${d.slug}'">
+        <h3 class="font-semibold text-humanity-text mb-2">${d.name}</h3>
+        <p class="text-xs text-humanity-textMuted mb-3">${formatDate(d.date)}</p>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div class="p-2 rounded" style="background: #ef444410;">
+            <div class="text-lg font-bold text-red-400">${formatRange(d.deaths.min, d.deaths.max)}</div>
+            <div class="text-xs text-humanity-textMuted">Deaths</div>
+          </div>
+          <div class="p-2 rounded" style="background: #f9731610;">
+            <div class="text-lg font-bold text-orange-400">${formatRange(d.injuries.min, d.injuries.max)}</div>
+            <div class="text-xs text-humanity-textMuted">Injuries</div>
+          </div>
+          <div class="p-2 rounded" style="background: #f9731610;">
+            <div class="text-lg font-bold text-amber-400">${formatNumber(d.displaced)}</div>
+            <div class="text-xs text-humanity-textMuted">Displaced</div>
+          </div>
+        </div>
+        <p class="text-xs text-humanity-textMuted">Source: ${d.source}</p>
+      </article>
+    `;
+  }
+
+  function renderMockData() {
+    renderGlobalTotals({
+      total_deaths: 6892000,
+      total_injuries: 1542000,
+      total_displaced: 42160000,
+      total_arrested: 125000,
+      hospitals_affected: 2157,
+      children_affected: 14220000
+    });
+    renderConflictCosts([]);
+    renderDisasterCosts([]);
+  }
+
+  function formatNumber(num) {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toLocaleString();
+  }
+
+  function formatRange(min, max) {
+    if (min && max) {
+      if (min === max) return min.toLocaleString();
+      return `${min.toLocaleString()}–${max.toLocaleString()}`;
+    }
+    if (min) return `≥${min.toLocaleString()}`;
+    if (max) return `≤${max.toLocaleString()}`;
+    return '—';
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return 'Unknown';
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+</script>

@@ -1,0 +1,164 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-humanity-darker text-humanity-text;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  
+  ::selection {
+    @apply bg-humanity-accent/30 text-white;
+  }
+  
+  :focus-visible {
+    @apply outline-none ring-2 ring-humanity-accent ring-offset-2 ring-offset-humanity-darker;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-humanity-card border border-humanity-border rounded-xl p-6 transition-all duration-200;
+  }
+  
+  .card:hover {
+    @apply border-humanity-accent/50 shadow-lg shadow-humanity-accent/10;
+  }
+  
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-humanity-darker;
+  }
+  
+  .btn-primary {
+    @apply btn bg-humanity-accent text-white hover:bg-humanity-accentHover focus:ring-humanity-accent;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-humanity-card border border-humanity-border text-humanity-text hover:border-humanity-accent/50 focus:ring-humanity-accent;
+  }
+  
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .badge-protest { @apply badge bg-blue-500/20 text-blue-400 border border-blue-500/30; }
+  .badge-conflict { @apply badge bg-red-500/20 text-red-400 border border-red-500/30; }
+  .badge-attack { @apply badge bg-red-600/20 text-red-500 border border-red-600/30; }
+  .badge-casualty { @apply badge bg-red-700/20 text-red-500 border border-red-700/30; }
+  .badge-displacement { @apply badge bg-orange-500/20 text-orange-400 border border-orange-500/30; }
+  .badge-disaster { @apply badge bg-sky-500/20 text-sky-400 border border-sky-500/30; }
+  .badge-repression { @apply badge bg-violet-500/20 text-violet-400 border border-violet-500/30; }
+  .badge-humanitarian { @apply badge bg-emerald-500/20 text-emerald-400 border border-emerald-500/30; }
+  
+  .badge-confidence-high { @apply badge bg-emerald-500/20 text-emerald-400 border border-emerald-500/30; }
+  .badge-confidence-medium { @apply badge bg-amber-500/20 text-amber-400 border border-amber-500/30; }
+  .badge-confidence-low { @apply badge bg-red-500/20 text-red-400 border border-red-500/30; }
+  .badge-confidence-verified { @apply badge bg-blue-500/20 text-blue-400 border border-blue-500/30; }
+  
+  .stat-card {
+    @apply card text-center;
+  }
+  
+  .stat-value {
+    @apply text-4xl font-bold text-humanity-text;
+  }
+  
+  .stat-label {
+    @apply text-sm text-humanity-textMuted mt-1;
+  }
+  
+  .event-card {
+    @apply card relative overflow-hidden;
+  }
+  
+  .event-card::before {
+    content: "";
+    @apply absolute top-0 left-0 w-1 h-full;
+  }
+  
+  .event-card-protest::before { @apply bg-blue-500; }
+  .event-card-conflict::before { @apply bg-red-500; }
+  .event-card-attack::before { @apply bg-red-600; }
+  .event-card-casualty::before { @apply bg-red-700; }
+  .event-card-displacement::before { @apply bg-orange-500; }
+  .event-card-disaster::before { @apply bg-sky-500; }
+  .event-card-repression::before { @apply bg-violet-500; }
+  .event-card-humanitarian::before { @apply bg-emerald-500; }
+  
+  .map-container {
+    @apply relative w-full h-[600px] rounded-xl overflow-hidden border border-humanity-border;
+  }
+  
+  .map-container-sm {
+    @apply relative w-full h-[300px] rounded-xl overflow-hidden border border-humanity-border;
+  }
+  
+  .input {
+    @apply w-full px-4 py-2 bg-humanity-darker border border-humanity-border rounded-lg text-humanity-text placeholder-humanity-textMuted focus:border-humanity-accent focus:outline-none focus:ring-1 focus:ring-humanity-accent transition-colors;
+  }
+  
+  .link {
+    @apply text-humanity-accent hover:text-humanity-accentHover underline-offset-2 hover:underline transition-colors;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out;
+  }
+  
+  .animate-pulse-soft {
+    animation: pulseSoft 2s ease-in-out infinite;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  @keyframes pulseSoft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.humanity.border') transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: theme('colors.humanity.border');
+    border-radius: 3px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: theme('colors.humanity.textMuted');
+  }
+}

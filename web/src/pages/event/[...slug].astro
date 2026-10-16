@@ -1,0 +1,360 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+import EventCard from '../../components/EventCard.astro';
+
+export async function getStaticPaths() {
+  // For now, return empty paths - we'll use client-side rendering
+  return [];
+}
+
+const { slug } = Astro.params;
+const slugStr = Array.isArray(slug) ? slug.join('/') : slug;
+---
+
+<BaseLayout title="Event Details | HUMANITY" description="Detailed view of a human event with sources, evidence, and verification status.">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Breadcrumb -->
+    <nav class="mb-6 text-sm text-humanity-textMuted" aria-label="Breadcrumb">
+      <ol class="flex items-center gap-2">
+        <li><a href="/" class="link hover:text-humanity-text">Home</a></li>
+        <li aria-hidden="true">/</li>
+        <li><a href="/events" class="link hover:text-humanity-text">Events</a></li>
+        <li aria-hidden="true">/</li>
+        <li aria-current="page" class="text-humanity-text">{slugStr}</li>
+      </ol>
+    </nav>
+
+    <div id="event-container" class="animate-fade-in">
+      <!-- Loading state -->
+      <div class="card text-center py-12">
+        <div class="animate-pulse-soft text-humanity-textMuted">Loading event data...</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const container = document.getElementById('event-container');
+    if (!container) return;
+    
+    try {
+      // Convert slug back to file path
+      const fileSlug = slugStr.replace(/\//g, '_');
+      const response = await fetch(`/data/events/${fileSlug}.json`);
+      
+      if (!response.ok) {
+        throw new Error('Event not found');
+      }
+      
+      const event = await response.json();
+      renderEvent(event);
+      
+      // Update page title
+      document.title = `${event.title} | HUMANITY`;
+      
+      // Update meta description
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) {
+        metaDesc.setAttribute('content', event.summary || event.description?.slice(0, 160) || 'Event details');
+      }
+      
+    } catch (error) {
+      container.innerHTML = `
+        <div class="card text-center py-12">
+          <h2 class="text-xl font-semibold text-humanity-text mb-2">Event Not Found</h2>
+          <p class="text-humanity-textMuted">The requested event could not be found or has not been published yet.</p>
+          <a href="/events" class="btn-primary mt-4 inline-block">Browse All Events</a>
+        </div>
+      `;
+    }
+  });
+  
+  function renderEvent(event) {
+    const container = document.getElementById('event-container');
+    
+    const typeColors = {
+      PROTEST: '#3b82f6',
+      CONFLICT: '#ef4444',
+      ATTACK: '#dc2626',
+      CASUALTY: '#b91c1c',
+      DISPLACEMENT: '#f97316',
+      DISASTER: '#0ea5e9',
+      REPRESSION: '#7c3aed',
+      HUMANITARIAN: '#10b981'
+    };
+    
+    const color = typeColors[event.event_type] || '#888888';
+    const typeLabel = event.event_type.replace('_', ' ');
+    
+    container.innerHTML = `
+      <article class="space-y-8">
+        <!-- Header -->
+        <header class="space-y-4">
+          <div class="flex flex-wrap items-center gap-3">
+            <span class="px-3 py-1 rounded-full text-sm font-medium text-white" style="background: ${color};">${typeLabel}</span>
+            <span class="px-3 py-1 rounded-full text-sm font-medium badge-confidence-${event.confidence.toLowerCase()}">${event.confidence}</span>
+            ${event.publish_warning ? '<span class="px-3 py-1 rounded-full text-sm font-medium bg-amber-500/20 text-amber-400 border border-amber-500/30">⚠️ Developing Story</span>' : ''}
+          </div>
+          
+          <h1 class="text-3xl sm:text-4xl font-bold text-humanity-text leading-tight">${event.title}</h1>
+          
+          <div class="flex flex-wrap items-center gap-4 text-sm text-humanity-textMuted border-t border-humanity-border pt-4">
+            <span>📍 ${event.city || 'Unknown location'}, ${event.country_name}</span>
+            <span>📅 ${formatDate(event.start_time)}${event.end_time ? ` – ${formatDate(event.end_time)}` : ''}</span>
+            <span>📰 ${event.sources?.length || 0} source${event.sources?.length !== 1 ? 's' : ''}</span>
+            ${event.severity ? `<span>Severity: ${event.severity}/10</span>` : ''}
+          </div>
+        </header>
+
+        <!-- Map -->
+        ${event.latitude && event.longitude ? `
+        <section class="card p-0 overflow-hidden">
+          <div id="event-map" class="map-container-sm"></div>
+        </section>
+        ` : ''}
+
+        <!-- Key Facts -->
+        ${renderHumanImpact(event)}
+
+        <!-- Summary -->
+        <section class="card">
+          <h2 class="text-xl font-semibold text-humanity-text mb-4">Summary</h2>
+          <div class="prose prose-invert max-w-none text-humanity-textMuted">
+            <p>${event.summary || event.description}</p>
+          </div>
+        </section>
+
+        <!-- What is Known -->
+        ${renderSection('What Is Known', event.known, '✅', 'emerald')}
+
+        <!-- What Is Uncertain -->
+        ${renderSection('What Is Uncertain', event.uncertain, '❓', 'amber')}
+
+        <!-- Sources -->
+        ${renderSources(event.sources)}
+
+        <!-- Claims/Evidence -->
+        ${renderClaims(event.claims)}
+
+        <!-- Related -->
+        ${renderRelated(event)}
+
+        <!-- Metadata -->
+        <footer class="border-t border-humanity-border pt-6 text-sm text-humanity-textMuted space-y-1">
+          <p>First detected: ${formatDateTime(event.first_detected_at)}</p>
+          <p>Last updated: ${formatDateTime(event.last_updated_at)}</p>
+          ${event.published_at ? `<p>Published: ${formatDateTime(event.published_at)}</p>` : ''}
+          <p>Event ID: <code class="text-humanity-textMuted/70">${event.id}</code></p>
+          ${event.canonical_id ? `<p>Canonical ID: <code class="text-humanity-textMuted/70">${event.canonical_id}</code></p>` : ''}
+        </footer>
+      </article>
+    `;
+    
+    // Initialize map if coordinates exist
+    if (event.latitude && event.longitude) {
+      setTimeout(() => initEventMap(event), 100);
+    }
+  }
+  
+  function renderHumanImpact(event) {
+    const impacts = [];
+    if (event.human_impact) {
+      if (event.human_impact.deaths) impacts.push({ icon: '☠️', label: 'Deaths', value: event.human_impact.deaths, color: '#ef4444' });
+      if (event.human_impact.injuries) impacts.push({ icon: '🤕', label: 'Injuries', value: event.human_impact.injuries, color: '#f97316' });
+      if (event.human_impact.arrests) impacts.push({ icon: '🚔', label: 'Arrests', value: event.human_impact.arrests, color: '#7c3aed' });
+      if (event.human_impact.displaced) impacts.push({ icon: '🏃', label: 'Displaced', value: event.human_impact.displaced, color: '#f97316' });
+      if (event.human_impact.participants) impacts.push({ icon: '✊', label: 'Participants', value: event.human_impact.participants, color: '#3b82f6' });
+    }
+    
+    if (impacts.length === 0) return '';
+    
+    return `
+      <section class="card">
+        <h2 class="text-xl font-semibold text-humanity-text mb-4">Human Impact</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-${impacts.length} gap-4">
+          ${impacts.map(i => `
+            <div class="text-center p-4 rounded-lg" style="background: ${i.color}10; border: 1px solid ${i.color}30;">
+              <div class="text-2xl mb-1">${i.icon}</div>
+              <div class="text-2xl font-bold text-humanity-text" style="color: ${i.color};">${i.value}</div>
+              <div class="text-xs text-humanity-textMuted">${i.label}</div>
+            </div>
+          `).join('')}
+        </div>
+      </section>
+    `;
+  }
+  
+  function renderSection(title, items, icon, color) {
+    if (!items || items.length === 0) return '';
+    return `
+      <section class="card">
+        <h2 class="text-xl font-semibold text-humanity-text mb-4 flex items-center gap-2">
+          <span style="color: ${color};">${icon}</span>
+          ${title}
+        </h2>
+        <ul class="space-y-2 text-sm text-humanity-textMuted">
+          ${items.map(item => `<li class="flex items-start gap-2"><span class="text-${color}-400 mt-0.5">${icon}</span><span>${item}</span></li>`).join('')}
+        </ul>
+      </section>
+    `;
+  }
+  
+  function renderSources(sources) {
+    if (!sources || sources.length === 0) return '';
+    return `
+      <section class="card">
+        <h2 class="text-xl font-semibold text-humanity-text mb-4 flex items-center gap-2">
+          <span>📰</span>
+          Sources (${sources.length})
+        </h2>
+        <ul class="space-y-3">
+          ${sources.map(s => `
+            <li class="p-3 rounded-lg border border-humanity-border hover:border-humanity-accent/50 transition-colors">
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                  <a href="${s.url}" target="_blank" rel="noopener" class="link font-medium text-humanity-text hover:text-humanity-accent">${s.title}</a>
+                  <div class="flex items-center gap-3 mt-1 text-xs text-humanity-textMuted">
+                    <span>${s.publisher}</span>
+                    <span>${s.source_type}</span>
+                    ${s.published_at ? `<span>${formatDate(s.published_at)}</span>` : ''}
+                    ${s.country ? `<span>📍 ${s.country}</span>` : ''}
+                    ${s.language ? `<span>${s.language.toUpperCase()}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+            </li>
+          `).join('')}
+        </ul>
+      </section>
+    `;
+  }
+  
+  function renderClaims(claims) {
+    if (!claims || Object.keys(claims).length === 0) return '';
+    
+    return `
+      <section class="card">
+        <h2 class="text-xl font-semibold text-humanity-text mb-4 flex items-center gap-2">
+          <span>📋</span>
+          Evidence & Claims
+        </h2>
+        <div class="space-y-4">
+          ${Object.entries(claims).map(([type, claimList]) => `
+            <div>
+              <h3 class="font-medium text-humanity-text mb-2 capitalize">${type.replace('_', ' ')}</h3>
+              <div class="space-y-2">
+                ${claimList.map(claim => `
+                  <div class="p-3 rounded-lg border border-humanity-border bg-humanity-darker/50">
+                    <div class="flex items-start justify-between gap-2">
+                      <div class="flex-1">
+                        <p class="text-sm text-humanity-text">${claim.subject} ${claim.predicate}: <strong>${claim.min_value !== undefined || claim.max_value !== undefined ? formatRange(claim.min_value, claim.max_value) + (claim.unit ? ' ' + claim.unit : '') : claim.value + (claim.unit ? ' ' + claim.unit : '')}</strong></p>
+                        <p class="text-xs text-humanity-textMuted mt-1">"${claim.source_quote.slice(0, 200)}${claim.source_quote.length > 200 ? '...' : ''}"</p>
+                      </div>
+                      <div class="flex items-center gap-2 text-xs">
+                        <span class="badge-confidence-${Math.round(claim.confidence * 100) > 70 ? 'high' : Math.round(claim.confidence * 100) > 40 ? 'medium' : 'low'}">${Math.round(claim.confidence * 100)}%</span>
+                        <span class="text-humanity-textMuted">${claim.verification_status.replace('_', ' ')}</span>
+                      </div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </section>
+    `;
+  }
+  
+  function renderRelated(event) {
+    const parts = [];
+    if (event.related_events && event.related_events.length > 0) {
+      parts.push(`
+        <section class="card">
+          <h2 class="text-xl font-semibold text-humanity-text mb-4">Related Events</h2>
+          <ul class="space-y-2">
+            ${event.related_events.map(id => `<li><a href="/event/${id}" class="link text-sm">${id}</a></li>`).join('')}
+          </ul>
+        </section>
+      `);
+    }
+    if (event.conflict_id) {
+      parts.push(`
+        <section class="card">
+          <h2 class="text-xl font-semibold text-humanity-text mb-4">Related Conflict</h2>
+          <p class="text-humanity-textMuted">This event is part of the <a href="/conflict/${event.conflict_id}" class="link">${event.conflict_id}</a> conflict.</p>
+        </section>
+      `);
+    }
+    return parts.join('');
+  }
+  
+  function formatDate(dateStr) {
+    if (!dateStr) return 'Unknown';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  }
+  
+  function formatDateTime(dateStr) {
+    if (!dateStr) return 'Unknown';
+    const date = new Date(dateStr);
+    return date.toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+  
+  function formatRange(min, max, unit = '') {
+    if (min !== undefined && max !== undefined) {
+      if (min === max) return `${min.toLocaleString()} ${unit}`.trim();
+      return `${min.toLocaleString()}–${max.toLocaleString()} ${unit}`.trim();
+    }
+    if (min !== undefined) return `≥${min.toLocaleString()} ${unit}`.trim();
+    if (max !== undefined) return `≤${max.toLocaleString()} ${unit}`.trim();
+    return '—';
+  }
+  
+  async function initEventMap(event) {
+    const maplibregl = await import('maplibre-gl');
+    const { default: maplibreCss } = await import('maplibre-gl/dist/maplibre-gl.css');
+    
+    const map = new maplibregl.Map({
+      container: 'event-map',
+      style: {
+        version: 8,
+        sources: {
+          osm: {
+            type: 'raster',
+            tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '© OpenStreetMap contributors'
+          }
+        },
+        layers: [
+          { id: 'background', type: 'background', paint: { 'background-color': '#050505' } },
+          { id: 'osm', type: 'raster', source: 'osm' }
+        ]
+      },
+      center: [event.longitude, event.latitude],
+      zoom: 10,
+      interactive: false
+    });
+    
+    map.on('load', () => {
+      new maplibregl.Marker({ color: '#ef4444' })
+        .setLngLat([event.longitude, event.latitude])
+        .addTo(map);
+    });
+  }
+  
+  function getEventTypeLabel(type) {
+    const labels = {
+      PROTEST: 'Protest',
+      CONFLICT: 'Conflict',
+      ATTACK: 'Attack',
+      CASUALTY: 'Casualty',
+      DISPLACEMENT: 'Displacement',
+      DISASTER: 'Disaster',
+      REPRESSION: 'Repression',
+      HUMANITARIAN: 'Humanitarian'
+    };
+    return labels[type] || type;
+  }
+</script>

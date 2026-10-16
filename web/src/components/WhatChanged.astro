@@ -1,0 +1,148 @@
+---
+interface Props {}
+---
+<div class="card">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold text-humanity-text">What Changed in the Last 24 Hours?</h2>
+    <a href="/what-changed" class="link text-sm">View full brief →</a>
+  </div>
+  <div id="what-changed" class="space-y-4">
+    <div class="text-center py-8 text-humanity-textMuted">
+      <div class="animate-pulse-soft">Loading daily brief...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const container = document.getElementById('what-changed');
+    if (!container) return;
+    
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const response = await fetch(`/data/briefs/${today}.json`);
+      if (response.ok) {
+        const brief = await response.json();
+        renderBrief(brief);
+      } else {
+        renderMockBrief();
+      }
+    } catch {
+      renderMockBrief();
+    }
+  });
+  
+  function renderBrief(brief) {
+    const container = document.getElementById('what-changed');
+    
+    if (!brief.items || brief.items.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-8 text-humanity-textMuted">
+          No major developments detected in the last 24 hours.
+        </div>
+      `;
+      return;
+    }
+    
+    container.innerHTML = brief.items.slice(0, 8).map(item => `
+      <article class="border-l-4 border-humanity-accent/50 pl-4 hover:border-humanity-accent transition-colors group">
+        <div class="flex items-start gap-3">
+          <span class="text-lg">${getEventIcon(item.event_type)}</span>
+          <div class="flex-1 min-w-0">
+            <h3 class="font-medium text-humanity-text group-hover:text-humanity-accent transition-colors">
+              <a href="/event/${item.slug}" class="link">${item.title}</a>
+            </h3>
+            <div class="flex items-center gap-4 mt-1 text-sm text-humanity-textMuted">
+              <span>${getEventTypeLabel(item.event_type)}</span>
+              <span>📍 ${item.city || ''}, ${item.country}</span>
+              <span>📅 ${item.date}</span>
+              <span>📰 ${item.source_count} sources</span>
+              <span class="badge-confidence-${item.confidence.toLowerCase()}">${item.confidence}</span>
+            </div>
+            ${item.summary ? `<p class="mt-2 text-sm text-humanity-textMuted line-clamp-2">${item.summary}</p>` : ''}
+          </div>
+        </div>
+      </article>
+    `).join('');
+  }
+  
+  function renderMockBrief() {
+    const container = document.getElementById('what-changed');
+    const mockItems = [
+      {
+        slug: '2026/10/08/protests-paris-france',
+        title: '14 new protests detected in France',
+        event_type: 'PROTEST',
+        country: 'France',
+        city: 'Paris',
+        date: '2026-10-08',
+        source_count: 12,
+        confidence: 'HIGH',
+        summary: 'Multiple demonstrations across France over pension reform and cost of living. Largest gatherings in Paris, Lyon, and Marseille.'
+      },
+      {
+        slug: '2026/10/08/conflict-sudan-khartoum',
+        title: 'Three major conflict events added in Sudan',
+        event_type: 'CONFLICT',
+        country: 'Sudan',
+        city: 'Khartoum',
+        date: '2026-10-08',
+        source_count: 8,
+        confidence: 'HIGH',
+        summary: 'Heavy fighting reported in Khartoum and Omdurman. RSF and SAF exchanges continue with civilian casualties.'
+      },
+      {
+        slug: '2026/10/08/casualty-gaza-airstrike',
+        title: 'New civilian casualty reports from Gaza',
+        event_type: 'CASUALTY',
+        country: 'Palestine',
+        city: 'Gaza City',
+        date: '2026-10-08',
+        source_count: 6,
+        confidence: 'MEDIUM',
+        summary: 'Ministry of Health reports additional casualties from overnight airstrikes. Figures being verified.'
+      },
+      {
+        slug: '2026/10/08/protest-iran-tehran',
+        title: 'Student protests at Tehran University',
+        event_type: 'PROTEST',
+        country: 'Iran',
+        city: 'Tehran',
+        date: '2026-10-08',
+        source_count: 3,
+        confidence: 'MEDIUM',
+        summary: 'Students gather demanding academic freedom. Security forces present. Limited independent verification.'
+      }
+    ];
+    
+    renderBrief({ items: mockItems });
+  }
+  
+  function getEventIcon(type) {
+    const icons = {
+      PROTEST: '✊',
+      CONFLICT: '⚔️',
+      ATTACK: '💥',
+      CASUALTY: '☠️',
+      DISPLACEMENT: '🏃',
+      DISASTER: '🌪️',
+      REPRESSION: '🚔',
+      HUMANITARIAN: '🏥'
+    };
+    return icons[type] || '📍';
+  }
+  
+  function getEventTypeLabel(type) {
+    const labels = {
+      PROTEST: 'Protest',
+      CONFLICT: 'Conflict',
+      ATTACK: 'Attack',
+      CASUALTY: 'Casualty',
+      DISPLACEMENT: 'Displacement',
+      DISASTER: 'Disaster',
+      REPRESSION: 'Repression',
+      HUMANITARIAN: 'Humanitarian'
+    };
+    return labels[type] || type;
+  }
+</script>

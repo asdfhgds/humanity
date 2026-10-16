@@ -1,0 +1,450 @@
+# HUMANITY Source Registry
+# Each source must have a reason for inclusion
+
+global_news:
+  - name: "Reuters"
+    url: "https://www.reuters.com/world/"
+    type: "news"
+    country: "global"
+    language: "en"
+    priority: 10
+    poll_interval_hours: 1
+    robots_policy: "allow"
+    enabled: true
+    reason: "Global wire service with extensive conflict coverage"
+
+  - name: "Associated Press"
+    url: "https://apnews.com/hub/world-news"
+    type: "news"
+    country: "global"
+    language: "en"
+    priority: 10
+    poll_interval_hours: 1
+    robots_policy: "allow"
+    enabled: true
+    reason: "Global wire service with extensive conflict coverage"
+
+  - name: "BBC World"
+    url: "https://www.bbc.com/news/world"
+    type: "news"
+    country: "global"
+    language: "en"
+    priority: 9
+    poll_interval_hours: 2
+    robots_policy: "allow"
+    enabled: true
+    reason: "Major international broadcaster"
+
+  - name: "Al Jazeera English"
+    url: "https://www.aljazeera.com/news/"
+    type: "news"
+    country: "global"
+    language: "en"
+    priority: 9
+    poll_interval_hours: 2
+    robots_policy: "allow"
+    enabled: true
+    reason: "Major international broadcaster with Middle East focus"
+
+  - name: "France 24 English"
+    url: "https://www.france24.com/en/"
+    type: "news"
+    country: "global"
+    language: "en"
+    priority: 8
+    poll_interval_hours: 3
+    robots_policy: "allow"
+    enabled: true
+    reason: "International broadcaster with Africa focus"
+
+  - name: "Deutsche Welle English"
+    url: "https://www.dw.com/en/top-stories/world/s-9097"
+    type: "news"
+    country: "global"
+    language: "en"
+    priority: 8
+    poll_interval_hours: 3
+    robots_policy: "allow"
+    enabled: true
+    reason: "International broadcaster"
+
+regional_news:
+  - name: "The Guardian World"
+    url: "https://www.theguardian.com/world"
+    type: "news"
+    country: "UK"
+    language: "en"
+    priority: 8
+    poll_interval_hours: 2
+    robots_policy: "allow"
+    enabled: true
+    reason: "Quality international reporting"
+
+  - name: "Le Monde English"
+    url: "https://www.lemonde.fr/en/"
+    type: "news"
+    country: "France"
+    language: "en"
+    priority: 7
+    poll_interval_hours: 3
+    robots_policy: "allow"
+    enabled: true
+    reason: "Major French newspaper with international edition"
+
+  - name: "El País English"
+    url: "https://english.elpais.com/"
+    type: "news"
+    country: "Spain"
+    language: "en"
+    priority: 7
+    poll_interval_hours: 3
+    robots_policy: "allow"
+    enabled: true
+    reason: "Major Spanish newspaper with international edition"
+
+government:
+  - name: "UN OCHA ReliefWeb"
+    url: "https://reliefweb.int/updates"
+    type: "un"
+    country: "global"
+    language: "en"
+    priority: 10
+    poll_interval_hours: 2
+    robots_policy: "allow"
+    enabled: true
+    reason: "Primary humanitarian information source"
+    roles: ["discovery", "evidence", "structured_data"]
+    connector_type: "api"
+    timeout_seconds: 60
+    rate_limit_per_minute: 10
+    rate_limit_per_hour: 200
+    max_articles_per_fetch: 100
+    fetch_full_content: true
+    respect_robots_txt: true
+
+  - name: "UNHCR Data"
+    url: "https://data.unhcr.org/en/situations"
+    type: "un"
+    country: "global"
+    language: "en"
+    priority: 9
+    poll_interval_hours: 6
+    robots_policy: "allow"
+    enabled: true
+    reason: "Official refugee displacement data"
+
+  - name: "WHO Emergencies"
+    url: "https://www.who.int/emergencies"
+    type: "un"
+    country: "global"
+    language: "en"
+    priority: 8
+    poll_interval_hours: 6
+    robots_policy: "allow"
+    enabled: true
+    reason: "Health emergency updates"
+
+ngo:
+  - name: "ACLED"
+    url: "https://acleddata.com/data/"
+    type: "ngo"
+    country: "global"
+    language: "en"
+    priority: 10
+    poll_interval_hours: 24
+    robots_policy: "allow"
+    enabled: false
+    reason: "Armed Conflict Location & Event Data - requires registration"
+
+  - name: "UCDP"
+    url: "https://ucdp.uu.se/downloads/"
+    type: "academic"
+    country: "global"
+    language: "en"
+    priority: 10
+    poll_interval_hours: 168
+    robots_policy: "allow"
+    enabled: true
+    reason: "Uppsala Conflict Data Program - authoritative conflict data"
+
+  - name: "ICRC"
+    url: "https://www.icrc.org/en/where-we-work"
+    type: "ngo"
+    country: "global"
+    language: "en"
+    priority: 8
+    poll_interval_hours: 6
+    robots_policy: "allow"
+    enabled: true
+    reason: "International Committee of the Red Cross"
+
+data_provider:
+  - name: "GDELT GKG"
+    url: "http://data.gdeltproject.org/gkg/index.html"
+    type: "data_provider"
+    country: "global"
+    language: "multilingual"
+    priority: 10
+    poll_interval_hours: 1
+    robots_policy: "allow"
+    enabled: true
+    reason: "Global Database of Events, Language, and Tone - primary discovery layer"
+
+  - name: "GDELT Events"
+    url: "http://data.gdeltproject.org/events/index.html"
+    type: "data_provider"
+    country: "global"
+    language: "multilingual"
+    priority: 10
+    poll_interval_hours: 1
+    robots_policy: "allow"
+    enabled: true
+    reason: "GDELT Event Database - structured event records"
+
+  - name: "ReliefWeb API"
+    url: "https://api.reliefweb.int/v2/reports"
+    type: "api"
+    country: "global"
+    language: "en"
+    priority: 10
+    poll_interval_hours: 2
+    robots_policy: "allow"
+    enabled: true
+    reason: "ReliefWeb humanitarian reports API - requires RELIEFWEB_APPNAME"
+    roles: ["discovery", "evidence", "structured_data"]
+    connector_type: "api"
+    timeout_seconds: 60
+    rate_limit_per_minute: 10
+    rate_limit_per_hour: 200
+    max_articles_per_fetch: 100
+    fetch_full_content: true
+    respect_robots_txt: true
+
+rss_feeds:
+  - name: "Reuters World RSS"
+    url: "https://www.reuters.com/world/rss"
+    type: "rss"
+    country: "global"
+    language: "en"
+    priority: 10
+    poll_interval_hours: 1
+    robots_policy: "allow"
+    enabled: true
+    reason: "Reuters world news RSS feed"
+    roles: ["discovery", "evidence"]
+    connector_type: "rss"
+    timeout_seconds: 30
+    rate_limit_per_minute: 30
+    rate_limit_per_hour: 500
+    max_articles_per_fetch: 50
+    fetch_full_content: true
+    respect_robots_txt: true
+
+  - name: "AP News World RSS"
+    url: "https://apnews.com/rss/world"
+    type: "rss"
+    country: "global"
+    language: "en"
+    priority: 10
+    poll_interval_hours: 1
+    robots_policy: "allow"
+    enabled: true
+    reason: "Associated Press world news RSS feed"
+    roles: ["discovery", "evidence"]
+    connector_type: "rss"
+    timeout_seconds: 30
+    rate_limit_per_minute: 30
+    rate_limit_per_hour: 500
+    max_articles_per_fetch: 50
+    fetch_full_content: true
+    respect_robots_txt: true
+
+  - name: "BBC World RSS"
+    url: "https://feeds.bbci.co.uk/news/world/rss.xml"
+    type: "rss"
+    country: "global"
+    language: "en"
+    priority: 9
+    poll_interval_hours: 2
+    robots_policy: "allow"
+    enabled: true
+    reason: "BBC World news RSS feed"
+    roles: ["discovery", "evidence"]
+    connector_type: "rss"
+    timeout_seconds: 30
+    rate_limit_per_minute: 15
+    rate_limit_per_hour: 150
+    max_articles_per_fetch: 50
+    fetch_full_content: true
+    respect_robots_txt: true
+
+  - name: "Al Jazeera English RSS"
+    url: "https://www.aljazeera.com/xml/rss/all.xml"
+    type: "rss"
+    country: "global"
+    language: "en"
+    priority: 9
+    poll_interval_hours: 2
+    robots_policy: "allow"
+    enabled: true
+    reason: "Al Jazeera English RSS feed"
+    roles: ["discovery", "evidence"]
+    connector_type: "rss"
+    timeout_seconds: 30
+    rate_limit_per_minute: 15
+    rate_limit_per_hour: 150
+    max_articles_per_fetch: 50
+    fetch_full_content: true
+    respect_robots_txt: true
+
+  - name: "France 24 English RSS"
+    url: "https://www.france24.com/en/rss"
+    type: "rss"
+    country: "global"
+    language: "en"
+    priority: 8
+    poll_interval_hours: 3
+    robots_policy: "allow"
+    enabled: true
+    reason: "France 24 English RSS feed"
+    roles: ["discovery", "evidence"]
+    connector_type: "rss"
+    timeout_seconds: 30
+    rate_limit_per_minute: 15
+    rate_limit_per_hour: 150
+    max_articles_per_fetch: 50
+    fetch_full_content: true
+    respect_robots_txt: true
+
+  - name: "Deutsche Welle RSS"
+    url: "https://rss.dw.com/rdf/rss-en-all"
+    type: "rss"
+    country: "global"
+    language: "en"
+    priority: 8
+    poll_interval_hours: 3
+    robots_policy: "allow"
+    enabled: true
+    reason: "Deutsche Welle English RSS feed"
+    roles: ["discovery", "evidence"]
+    connector_type: "rss"
+    timeout_seconds: 30
+    rate_limit_per_minute: 15
+    rate_limit_per_hour: 150
+    max_articles_per_fetch: 50
+    fetch_full_content: true
+    respect_robots_txt: true
+
+  - name: "Guardian World RSS"
+    url: "https://www.theguardian.com/world/rss"
+    type: "rss"
+    country: "UK"
+    language: "en"
+    priority: 8
+    poll_interval_hours: 2
+    robots_policy: "allow"
+    enabled: true
+    reason: "The Guardian world news RSS feed"
+    roles: ["discovery", "evidence"]
+    connector_type: "rss"
+    timeout_seconds: 30
+    rate_limit_per_minute: 15
+    rate_limit_per_hour: 150
+    max_articles_per_fetch: 50
+    fetch_full_content: true
+    respect_robots_txt: true
+
+  - name: "Le Monde English RSS"
+    url: "https://www.lemonde.fr/rss/en_une.xml"
+    type: "rss"
+    country: "France"
+    language: "en"
+    priority: 7
+    poll_interval_hours: 3
+    robots_policy: "allow"
+    enabled: true
+    reason: "Le Monde English edition RSS feed"
+    roles: ["discovery", "evidence"]
+    connector_type: "rss"
+    timeout_seconds: 30
+    rate_limit_per_minute: 15
+    rate_limit_per_hour: 150
+    max_articles_per_fetch: 50
+    fetch_full_content: true
+    respect_robots_txt: true
+
+  - name: "El País English RSS"
+    url: "https://feeds.elpais.com/mrss-portada/en/portada"
+    type: "rss"
+    country: "Spain"
+    language: "en"
+    priority: 7
+    poll_interval_hours: 3
+    robots_policy: "allow"
+    enabled: true
+    reason: "El País English edition RSS feed"
+    roles: ["discovery", "evidence"]
+    connector_type: "rss"
+    timeout_seconds: 30
+    rate_limit_per_minute: 15
+    rate_limit_per_hour: 150
+    max_articles_per_fetch: 50
+    fetch_full_content: true
+    respect_robots_txt: true
+
+  - name: "ReliefWeb Updates RSS"
+    url: "https://reliefweb.int/updates/rss.xml"
+    type: "rss"
+    country: "global"
+    language: "en"
+    priority: 10
+    poll_interval_hours: 2
+    robots_policy: "allow"
+    enabled: true
+    reason: "UN OCHA ReliefWeb humanitarian updates RSS feed"
+    roles: ["discovery", "evidence"]
+    connector_type: "rss"
+    timeout_seconds: 30
+    rate_limit_per_minute: 15
+    rate_limit_per_hour: 150
+    max_articles_per_fetch: 50
+    fetch_full_content: true
+    respect_robots_txt: true
+
+  - name: "UN News RSS"
+    url: "https://news.un.org/feed/subscribe/en/news/all/rss.xml"
+    type: "rss"
+    country: "global"
+    language: "en"
+    priority: 9
+    poll_interval_hours: 3
+    robots_policy: "allow"
+    enabled: true
+    reason: "UN News official RSS feed"
+    roles: ["discovery", "evidence"]
+    connector_type: "rss"
+    timeout_seconds: 30
+    rate_limit_per_minute: 15
+    rate_limit_per_hour: 150
+    max_articles_per_fetch: 50
+    fetch_full_content: true
+    respect_robots_txt: true
+
+  - name: "ICRC News RSS"
+    url: "https://www.icrc.org/en/rss.xml"
+    type: "rss"
+    country: "global"
+    language: "en"
+    priority: 8
+    poll_interval_hours: 6
+    robots_policy: "allow"
+    enabled: true
+    reason: "International Committee of the Red Cross RSS feed"
+    roles: ["discovery", "evidence"]
+    connector_type: "rss"
+    timeout_seconds: 30
+    rate_limit_per_minute: 15
+    rate_limit_per_hour: 150
+    max_articles_per_fetch: 50
+    fetch_full_content: true
+    respect_robots_txt: true

@@ -1,0 +1,195 @@
+name: HUMANITY Autonomous Pipeline
+
+on:
+  schedule:
+    # Every 30 minutes
+    - cron: '*/30 * * * *'
+    # Daily at 02:00 UTC for daily brief
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      hours_back:
+        description: 'Hours back for discovery'
+        required: false
+        default: '6'
+      force_publish:
+        description: 'Force publish all events'
+        required: false
+        default: 'false'
+
+concurrency:
+  group: humanity-pipeline
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  discover-and-publish:
+    name: Discover & Publish Events
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_MODEL: ${{ secrets.GEMINI_MODEL || 'gemini-flash-latest' }}
+      TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+      MAX_ARTICLES_PER_RUN: ${{ vars.MAX_ARTICLES_PER_RUN || '1000' }}
+      MAX_LLM_CALLS_PER_RUN: ${{ vars.MAX_LLM_CALLS_PER_RUN || '100' }}
+      MAX_SEARCH_CALLS_PER_RUN: ${{ vars.MAX_SEARCH_CALLS_PER_RUN || '50' }}
+      MIN_PUBLISH_SCORE: ${{ vars.MIN_PUBLISH_SCORE || '70' }}
+      MIN_CONFIDENCE: ${{ vars.MIN_CONFIDENCE || '0.6' }}
+      ENABLE_TAVILY: ${{ vars.ENABLE_TAVILY || 'false' }}
+      ENABLE_AUTOPUBLISH: ${{ vars.ENABLE_AUTOPUBLISH || 'true' }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e .
+          pip install -e ".[dev]"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install Node dependencies
+        run: |
+          cd web
+          npm ci
+
+      - name: Run Discovery Pipeline
+        run: |
+          python -m app.cli run --hours ${{ github.event.inputs.hours_back || '6' }}
+
+      - name: Persist validated state and generated public data
+        run: |
+          git config user.name "HUMANITY Bot"
+          git config user.email "humanity-bot@users.noreply.github.com"
+          git add data/ web/public/data/
+          git diff --staged --quiet || git commit -m "🤖 Persist ingestion state"
+          git push
+
+      - name: Build Astro Site
+        run: |
+          cd web
+          npm run build
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: humanity-build
+          path: web/dist/
+          retention-days: 7
+
+      - name: Deploy to Cloudflare Pages
+        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: humanity
+          directory: web/dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+  daily-brief:
+    name: Generate Daily Brief
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_MODEL: ${{ secrets.GEMINI_MODEL || 'gemini-flash-latest' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e .
+
+      - name: Generate Daily Brief
+        run: |
+          python -m app.cli run --daily-brief-only
+
+      - name: Commit Daily Brief
+        run: |
+          git config user.name "HUMANITY Bot"
+          git config user.email "humanity-bot@users.noreply.github.com"
+          git add web/public/data/briefs/
+          git diff --staged --quiet || git commit -m "🤖 Daily brief: $(date +%Y-%m-%d)"
+          git push
+
+  health-check:
+    name: Source Health Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event.schedule == '0 2 * * *'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e .
+
+      - name: Run Health Check
+        run: |
+          python -m app.cli health
+
+  cleanup:
+    name: Weekly Cleanup
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event.schedule == '0 3 * * 0'  # Weekly on Sunday
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e .
+
+      - name: Run Cleanup
+        run: |
+          python -m app.cli run --cleanup-only

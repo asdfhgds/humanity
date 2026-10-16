@@ -1,0 +1,27 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+}
+const { title, description } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title} | HUMANITY</title>
+    <meta name="description" content={description || "A live global map and evidence-based database of protests, conflicts, humanitarian crises, disasters and other major human events."} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description || "A live global map and evidence-based database of protests, conflicts, humanitarian crises, disasters and other major human events."} />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description || "A live global map and evidence-based database of protests, conflicts, humanitarian crises, disasters and other major human events."} />
+  </head>
+  <body class="bg-humanity-darker text-humanity-text min-h-screen font-sans antialiased">
+    <slot />
+  </body>
+</html>

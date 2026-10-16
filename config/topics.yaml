@@ -1,0 +1,180 @@
+# HUMANITY Topic Taxonomy
+# Standardized event types for classification
+
+event_types:
+  - id: "PROTEST"
+    label: "Protest"
+    description: "Public demonstrations, rallies, strikes, civil disobedience"
+    icon: "protest"
+    color: "#3b82f6"
+    severity_base: 3
+    subcategories:
+      - "political"
+      - "economic"
+      - "social"
+      - "environmental"
+      - "human_rights"
+      - "anti_government"
+      - "pro_government"
+
+  - id: "CONFLICT"
+    label: "Armed Conflict"
+    description: "Battles, clashes, military operations between organized armed groups"
+    icon: "conflict"
+    color: "#ef4444"
+    severity_base: 8
+    subcategories:
+      - "battle"
+      - "offensive"
+      - "ambush"
+      - "shelling"
+      - "siege"
+      - "territorial_change"
+
+  - id: "ATTACK"
+    label: "Attack / Strike"
+    description: "Airstrikes, bombings, explosions, targeted killings, drone strikes"
+    icon: "attack"
+    color: "#dc2626"
+    severity_base: 7
+    subcategories:
+      - "airstrike"
+      - "artillery"
+      - "missile"
+      - "drone_strike"
+      - "bombing"
+      - "ied"
+      - "assassination"
+      - "raid"
+
+  - id: "CASUALTY"
+    label: "Casualty Event"
+    description: "Reported deaths or injuries of civilians or combatants"
+    icon: "casualty"
+    color: "#b91c1c"
+    severity_base: 6
+    subcategories:
+      - "civilian_deaths"
+      - "civilian_injuries"
+      - "combatant_deaths"
+      - "mass_casualty"
+      - "child_casualties"
+
+  - id: "DISPLACEMENT"
+    label: "Displacement"
+    description: "Forced migration, refugees, IDPs, evacuations"
+    icon: "displacement"
+    color: "#f97316"
+    severity_base: 5
+    subcategories:
+      - "refugee_outflow"
+      - "internal_displacement"
+      - "evacuation"
+      - "return"
+      - "camp_establishment"
+
+  - id: "DISASTER"
+    label: "Disaster"
+    description: "Natural disasters, industrial accidents, humanitarian emergencies"
+    icon: "disaster"
+    color: "#0ea5e9"
+    severity_base: 5
+    subcategories:
+      - "earthquake"
+      - "flood"
+      - "storm"
+      - "wildfire"
+      - "drought"
+      - "epidemic"
+      - "industrial_accident"
+      - "famine"
+
+  - id: "REPRESSION"
+    label: "Political Repression"
+    description: "Arrests, detentions, censorship, torture, enforced disappearances"
+    icon: "repression"
+    color: "#7c3aed"
+    severity_base: 5
+    subcategories:
+      - "mass_arrest"
+      - "detention"
+      - "enforced_disappearance"
+      - "torture"
+      - "censorship"
+      - "internet_shutdown"
+      - "law_enactment"
+
+  - id: "HUMANITARIAN"
+    label: "Humanitarian Development"
+    description: "Aid delivery, ceasefire, peace talks, infrastructure damage, hospital status"
+    icon: "humanitarian"
+    color: "#10b981"
+    severity_base: 4
+    subcategories:
+      - "aid_delivery"
+      - "ceasefire"
+      - "peace_talks"
+      - "hospital_damage"
+      - "infrastructure_damage"
+      - "sanctions"
+      - "access_negotiation"
+
+severity_scale:
+  1: "Minimal"
+  2: "Low"
+  3: "Moderate"
+  4: "Significant"
+  5: "Serious"
+  6: "Severe"
+  7: "Critical"
+  8: "Extreme"
+  9: "Catastrophic"
+  10: "Unprecedented"
+
+status_values:
+  - "developing"
+  - "ongoing"
+  - "contained"
+  - "resolved"
+  - "historical"
+
+confidence_levels:
+  - "LOW"
+  - "MEDIUM"
+  - "HIGH"
+  - "VERIFIED"
+
+verification_status:
+  - "reported"
+  - "corroborated"
+  - "disputed"
+  - "estimated"
+  - "unknown"
+  - "independently_verified"
+
+source_types:
+  - "news"
+  - "government"
+  - "ngo"
+  - "un"
+  - "academic"
+  - "dataset"
+  - "social"
+  - "official_statement"
+  - "wire_service"
+
+claim_types:
+  - "casualty"
+  - "participants"
+  - "arrested"
+  - "displaced"
+  - "damage"
+  - "duration"
+  - "perpetrator"
+  - "target"
+  - "weapon"
+  - "location"
+  - "date"
+  - "cause"
+  - "demand"
+  - "response"

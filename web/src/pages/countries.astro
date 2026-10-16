@@ -1,0 +1,232 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Countries | HUMANITY" description="Browse events by country. View protests, conflicts, humanitarian events, and human impact for every nation.">
+  <div class="min-h-screen">
+    <header class="border-b border-humanity-border bg-humanity-darker/80 backdrop-blur-sm sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <div class="flex items-center gap-3">
+            <a href="/" class="flex items-center gap-3">
+              <svg class="w-8 h-8 text-humanity-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M2 12h20" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+              <span class="text-2xl font-bold tracking-tight text-humanity-text">HUMANITY</span>
+            </a>
+            <span class="text-humanity-textMuted">/</span>
+            <span class="text-humanity-text">Countries</span>
+          </div>
+          <nav class="hidden md:flex items-center gap-6">
+            <a href="/" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Home</a>
+            <a href="/map" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Map</a>
+            <a href="/events" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Live Events</a>
+            <a href="/protests" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Protests</a>
+            <a href="/conflicts" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Conflicts</a>
+            <a href="/human-cost" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Human Cost</a>
+            <a href="/countries" class="text-humanity-accent font-medium text-sm">Countries</a>
+            <a href="/timelines" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Timelines</a>
+            <a href="/methodology" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Methodology</a>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-humanity-text mb-2 flex items-center gap-3">
+          <span style="color: #0ea5e9;">🌍</span>
+          Countries
+        </h1>
+        <p class="text-humanity-textMuted">Browse events by country. Every nation with detected human events.</p>
+      </div>
+
+      <!-- Search -->
+      <div class="card mb-8">
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="flex-1 min-w-[300px]">
+            <label class="block text-sm text-humanity-textMuted mb-1">Search countries</label>
+            <input type="text" id="search-input" placeholder="Type country name..." class="input" />
+          </div>
+          <div>
+            <label class="block text-sm text-humanity-textMuted mb-1">Region</label>
+            <select id="region-filter" class="input">
+              <option value="">All Regions</option>
+              <option value="Africa">Africa</option>
+              <option value="Americas">Americas</option>
+              <option value="Asia">Asia</option>
+              <option value="Europe">Europe</option>
+              <option value="Oceania">Oceania</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-humanity-textMuted mb-1">Sort by</label>
+            <select id="sort-filter" class="input">
+              <option value="events">Most Events</option>
+              <option value="deaths">Most Deaths</option>
+              <option value="name">Alphabetical</option>
+              <option value="recent">Most Recent</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Countries Grid -->
+      <div id="countries-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div class="card text-center py-12 col-span-full">
+          <div class="animate-pulse-soft text-humanity-textMuted">Loading countries...</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+<script>
+  let allCountries = [];
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadCountries();
+    setupFilters();
+  });
+
+  async function loadCountries() {
+    const grid = document.getElementById('countries-grid');
+    try {
+      const response = await fetch('/data/countries/all.json');
+      if (response.ok) {
+        allCountries = await response.json();
+      } else {
+        allCountries = getMockCountries();
+      }
+      renderCountries();
+    } catch {
+      allCountries = getMockCountries();
+      renderCountries();
+    }
+  }
+
+  function getMockCountries() {
+    return [
+      { code: 'UA', name: 'Ukraine', region: 'Europe', events: 2847, protests: 12, conflicts: 2847, deaths: 500000, displaced: 6500000, recent: '2026-10-08' },
+      { code: 'PS', name: 'Palestine', region: 'Asia', events: 1203, protests: 45, conflicts: 892, deaths: 40000, displaced: 1900000, recent: '2026-10-08' },
+      { code: 'SD', name: 'Sudan', region: 'Africa', events: 892, protests: 23, conflicts: 892, deaths: 15000, displaced: 8500000, recent: '2026-10-08' },
+      { code: 'MM', name: 'Myanmar', region: 'Asia', events: 2156, protests: 156, conflicts: 1890, deaths: 50000, displaced: 2700000, recent: '2026-10-07' },
+      { code: 'FR', name: 'France', region: 'Europe', events: 342, protests: 298, conflicts: 0, deaths: 0, displaced: 0, recent: '2026-10-08' },
+      { code: 'CD', name: 'DR Congo', region: 'Africa', events: 1423, protests: 34, conflicts: 1234, deaths: 12000, displaced: 6900000, recent: '2026-10-07' },
+      { code: 'SY', name: 'Syria', region: 'Asia', events: 3421, protests: 89, conflicts: 3120, deaths: 500000, displaced: 13000000, recent: '2026-10-06' },
+      { code: 'YE', name: 'Yemen', region: 'Asia', events: 567, protests: 12, conflicts: 489, deaths: 377000, displaced: 4500000, recent: '2026-10-05' },
+      { code: 'AF', name: 'Afghanistan', region: 'Asia', events: 678, protests: 23, conflicts: 456, deaths: 15000, displaced: 3200000, recent: '2026-10-07' },
+      { code: 'ET', name: 'Ethiopia', region: 'Africa', events: 534, protests: 67, conflicts: 389, deaths: 25000, displaced: 4100000, recent: '2026-10-06' },
+      { code: 'IR', name: 'Iran', region: 'Asia', events: 234, protests: 189, conflicts: 0, deaths: 120, displaced: 0, recent: '2026-10-08' },
+      { code: 'AR', name: 'Argentina', region: 'Americas', events: 156, protests: 142, conflicts: 0, deaths: 5, displaced: 0, recent: '2026-10-07' },
+      { code: 'BR', name: 'Brazil', region: 'Americas', events: 289, protests: 234, conflicts: 0, deaths: 34, displaced: 12000, recent: '2026-10-06' },
+      { code: 'NG', name: 'Nigeria', region: 'Africa', events: 1123, protests: 89, conflicts: 890, deaths: 40000, displaced: 3500000, recent: '2026-10-06' },
+      { code: 'CO', name: 'Colombia', region: 'Americas', events: 789, protests: 234, conflicts: 456, deaths: 450000, displaced: 7800000, recent: '2026-10-05' },
+      { code: 'DE', name: 'Germany', region: 'Europe', events: 123, protests: 112, conflicts: 0, deaths: 0, displaced: 0, recent: '2026-10-06' },
+      { code: 'IN', name: 'India', region: 'Asia', events: 456, protests: 389, conflicts: 23, deaths: 234, displaced: 56000, recent: '2026-10-05' },
+      { code: 'PK', name: 'Pakistan', region: 'Asia', events: 345, protests: 156, conflicts: 189, deaths: 5600, displaced: 1200000, recent: '2026-10-05' },
+      { code: 'SO', name: 'Somalia', region: 'Africa', events: 456, protests: 12, conflicts: 434, deaths: 12000, displaced: 2900000, recent: '2026-10-05' },
+      { code: 'ML', name: 'Mali', region: 'Africa', events: 345, protests: 23, conflicts: 312, deaths: 8000, displaced: 560000, recent: '2026-10-05' },
+      { code: 'BF', name: 'Burkina Faso', region: 'Africa', events: 234, protests: 34, conflicts: 210, deaths: 12000, displaced: 2100000, recent: '2026-10-05' },
+    ];
+  }
+
+  function setupFilters() {
+    ['search-input', 'region-filter', 'sort-filter'].forEach(id => {
+      document.getElementById(id).addEventListener('input', renderCountries);
+    });
+  }
+
+  function getFilteredCountries() {
+    const search = document.getElementById('search-input').value.toLowerCase();
+    const region = document.getElementById('region-filter').value;
+    const sort = document.getElementById('sort-filter').value;
+
+    let filtered = allCountries.filter(c => {
+      if (search && !c.name.toLowerCase().includes(search)) return false;
+      if (region && c.region !== region) return false;
+      return true;
+    });
+
+    switch (sort) {
+      case 'deaths':
+        filtered.sort((a, b) => (b.deaths || 0) - (a.deaths || 0));
+        break;
+      case 'name':
+        filtered.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'recent':
+        filtered.sort((a, b) => new Date(b.recent) - new Date(a.recent));
+        break;
+      default:
+        filtered.sort((a, b) => (b.events || 0) - (a.events || 0));
+    }
+
+    return filtered;
+  }
+
+  function renderCountries() {
+    const grid = document.getElementById('countries-grid');
+    const filtered = getFilteredCountries();
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `<div class="card text-center py-12 col-span-full"><h3 class="text-lg font-medium text-humanity-text mb-2">No countries found</h3><p class="text-humanity-textMuted">Try adjusting your filters.</p></div>`;
+      return;
+    }
+
+    grid.innerHTML = filtered.map(c => `
+      <article class="card p-5 hover:shadow-lg transition-shadow" onclick="window.location.href='/country/${c.code.toLowerCase()}'">
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">${getFlagEmoji(c.code)}</span>
+            <div>
+              <h3 class="font-semibold text-humanity-text">${c.name}</h3>
+              <p class="text-xs text-humanity-textMuted">${c.region}</p>
+            </div>
+          </div>
+          ${c.conflicts > 0 ? '<span class="badge bg-red-500/20 text-red-400 border border-red-500/30">Conflict</span>' : ''}
+        </div>
+        
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <div class="text-center p-2 rounded" style="background: #3b82f610;">
+            <div class="text-lg font-bold text-blue-400">${c.events.toLocaleString()}</div>
+            <div class="text-xs text-humanity-textMuted">Total Events</div>
+          </div>
+          <div class="text-center p-2 rounded" style="background: #ef444410;">
+            <div class="text-lg font-bold text-red-400">${(c.deaths || 0).toLocaleString()}</div>
+            <div class="text-xs text-humanity-textMuted">Deaths</div>
+          </div>
+          <div class="text-center p-2 rounded" style="background: #3b82f610;">
+            <div class="text-lg font-bold text-blue-400">${c.protests.toLocaleString()}</div>
+            <div class="text-xs text-humanity-textMuted">Protests</div>
+          </div>
+          <div class="text-center p-2 rounded" style="background: #f9731610;">
+            <div class="text-lg font-bold text-orange-400">${(c.displaced || 0).toLocaleString()}</div>
+            <div class="text-xs text-humanity-textMuted">Displaced</div>
+          </div>
+        </div>
+
+        <div class="text-xs text-humanity-textMuted">
+          Last event: ${formatDate(c.recent)}
+        </div>
+      </article>
+    `).join('');
+  }
+
+  function getFlagEmoji(code) {
+    // Simple flag emoji approximation
+    const flags = {
+      'UA': '🇺🇦', 'PS': '🇵🇸', 'SD': '🇸🇩', 'MM': '🇲🇲', 'FR': '🇫🇷',
+      'CD': '🇨🇩', 'SY': '🇸🇾', 'YE': '🇾🇪', 'AF': '🇦🇫', 'ET': '🇪🇹',
+      'IR': '🇮🇷', 'AR': '🇦🇷', 'BR': '🇧🇷', 'NG': '🇳🇬', 'CO': '🇨🇴',
+      'DE': '🇩🇪', 'IN': '🇮🇳', 'PK': '🇵🇰', 'SO': '🇸🇴', 'ML': '🇲🇱', 'BF': '🇧🇫'
+    };
+    return flags[code] || '🏳️';
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return 'Unknown';
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+</script>

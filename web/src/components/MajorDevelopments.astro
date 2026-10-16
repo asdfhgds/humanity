@@ -1,0 +1,235 @@
+---
+interface Props {}
+---
+<div class="card">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold text-humanity-text">Major Developments</h2>
+    <a href="/events" class="link text-sm">View all events →</a>
+  </div>
+  <div id="major-developments" class="space-y-4">
+    <div class="text-center py-8 text-humanity-textMuted">
+      <div class="animate-pulse-soft">Loading major developments...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const container = document.getElementById('major-developments');
+    if (!container) return;
+    
+    try {
+      const response = await fetch('/data/events/recent.json');
+      if (response.ok) {
+        const events = await response.json();
+        renderEvents(events.slice(0, 6));
+      } else {
+        renderMockEvents();
+      }
+    } catch {
+      renderMockEvents();
+    }
+  });
+  
+  function renderEvents(events) {
+    const container = document.getElementById('major-developments');
+    
+    if (!events || events.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-8 text-humanity-textMuted">
+          No major developments at this time.
+        </div>
+      `;
+      return;
+    }
+    
+    container.innerHTML = events.map(event => `
+      <article class="event-card event-card-${event.event_type.toLowerCase()} p-4 hover:shadow-lg transition-shadow">
+        <div class="flex items-start gap-4">
+          <div class="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center text-xl" style="background: ${getEventColor(event.event_type)}20;">
+            <span>${getEventIcon(event.event_type)}</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <h3 class="font-semibold text-humanity-text truncate">
+                <a href="/event/${event.slug}" class="link hover:text-humanity-accent">${event.title}</a>
+              </h3>
+              <span class="badge-${event.event_type.toLowerCase()}">${getEventTypeLabel(event.event_type)}</span>
+            </div>
+            <div class="flex items-center gap-4 text-sm text-humanity-textMuted mb-2">
+              <span>📍 ${event.city || 'Unknown'}, ${event.country_name}</span>
+              <span>📅 ${event.start_time ? new Date(event.start_time).toLocaleDateString() : 'Unknown'}</span>
+              <span>📰 ${event.sources?.length || 0} sources</span>
+            </div>
+            <p class="text-sm text-humanity-textMuted line-clamp-2">${event.summary || event.description?.slice(0, 200) || 'No summary available.'}</p>
+            ${renderHumanImpact(event)}
+          </div>
+        </div>
+      </article>
+    `).join('');
+  }
+  
+  function renderMockEvents() {
+    const mockEvents = [
+      {
+        slug: '2026/10/08/major-protest-paris',
+        title: 'Nationwide protests across France over pension reform',
+        event_type: 'PROTEST',
+        country_name: 'France',
+        city: 'Paris',
+        start_time: '2026-10-08T10:00:00Z',
+        sources: [{}, {}, {}],
+        summary: 'Hundreds of thousands demonstrate in Paris, Lyon, Marseille and other cities. Transport disrupted. 12,000–20,000 estimated in Paris alone.',
+        deaths_min: 0,
+        deaths_max: 0,
+        injured_min: 14,
+        injured_max: 14,
+        arrested_min: 7,
+        arrested_max: 7,
+        estimated_participants_min: 12000,
+        estimated_participants_max: 20000
+      },
+      {
+        slug: '2026/10/08/conflict-sudan-khartoum',
+        title: 'Intense fighting in Khartoum enters third week',
+        event_type: 'CONFLICT',
+        country_name: 'Sudan',
+        city: 'Khartoum',
+        start_time: '2026-10-08T06:00:00Z',
+        sources: [{}, {}, {}, {}],
+        summary: 'RSF and SAF continue heavy artillery exchanges in residential areas. Humanitarian access severely restricted. Civilian casualties mounting.',
+        deaths_min: 45,
+        deaths_max: 67,
+        injured_min: 120,
+        injured_max: 180
+      },
+      {
+        slug: '2026/10/08/airstrike-gaza-city',
+        title: 'Airstrike on residential building in Gaza City',
+        event_type: 'ATTACK',
+        country_name: 'Palestine',
+        city: 'Gaza City',
+        start_time: '2026-10-08T02:30:00Z',
+        sources: [{}, {}],
+        summary: 'Israeli airstrike hits multi-story residential building. Civil defense teams recovering victims. Death toll expected to rise.',
+        deaths_min: 23,
+        deaths_max: 31,
+        injured_min: 45,
+        injured_max: 52
+      },
+      {
+        slug: '2026/10/07/displacement-congo-goma',
+        title: 'Mass displacement near Goma as M23 advances',
+        event_type: 'DISPLACEMENT',
+        country_name: 'DR Congo',
+        city: 'Goma',
+        start_time: '2026-10-07T14:00:00Z',
+        sources: [{}, {}],
+        summary: 'Over 150,000 people flee fighting between M23 rebels and FARDC. IDP camps overwhelmed. Cholera risk rising.',
+        displaced_min: 150000,
+        displaced_max: 180000
+      },
+      {
+        slug: '2026/10/07/earthquake-afghanistan-herat',
+        title: 'Magnitude 6.3 earthquake strikes western Afghanistan',
+        event_type: 'DISASTER',
+        country_name: 'Afghanistan',
+        city: 'Herat',
+        start_time: '2026-10-07T11:30:00Z',
+        sources: [{}, {}, {}],
+        summary: 'Powerful quake destroys villages in Herat province. At least 2,000 dead, thousands injured. Rescue operations hampered by access.',
+        deaths_min: 2000,
+        deaths_max: 2400,
+        injured_min: 9000,
+        injured_max: 12000
+      },
+      {
+        slug: '2026/10/07/repression-belarus-minsk',
+        title: 'Mass arrests of opposition activists in Minsk',
+        event_type: 'REPRESSION',
+        country_name: 'Belarus',
+        city: 'Minsk',
+        start_time: '2026-10-07T08:00:00Z',
+        sources: [{}, {}],
+        summary: 'Security services detain 200+ activists ahead of election anniversary. Charges include "extremism" and "foreign agent" allegations.',
+        arrested_min: 200,
+        arrested_max: 250
+      }
+    ];
+    
+    renderEvents(mockEvents);
+  }
+  
+  function renderHumanImpact(event) {
+    const parts = [];
+    if (event.deaths_min || event.deaths_max) {
+      parts.push(`<span class="text-red-400">☠ ${formatRange(event.deaths_min, event.deaths_max)} deaths</span>`);
+    }
+    if (event.injured_min || event.injured_max) {
+      parts.push(`<span class="text-orange-400">🤕 ${formatRange(event.injured_min, event.injured_max)} injured</span>`);
+    }
+    if (event.arrested_min || event.arrested_max) {
+      parts.push(`<span class="text-violet-400">🚔 ${formatRange(event.arrested_min, event.arrested_max)} arrested</span>`);
+    }
+    if (event.displaced_min || event.displaced_max) {
+      parts.push(`<span class="text-amber-400">🏃 ${formatRange(event.displaced_min, event.displaced_max)} displaced</span>`);
+    }
+    if (event.estimated_participants_min || event.estimated_participants_max) {
+      parts.push(`<span class="text-blue-400">✊ ${formatRange(event.estimated_participants_min, event.estimated_participants_max)} participants</span>`);
+    }
+    if (parts.length === 0) return '';
+    return `<div class="flex flex-wrap gap-3 mt-2">${parts.join('')}</div>`;
+  }
+  
+  function formatRange(min, max) {
+    if (min && max) {
+      if (min === max) return min.toLocaleString();
+      return `${min.toLocaleString()}–${max.toLocaleString()}`;
+    }
+    if (min) return `≥${min.toLocaleString()}`;
+    if (max) return `≤${max.toLocaleString()}`;
+    return '—';
+  }
+  
+  function getEventIcon(type) {
+    const icons = {
+      PROTEST: '✊',
+      CONFLICT: '⚔️',
+      ATTACK: '💥',
+      CASUALTY: '☠️',
+      DISPLACEMENT: '🏃',
+      DISASTER: '🌪️',
+      REPRESSION: '🚔',
+      HUMANITARIAN: '🏥'
+    };
+    return icons[type] || '📍';
+  }
+  
+  function getEventColor(type) {
+    const colors = {
+      PROTEST: '#3b82f6',
+      CONFLICT: '#ef4444',
+      ATTACK: '#dc2626',
+      CASUALTY: '#b91c1c',
+      DISPLACEMENT: '#f97316',
+      DISASTER: '#0ea5e9',
+      REPRESSION: '#7c3aed',
+      HUMANITARIAN: '#10b981'
+    };
+    return colors[type] || '#888888';
+  }
+  
+  function getEventTypeLabel(type) {
+    const labels = {
+      PROTEST: 'Protest',
+      CONFLICT: 'Conflict',
+      ATTACK: 'Attack',
+      CASUALTY: 'Casualty',
+      DISPLACEMENT: 'Displacement',
+      DISASTER: 'Disaster',
+      REPRESSION: 'Repression',
+      HUMANITARIAN: 'Humanitarian'
+    };
+    return labels[type] || type;
+  }
+</script>

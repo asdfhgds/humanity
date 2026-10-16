@@ -1,0 +1,64 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import MapGlobe from '../components/MapGlobe.astro';
+---
+
+<BaseLayout title="Live Global Map | HUMANITY" description="Interactive globe showing protests, conflicts, attacks, casualties, displacement, disasters, repression, and humanitarian events worldwide.">
+  <div class="min-h-screen">
+    <header class="border-b border-humanity-border bg-humanity-darker/80 backdrop-blur-sm sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <div class="flex items-center gap-3">
+            <a href="/" class="flex items-center gap-3">
+              <svg class="w-8 h-8 text-humanity-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M2 12h20" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+              <span class="text-2xl font-bold tracking-tight text-humanity-text">HUMANITY</span>
+            </a>
+            <span class="text-humanity-textMuted">/</span>
+            <span class="text-humanity-text">Live Map</span>
+          </div>
+          <nav class="hidden md:flex items-center gap-6">
+            <a href="/" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Home</a>
+            <a href="/map" class="text-humanity-accent font-medium text-sm">Map</a>
+            <a href="/events" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Live Events</a>
+            <a href="/protests" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Protests</a>
+            <a href="/conflicts" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Conflicts</a>
+            <a href="/human-cost" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Human Cost</a>
+            <a href="/countries" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Countries</a>
+            <a href="/timelines" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Timelines</a>
+            <a href="/methodology" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Methodology</a>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-full mx-auto px-0 py-0">
+      <div class="h-[calc(100vh-64px)]">
+        <MapGlobe class="w-full h-full rounded-none" />
+      </div>
+      
+      <!-- Legend -->
+      <div class="fixed bottom-6 left-6 right-6 md:left-auto md:right-6 md:bottom-6 md:w-72 z-50">
+        <div class="card p-4">
+          <h3 class="font-semibold text-humanity-text mb-3">Event Types</h3>
+          <div class="space-y-2 text-sm">
+            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background: #3b82f6;"></span><span class="text-humanity-textMuted">Protest</span></div>
+            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background: #ef4444;"></span><span class="text-humanity-textMuted">Conflict</span></div>
+            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background: #dc2626;"></span><span class="text-humanity-textMuted">Attack</span></div>
+            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background: #b91c1c;"></span><span class="text-humanity-textMuted">Casualty</span></div>
+            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background: #f97316;"></span><span class="text-humanity-textMuted">Displacement</span></div>
+            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background: #0ea5e9;"></span><span class="text-humanity-textMuted">Disaster</span></div>
+            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background: #7c3aed;"></span><span class="text-humanity-textMuted">Repression</span></div>
+            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background: #10b981;"></span><span class="text-humanity-textMuted">Humanitarian</span></div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-humanity-border text-xs text-humanity-textMuted">
+            Circle size = severity. Clusters show multiple events. Click event for details.
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</BaseLayout>

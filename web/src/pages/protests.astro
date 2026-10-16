@@ -1,0 +1,312 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Protests | HUMANITY" description="Global protests and demonstrations. Track political, social, economic, and environmental protests worldwide.">
+  <div class="min-h-screen">
+    <header class="border-b border-humanity-border bg-humanity-darker/80 backdrop-blur-sm sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <div class="flex items-center gap-3">
+            <a href="/" class="flex items-center gap-3">
+              <svg class="w-8 h-8 text-humanity-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M2 12h20" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+              <span class="text-2xl font-bold tracking-tight text-humanity-text">HUMANITY</span>
+            </a>
+            <span class="text-humanity-textMuted">/</span>
+            <span class="text-humanity-text">Protests</span>
+          </div>
+          <nav class="hidden md:flex items-center gap-6">
+            <a href="/" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Home</a>
+            <a href="/map" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Map</a>
+            <a href="/events" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Live Events</a>
+            <a href="/protests" class="text-humanity-accent font-medium text-sm">Protests</a>
+            <a href="/conflicts" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Conflicts</a>
+            <a href="/human-cost" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Human Cost</a>
+            <a href="/countries" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Countries</a>
+            <a href="/timelines" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Timelines</a>
+            <a href="/methodology" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Methodology</a>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-humanity-text mb-2 flex items-center gap-3">
+          <span style="color: #3b82f6;">✊</span>
+          Protests & Demonstrations
+        </h1>
+        <p class="text-humanity-textMuted">Global protests, rallies, strikes, and civil disobedience. Filter by country, issue, and date.</p>
+      </div>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div class="card text-center" style="border-left: 3px solid #3b82f6;">
+          <div class="stat-value text-blue-400" id="total-protests">1,247</div>
+          <div class="stat-label">Total Protests</div>
+        </div>
+        <div class="card text-center" style="border-left: 3px solid #3b82f6;">
+          <div class="stat-value text-blue-400" id="countries-protests">87</div>
+          <div class="stat-label">Countries</div>
+        </div>
+        <div class="card text-center" style="border-left: 3px solid #3b82f6;">
+          <div class="stat-value text-blue-400" id="participants-protests">2.4M+</div>
+          <div class="stat-label">Participants (est.)</div>
+        </div>
+        <div class="card text-center" style="border-left: 3px solid #3b82f6;">
+          <div class="stat-value text-blue-400" id="protests-today">14</div>
+          <div class="stat-label">Today</div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="card mb-8">
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="flex-1 min-w-[200px]">
+            <label class="block text-sm text-humanity-textMuted mb-1">Search protests</label>
+            <input type="text" id="search-input" placeholder="Search by location, cause, demand..." class="input" />
+          </div>
+          <div>
+            <label class="block text-sm text-humanity-textMuted mb-1">Country</label>
+            <select id="country-filter" class="input">
+              <option value="">All Countries</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-humanity-textMuted mb-1">Issue</label>
+            <select id="issue-filter" class="input">
+              <option value="">All Issues</option>
+              <option value="political">Political</option>
+              <option value="economic">Economic</option>
+              <option value="social">Social</option>
+              <option value="environmental">Environmental</option>
+              <option value="human_rights">Human Rights</option>
+              <option value="anti_government">Anti-Government</option>
+              <option value="pro_government">Pro-Government</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-humanity-textMuted mb-1">Date</label>
+            <select id="date-filter" class="input">
+              <option value="">All Time</option>
+              <option value="1">Last 24 hours</option>
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Protests List -->
+      <div id="protests-container" class="space-y-4">
+        <div class="card text-center py-12">
+          <div class="animate-pulse-soft text-humanity-textMuted">Loading protests...</div>
+        </div>
+      </div>
+
+      <div id="pagination" class="flex items-center justify-center gap-2 mt-8"></div>
+    </main>
+  </div>
+
+<script>
+  let allProtests = [];
+  let currentPage = 1;
+  const pageSize = 20;
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadProtests();
+    setupFilters();
+  });
+
+  async function loadProtests() {
+    try {
+      const response = await fetch('/data/events/type/PROTEST.json');
+      if (response.ok) {
+        allProtests = await response.json();
+      } else {
+        allProtests = getMockProtests();
+      }
+      populateCountryFilter();
+      renderProtests();
+    } catch {
+      allProtests = getMockProtests();
+      populateCountryFilter();
+      renderProtests();
+    }
+  }
+
+  function getMockProtests() {
+    return [
+      {
+        slug: '2026/10/08/protest-paris-france',
+        title: 'Nationwide protests across France over pension reform',
+        country_name: 'France', country_code: 'FR', city: 'Paris',
+        start_time: '2026-10-08T10:00:00Z', severity: 6, confidence: 'HIGH',
+        sources: [{}, {}, {}], summary: 'Hundreds of thousands demonstrate...',
+        human_impact: { participants: '12,000–20,000', injuries: '14', arrests: '7' },
+        issue: 'economic'
+      },
+      {
+        slug: '2026/10/08/protest-iran-tehran',
+        title: 'Student protests at Tehran University demanding academic freedom',
+        country_name: 'Iran', country_code: 'IR', city: 'Tehran',
+        start_time: '2026-10-08T09:00:00Z', severity: 5, confidence: 'MEDIUM',
+        sources: [{}, {}], summary: 'Students gather demanding academic freedom...',
+        human_impact: { participants: '500–1,000', arrests: '12' },
+        issue: 'human_rights'
+      },
+      {
+        slug: '2026/10/07/protest-argentina-buenos-aires',
+        title: 'General strike paralyzes Buenos Aires over inflation',
+        country_name: 'Argentina', country_code: 'AR', city: 'Buenos Aires',
+        start_time: '2026-10-07T08:00:00Z', severity: 7, confidence: 'HIGH',
+        sources: [{}, {}, {}, {}], summary: 'CGT union confederation calls 24-hour strike...',
+        human_impact: { participants: '500,000+', injuries: '0' },
+        issue: 'economic'
+      },
+      {
+        slug: '2026/10/06/protest-germany-berlin',
+        title: 'Climate activists block highways in Berlin',
+        country_name: 'Germany', country_code: 'DE', city: 'Berlin',
+        start_time: '2026-10-06T07:00:00Z', severity: 4, confidence: 'HIGH',
+        sources: [{}, {}], summary: 'Last Generation activists glue themselves to roads...',
+        human_impact: { participants: '200', arrests: '45' },
+        issue: 'environmental'
+      },
+      {
+        slug: '2026/10/05/protest-brazil-sao-paulo',
+        title: 'Indigenous rights march in São Paulo',
+        country_name: 'Brazil', country_code: 'BR', city: 'São Paulo',
+        start_time: '2026-10-05T14:00:00Z', severity: 5, confidence: 'HIGH',
+        sources: [{}, {}, {}], summary: 'Thousands march for land demarcation and against mining...',
+        human_impact: { participants: '15,000–25,000' },
+        issue: 'human_rights'
+      }
+    ];
+  }
+
+  function populateCountryFilter() {
+    const select = document.getElementById('country-filter');
+    const countries = [...new Set(allProtests.map(e => e.country_name).filter(Boolean))].sort();
+    countries.forEach(country => {
+      const option = document.createElement('option');
+      option.value = country;
+      option.textContent = country;
+      select.appendChild(option);
+    });
+  }
+
+  function setupFilters() {
+    ['search-input', 'country-filter', 'issue-filter', 'date-filter'].forEach(id => {
+      document.getElementById(id).addEventListener('input', () => {
+        currentPage = 1;
+        renderProtests();
+      });
+    });
+  }
+
+  function getFilteredProtests() {
+    const search = document.getElementById('search-input').value.toLowerCase();
+    const country = document.getElementById('country-filter').value;
+    const issue = document.getElementById('issue-filter').value;
+    const dateRange = document.getElementById('date-filter').value;
+
+    return allProtests.filter(event => {
+      if (search && !event.title.toLowerCase().includes(search) && 
+          !event.city?.toLowerCase().includes(search) && 
+          !event.country_name.toLowerCase().includes(search)) {
+        return false;
+      }
+      if (country && event.country_name !== country) return false;
+      if (issue && event.issue !== issue) return false;
+      if (dateRange) {
+        const eventDate = new Date(event.start_time);
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - parseInt(dateRange));
+        if (eventDate < cutoff) return false;
+      }
+      return true;
+    }).sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+  }
+
+  function renderProtests() {
+    const container = document.getElementById('protests-container');
+    const pagination = document.getElementById('pagination');
+    const filtered = getFilteredProtests();
+    
+    const totalPages = Math.ceil(filtered.length / pageSize);
+    const start = (currentPage - 1) * pageSize;
+    const pageEvents = filtered.slice(start, start + pageSize);
+
+    if (pageEvents.length === 0) {
+      container.innerHTML = `<div class="card text-center py-12"><h3 class="text-lg font-medium text-humanity-text mb-2">No protests found</h3><p class="text-humanity-textMuted">Try adjusting your filters.</p></div>`;
+      pagination.innerHTML = '';
+      return;
+    }
+
+    container.innerHTML = pageEvents.map(event => `
+      <article class="event-card event-card-protest p-4">
+        <div class="flex items-start gap-4">
+          <div class="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center text-xl" style="background: #3b82f620;">
+            <span>✊</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <h3 class="font-semibold text-humanity-text truncate">
+                <a href="/event/${event.slug}" class="link hover:text-blue-400">${event.title}</a>
+              </h3>
+              <span class="badge-protest">Protest</span>
+              <span class="badge-confidence-${event.confidence.toLowerCase()}">${event.confidence}</span>
+              ${event.issue ? `<span class="badge bg-slate-500/20 text-slate-400 border border-slate-500/30">${event.issue.replace('_', ' ')}</span>` : ''}
+            </div>
+            <div class="flex items-center gap-4 text-sm text-humanity-textMuted mb-2">
+              <span>📍 ${event.city || 'Unknown'}, ${event.country_name}</span>
+              <span>📅 ${formatDate(event.start_time)}</span>
+              <span>📰 ${event.sources?.length || 0} sources</span>
+            </div>
+            <p class="text-sm text-humanity-textMuted line-clamp-2">${event.summary || 'No summary available.'}</p>
+            ${renderHumanImpact(event)}
+          </div>
+        </div>
+      </article>
+    `).join('');
+
+    if (totalPages > 1) {
+      pagination.innerHTML = `
+        <button ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(${currentPage - 1})" class="btn-secondary">Previous</button>
+        <span class="px-4 text-humanity-textMuted">Page ${currentPage} of ${totalPages}</span>
+        <button ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${currentPage + 1})" class="btn-secondary">Next</button>
+      `;
+    } else {
+      pagination.innerHTML = '';
+    }
+  }
+
+  function changePage(page) {
+    currentPage = page;
+    renderProtests();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function renderHumanImpact(event) {
+    const impacts = event.human_impact || {};
+    const parts = [];
+    if (impacts.participants) parts.push(`<span class="text-blue-400">✊ ${impacts.participants}</span>`);
+    if (impacts.injuries) parts.push(`<span class="text-orange-400">🤕 ${impacts.injuries}</span>`);
+    if (impacts.arrests) parts.push(`<span class="text-violet-400">🚔 ${impacts.arrests}</span>`);
+    if (impacts.deaths) parts.push(`<span class="text-red-400">☠ ${impacts.deaths}</span>`);
+    if (parts.length === 0) return '';
+    return `<div class="flex flex-wrap gap-3 mt-2">${parts.join('')}</div>`;
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return 'Unknown';
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  window.changePage = changePage;
+</script>

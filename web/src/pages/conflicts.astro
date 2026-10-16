@@ -1,0 +1,246 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Conflicts | HUMANITY" description="Armed conflicts worldwide. Track battles, offensives, territorial changes, and conflict dynamics.">
+  <div class="min-h-screen">
+    <header class="border-b border-humanity-border bg-humanity-darker/80 backdrop-blur-sm sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <div class="flex items-center gap-3">
+            <a href="/" class="flex items-center gap-3">
+              <svg class="w-8 h-8 text-humanity-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M2 12h20" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+              <span class="text-2xl font-bold tracking-tight text-humanity-text">HUMANITY</span>
+            </a>
+            <span class="text-humanity-textMuted">/</span>
+            <span class="text-humanity-text">Conflicts</span>
+          </div>
+          <nav class="hidden md:flex items-center gap-6">
+            <a href="/" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Home</a>
+            <a href="/map" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Map</a>
+            <a href="/events" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Live Events</a>
+            <a href="/protests" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Protests</a>
+            <a href="/conflicts" class="text-humanity-accent font-medium text-sm">Conflicts</a>
+            <a href="/human-cost" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Human Cost</a>
+            <a href="/countries" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Countries</a>
+            <a href="/timelines" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Timelines</a>
+            <a href="/methodology" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Methodology</a>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-humanity-text mb-2 flex items-center gap-3">
+          <span style="color: #ef4444;">⚔️</span>
+          Armed Conflicts
+        </h1>
+        <p class="text-humanity-textMuted">Active armed conflicts worldwide. Battles, offensives, territorial changes, and conflict dynamics.</p>
+      </div>
+
+      <!-- Major Conflicts Grid -->
+      <section class="mb-12">
+        <h2 class="text-xl font-semibold text-humanity-text mb-6">Major Active Conflicts</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="conflicts-grid">
+          <div class="card p-6 border-l-4 border-red-500" onclick="window.location.href='/conflict/ukraine'">
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <h3 class="text-lg font-semibold text-humanity-text">Ukraine</h3>
+                <p class="text-sm text-humanity-textMuted">Russia-Ukraine War</p>
+              </div>
+              <span class="badge bg-red-500/20 text-red-400 border border-red-500/30">Active</span>
+            </div>
+            <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+              <div><span class="text-humanity-textMuted">Events</span><br><span class="text-humanity-text font-medium">2,847</span></div>
+              <div><span class="text-humanity-textMuted">Deaths (reported)</span><br><span class="text-humanity-text font-medium text-red-400">500K+</span></div>
+              <div><span class="text-humanity-textMuted">Displaced</span><br><span class="text-humanity-text font-medium">6.5M+</span></div>
+              <div><span class="text-humanity-textMuted">Since</span><br><span class="text-humanity-text font-medium">Feb 2022</span></div>
+            </div>
+            <p class="text-sm text-humanity-textMuted line-clamp-2">Full-scale invasion continues with intense fighting in Donbas. Counteroffensive operations ongoing. Extensive infrastructure damage.</p>
+          </div>
+
+          <div class="card p-6 border-l-4 border-red-500" onclick="window.location.href='/conflict/gaza'">
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <h3 class="text-lg font-semibold text-humanity-text">Gaza</h3>
+                <p class="text-sm text-humanity-textMuted">Israel-Hamas War</p>
+              </div>
+              <span class="badge bg-red-500/20 text-red-400 border border-red-500/30">Active</span>
+            </div>
+            <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+              <div><span class="text-humanity-textMuted">Events</span><br><span class="text-humanity-text font-medium">1,203</span></div>
+              <div><span class="text-humanity-textMuted">Deaths (reported)</span><br><span class="text-humanity-text font-medium text-red-400">40K+</span></div>
+              <div><span class="text-humanity-textMuted">Displaced</span><br><span class="text-humanity-text font-medium">1.9M+</span></div>
+              <div><span class="text-humanity-textMuted">Since</span><br><span class="text-humanity-text font-medium">Oct 2023</span></div>
+            </div>
+            <p class="text-sm text-humanity-textMuted line-clamp-2">Intense urban warfare in Gaza Strip. High civilian casualties. Humanitarian crisis with severe access restrictions.</p>
+          </div>
+
+          <div class="card p-6 border-l-4 border-red-500" onclick="window.location.href='/conflict/sudan'">
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <h3 class="text-lg font-semibold text-humanity-text">Sudan</h3>
+                <p class="text-sm text-humanity-textMuted">SAF vs RSF</p>
+              </div>
+              <span class="badge bg-red-500/20 text-red-400 border border-red-500/30">Active</span>
+            </div>
+            <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+              <div><span class="text-humanity-textMuted">Events</span><br><span class="text-humanity-text font-medium">892</span></div>
+              <div><span class="text-humanity-textMuted">Deaths (reported)</span><br><span class="text-humanity-text font-medium text-red-400">15K+</span></div>
+              <div><span class="text-humanity-textMuted">Displaced</span><br><span class="text-humanity-text font-medium">8.5M+</span></div>
+              <div><span class="text-humanity-textMuted">Since</span><br><span class="text-humanity-text font-medium">Apr 2023</span></div>
+            </div>
+            <p class="text-sm text-humanity-textMuted line-clamp-2">Power struggle between army and paramilitary RSF. Khartoum devastated. Famine risk in multiple regions.</p>
+          </div>
+
+          <div class="card p-6 border-l-4 border-red-500" onclick="window.location.href='/conflict/myanmar'">
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <h3 class="text-lg font-semibold text-humanity-text">Myanmar</h3>
+                <p class="text-humanity-textMuted">Civil War</p>
+              </div>
+              <span class="badge bg-red-500/20 text-red-400 border border-red-500/30">Active</span>
+            </div>
+            <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+              <div><span class="text-humanity-textMuted">Events</span><br><span class="text-humanity-text font-medium">2,156</span></div>
+              <div><span class="text-humanity-textMuted">Deaths (reported)</span><br><span class="text-humanity-text font-medium text-red-400">50K+</span></div>
+              <div><span class="text-humanity-textMuted">Displaced</span><br><span class="text-humanity-text font-medium">2.7M+</span></div>
+              <div><span class="text-humanity-textMuted">Since</span><br><span class="text-humanity-text font-medium">Feb 2021</span></div>
+            </div>
+            <p class="text-sm text-humanity-textMuted line-clamp-2">Junta vs resistance forces. Rebel gains in border regions. Escalating airstrikes on civilian areas.</p>
+          </div>
+
+          <div class="card p-6 border-l-4 border-red-500" onclick="window.location.href='/conflict/yemen'">
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <h3 class="text-lg font-semibold text-humanity-text">Yemen</h3>
+                <p class="text-sm text-humanity-textMuted">Multi-party Conflict</p>
+              </div>
+              <span class="badge bg-amber-500/20 text-amber-400 border border-amber-500/30">Ceasefire</span>
+            </div>
+            <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+              <div><span class="text-humanity-textMuted">Events</span><br><span class="text-humanity-text font-medium">567</span></div>
+              <div><span class="text-humanity-textMuted">Deaths (reported)</span><br><span class="text-humanity-text font-medium text-red-400">377K+</span></div>
+              <div><span class="text-humanity-textMuted">Displaced</span><br><span class="text-humanity-text font-medium">4.5M+</span></div>
+              <div><span class="text-humanity-textMuted">Since</span><br><span class="text-humanity-text font-medium">2014</span></div>
+            </div>
+            <p class="text-sm text-humanity-textMuted line-clamp-2">UN-brokered ceasefire holding since 2022. Fragile peace. Humanitarian crisis persists with 21M in need.</p>
+          </div>
+
+          <div class="card p-6 border-l-4 border-red-500" onclick="window.location.href='/conflict/drc'">
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <h3 class="text-lg font-semibold text-humanity-text">DR Congo</h3>
+                <p class="text-sm text-humanity-textMuted">Kivu/Ituri Conflicts</p>
+              </div>
+              <span class="badge bg-red-500/20 text-red-400 border border-red-500/30">Active</span>
+            </div>
+            <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+              <div><span class="text-humanity-textMuted">Events</span><br><span class="text-humanity-text font-medium">1,423</span></div>
+              <div><span class="text-humanity-textMuted">Deaths (reported)</span><br><span class="text-humanity-text font-medium text-red-400">6M+</span></div>
+              <div><span class="text-humanity-textMuted">Displaced</span><br><span class="text-humanity-text font-medium">6.9M+</span></div>
+              <div><span class="text-humanity-textMuted">Since</span><br><span class="text-humanity-text font-medium">1996</span></div>
+            </div>
+            <p class="text-sm text-humanity-textMuted line-clamp-2">M23 rebels advance in North Kivu. Multiple armed groups. Worst displacement crisis in Africa.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- All Conflicts Table -->
+      <section>
+        <h2 class="text-xl font-semibold text-humanity-text mb-6">All Tracked Conflicts</h2>
+        <div class="card overflow-hidden">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-humanity-border text-left text-sm text-humanity-textMuted">
+                <th class="p-4 font-medium text-humanity-text">Conflict</th>
+                <th class="p-4 font-medium text-humanity-text">Countries</th>
+                <th class="p-4 font-medium text-humanity-text">Status</th>
+                <th class="p-4 font-medium text-humanity-text">Events</th>
+                <th class="p-4 font-medium text-humanity-text">Deaths</th>
+                <th class="p-4 font-medium text-humanity-text">Displaced</th>
+                <th class="p-4 font-medium text-humanity-text">Since</th>
+              </tr>
+            </thead>
+            <tbody id="conflicts-table" class="divide-y divide-humanity-border/50">
+              <tr><td colspan="7" class="p-8 text-center text-humanity-textMuted">Loading conflicts...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadConflicts();
+  });
+
+  async function loadConflicts() {
+    const tbody = document.getElementById('conflicts-table');
+    try {
+      const response = await fetch('/data/conflicts/all.json');
+      if (response.ok) {
+        const conflicts = await response.json();
+        renderConflictsTable(conflicts);
+      } else {
+        renderMockConflicts();
+      }
+    } catch {
+      renderMockConflicts();
+    }
+  }
+
+  function renderMockConflicts() {
+    const conflicts = [
+      { name: 'Ukraine', countries: 'Ukraine, Russia', status: 'Active', events: 2847, deaths: '500K+', displaced: '6.5M+', since: 'Feb 2022', slug: 'ukraine' },
+      { name: 'Gaza', countries: 'Palestine, Israel', status: 'Active', events: 1203, deaths: '40K+', displaced: '1.9M+', since: 'Oct 2023', slug: 'gaza' },
+      { name: 'Sudan', countries: 'Sudan', status: 'Active', events: 892, deaths: '15K+', displaced: '8.5M+', since: 'Apr 2023', slug: 'sudan' },
+      { name: 'Myanmar', countries: 'Myanmar', status: 'Active', events: 2156, deaths: '50K+', displaced: '2.7M+', since: 'Feb 2021', slug: 'myanmar' },
+      { name: 'Yemen', countries: 'Yemen, Saudi Arabia', status: 'Ceasefire', events: 567, deaths: '377K+', displaced: '4.5M+', since: '2014', slug: 'yemen' },
+      { name: 'DR Congo', countries: 'DR Congo', status: 'Active', events: 1423, deaths: '6M+', displaced: '6.9M+', since: '1996', slug: 'drc' },
+      { name: 'Syria', countries: 'Syria', status: 'Active', events: 3421, deaths: '500K+', displaced: '13M+', since: '2011', slug: 'syria' },
+      { name: 'Sahel', countries: 'Mali, Burkina Faso, Niger', status: 'Active', events: 1876, deaths: '30K+', displaced: '3.2M+', since: '2012', slug: 'sahel' },
+      { name: 'Colombia', countries: 'Colombia', status: 'Active', events: 789, deaths: '450K+', displaced: '7.8M+', since: '1964', slug: 'colombia' },
+      { name: 'Nigeria', countries: 'Nigeria', status: 'Active', events: 1123, deaths: '40K+', displaced: '3.5M+', since: '2009', slug: 'nigeria' },
+    ];
+    renderConflictsTable(conflicts);
+  }
+
+  function renderConflictsTable(conflicts) {
+    const tbody = document.getElementById('conflicts-table');
+    const statusColors = {
+      'Active': 'bg-red-500/20 text-red-400 border border-red-500/30',
+      'Ceasefire': 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
+      'Frozen': 'bg-slate-500/20 text-slate-400 border border-slate-500/30',
+      'Ended': 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+    };
+    
+    tbody.innerHTML = conflicts.map(c => `
+      <tr class="hover:bg-humanity-card/50 cursor-pointer" onclick="window.location.href='/conflict/${c.slug}'">
+        <td class="p-4 font-medium text-humanity-text">${c.name}</td>
+        <td class="p-4 text-humanity-textMuted">${c.countries}</td>
+        <td class="p-4"><span class="badge ${statusColors[c.status] || ''}">${c.status}</span></td>
+        <td class="p-4 text-humanity-textMuted">${c.events.toLocaleString()}</td>
+        <td class="p-4 text-red-400 font-medium">${c.deaths}</td>
+        <td class="p-4 text-amber-400 font-medium">${c.displaced}</td>
+        <td class="p-4 text-humanity-textMuted">${c.since}</td>
+      </tr>
+    `).join('');
+  }
+</script>
+
+<style>
+  .card[onclick] {
+    cursor: pointer;
+  }
+  .card[onclick]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(239, 68, 68, 0.15);
+  }
+</style>

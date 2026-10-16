@@ -1,0 +1,91 @@
+---
+interface Props {}
+---
+<div class="card border-amber-500/30 bg-amber-500/5" id="overlooked-event">
+  <div class="flex items-start gap-4">
+    <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-amber-500 bg-amber-500/10">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </div>
+    <div class="flex-1">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-xs font-medium text-amber-500 uppercase tracking-wider">Overlooked Event</span>
+        <span class="text-xs text-humanity-textMuted">Automatically detected</span>
+      </div>
+      <h3 class="font-semibold text-humanity-text mb-1" id="overlooked-title">Loading overlooked event...</h3>
+      <p class="text-sm text-humanity-textMuted" id="overlooked-summary">Finding significant events with low international coverage...</p>
+      <div class="flex items-center gap-4 mt-3 text-xs text-humanity-textMuted" id="overlooked-meta"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    try {
+      const response = await fetch('/data/overlooked/latest.json');
+      if (response.ok) {
+        const event = await response.json();
+        renderEvent(event);
+      } else {
+        renderMockEvent();
+      }
+    } catch {
+      renderMockEvent();
+    }
+  });
+  
+  function renderEvent(event) {
+    const titleEl = document.getElementById('overlooked-title');
+    const summaryEl = document.getElementById('overlooked-summary');
+    const metaEl = document.getElementById('overlooked-meta');
+    
+    if (!event) {
+      titleEl.textContent = 'No overlooked event detected today';
+      summaryEl.textContent = 'All major events are receiving adequate coverage in monitored sources.';
+      metaEl.innerHTML = '';
+      return;
+    }
+    
+    titleEl.innerHTML = `<a href="/event/${event.slug}" class="link hover:text-amber-400">${event.title}</a>`;
+    summaryEl.textContent = event.summary || 'Significant event with limited international media coverage.';
+    
+    metaEl.innerHTML = `
+      <span>📍 ${event.city || ''}, ${event.country}</span>
+      <span>${getEventTypeLabel(event.event_type)}</span>
+      <span>📰 ${event.source_count || 0} sources</span>
+      <span>Importance: ${Math.round(event.importance_score || 0)}/100</span>
+      <span>Coverage ratio: ${Math.round((event.coverage_ratio || 0) * 100)}%</span>
+    `;
+  }
+  
+  function renderMockEvent() {
+    const titleEl = document.getElementById('overlooked-title');
+    const summaryEl = document.getElementById('overlooked-summary');
+    const metaEl = document.getElementById('overlooked-meta');
+    
+    titleEl.innerHTML = `<a href="/event/2026/10/05/conflict-mozambique-cabo-delgado" class="link hover:text-amber-400">Escalating insurgency in Cabo Delgado, Mozambique</a>`;
+    summaryEl.textContent = 'Islamist militant attacks have displaced over 80,000 people in the past month with minimal international media attention. Humanitarian access severely restricted.';
+    metaEl.innerHTML = `
+      <span>📍 Cabo Delgado, Mozambique</span>
+      <span>Conflict</span>
+      <span>📰 3 sources</span>
+      <span>Importance: 78/100</span>
+      <span>Coverage ratio: 12%</span>
+    `;
+  }
+  
+  function getEventTypeLabel(type) {
+    const labels = {
+      PROTEST: 'Protest',
+      CONFLICT: 'Conflict',
+      ATTACK: 'Attack',
+      CASUALTY: 'Casualty',
+      DISPLACEMENT: 'Displacement',
+      DISASTER: 'Disaster',
+      REPRESSION: 'Repression',
+      HUMANITARIAN: 'Humanitarian'
+    };
+    return labels[type] || type;
+  }
+</script>

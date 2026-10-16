@@ -1,0 +1,296 @@
+---
+interface Props {
+  class?: string;
+}
+const { class: className = '' } = Astro.props;
+---
+<div id="map-globe" class={className}></div>
+
+<script>
+  import maplibregl from 'maplibre-gl';
+  import 'maplibre-gl/dist/maplibre-gl.css';
+  
+  // Wait for DOM to be ready
+  document.addEventListener('DOMContentLoaded', async () => {
+    const container = document.getElementById('map-globe');
+    if (!container) return;
+    
+    // MapLibre GL JS configuration
+    const map = new maplibregl.Map({
+      container: 'map-globe',
+      style: {
+        version: 8,
+        sources: {
+          osm: {
+            type: 'raster',
+            tiles: [
+              'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
+            ],
+            tileSize: 256,
+            attribution: '© OpenStreetMap contributors',
+            maxzoom: 19
+          }
+        },
+        layers: [
+          {
+            id: 'background',
+            type: 'background',
+            paint: {
+              'background-color': '#050505'
+            }
+          },
+          {
+            id: 'osm',
+            type: 'raster',
+            source: 'osm',
+            minzoom: 0,
+            maxzoom: 19
+          }
+        ]
+      },
+      center: [0, 20],
+      zoom: 1.2,
+      projection: 'globe',
+      renderWorldCopies: false
+    });
+    
+    // Add globe styling
+    map.on('style.load', () => {
+      map.setFog({
+        'horizon-blend': 0.3,
+        'color': '#050505',
+        'high-color': '#0a0a0a',
+        'space-color': '#050505',
+        'star-intensity': 0.15
+      });
+    });
+    
+    // Navigation controls
+    map.addControl(new maplibregl.NavigationControl({
+      visualizePitch: true
+    }), 'top-right');
+    
+    // Load events data
+    try {
+      const response = await fetch('/data/map/events.geojson');
+      if (response.ok) {
+        const geojson = await response.json();
+        
+        map.on('load', () => {
+          // Add source
+          map.addSource('events', {
+            type: 'geojson',
+            data: geojson,
+            cluster: true,
+            clusterMaxZoom: 14,
+            clusterRadius: 50
+          });
+          
+          // Cluster circles
+          map.addLayer({
+            id: 'clusters',
+            type: 'circle',
+            source: 'events',
+            filter: ['has', 'point_count'],
+            paint: {
+              'circle-color': [
+                'step',
+                ['get', 'point_count'],
+                '#3b82f6',
+                10, '#f97316',
+                50, '#ef4444',
+                100, '#dc2626'
+              ],
+              'circle-radius': [
+                'step',
+                ['get', 'point_count'],
+                16,
+                10, 20,
+                50, 28,
+                100, 36
+              ],
+              'circle-stroke-width': 2,
+              'circle-stroke-color': '#050505'
+            }
+          });
+          
+          // Cluster labels
+          map.addLayer({
+            id: 'cluster-count',
+            type: 'symbol',
+            source: 'events',
+            filter: ['has', 'point_count'],
+            layout: {
+              'text-field': ['get', 'point_count_abbreviated'],
+              'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+              'text-size': 12,
+              'text-color': '#ffffff'
+            }
+          });
+          
+          // Individual events
+          map.addLayer({
+            id: 'events-points',
+            type: 'circle',
+            source: 'events',
+            filter: ['!', ['has', 'point_count']],
+            paint: {
+              'circle-color': [
+                'match',
+                ['get', 'event_type'],
+                'PROTEST', '#3b82f6',
+                'CONFLICT', '#ef4444',
+                'ATTACK', '#dc2626',
+                'CASUALTY', '#b91c1c',
+                'DISPLACEMENT', '#f97316',
+                'DISASTER', '#0ea5e9',
+                'REPRESSION', '#7c3aed',
+                'HUMANITARIAN', '#10b981',
+                '#888888'
+              ],
+              'circle-radius': [
+                'interpolate',
+                ['linear'],
+                ['get', 'severity'],
+                1, 4,
+                5, 8,
+                10, 16
+              ],
+              'circle-stroke-width': 2,
+              'circle-stroke-color': '#050505',
+              'circle-opacity': 0.9
+            }
+          });
+          
+          // Hover effect
+          map.on('mouseenter', 'events-points', (e) => {
+            map.getCanvas().style.cursor = 'pointer';
+            const feature = e.features[0];
+            if (feature) {
+              showEventPopup(map, feature, e.lngLat);
+            }
+          });
+          
+          map.on('mouseleave', 'events-points', () => {
+            map.getCanvas().style.cursor = '';
+            hideEventPopup();
+          });
+          
+          map.on('mouseenter', 'clusters', (e) => {
+            map.getCanvas().style.cursor = 'pointer';
+          });
+          
+          map.on('mouseleave', 'clusters', () => {
+            map.getCanvas().style.cursor = '';
+          });
+          
+          // Click cluster to zoom
+          map.on('click', 'clusters', (e) => {
+            const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
+            const clusterId = features[0].properties.cluster_id;
+            map.getSource('events').getClusterExpansionZoom(clusterId, (err, zoom) => {
+              if (err) return;
+              map.easeTo({
+                center: features[0].geometry.coordinates,
+                zoom: zoom
+              });
+            });
+          });
+          
+          // Click event to navigate
+          map.on('click', 'events-points', (e) => {
+            const feature = e.features[0];
+            if (feature && feature.properties.slug) {
+              window.location.href = `/event/${feature.properties.slug}`;
+            }
+          });
+        });
+      }
+    } catch (error) {
+      console.log('No events data yet, showing empty map');
+    }
+    
+    // Make map globally accessible for debugging
+    window.humanityMap = map;
+  });
+  
+  let currentPopup = null;
+  
+  function showEventPopup(map, feature, lngLat) {
+    hideEventPopup();
+    
+    const props = feature.properties;
+    const typeColors = {
+      PROTEST: '#3b82f6',
+      CONFLICT: '#ef4444',
+      ATTACK: '#dc2626',
+      CASUALTY: '#b91c1c',
+      DISPLACEMENT: '#f97316',
+      DISASTER: '#0ea5e9',
+      REPRESSION: '#7c3aed',
+      HUMANITARIAN: '#10b981'
+    };
+    
+    const color = typeColors[props.event_type] || '#888888';
+    const typeLabel = props.event_type.replace('_', ' ');
+    
+    const popupContent = document.createElement('div');
+    popupContent.className = 'maplibregl-popup-content';
+    popupContent.style.cssText = `
+      background: #141414;
+      border: 1px solid ${color}40;
+      border-radius: 8px;
+      padding: 12px 16px;
+      min-width: 200px;
+      max-width: 280px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    `;
+    popupContent.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${color};"></span>
+        <strong style="color: #e8e8e8; font-size: 14px;">${typeLabel}</strong>
+      </div>
+      <h4 style="color: #e8e8e8; font-size: 14px; font-weight: 600; margin: 0 0 8px; line-height: 1.3;">${props.title}</h4>
+      <div style="display: flex; gap: 12px; font-size: 12px; color: #888888;">
+        <span>📍 ${props.city || 'Unknown'}, ${props.country_name}</span>
+        <span>📅 ${props.date}</span>
+      </div>
+      ${props.deaths ? `<div style="margin-top: 8px; font-size: 12px; color: #ef4444;">☠ ${props.deaths} deaths reported</div>` : ''}
+      ${props.injuries ? `<div style="font-size: 12px; color: #f97316;">🤕 ${props.injuries} injuries reported</div>` : ''}
+      <a href="/event/${props.slug}" style="margin-top: 8px; display: inline-block; font-size: 12px; color: #ef4444; text-decoration: none;">View details →</a>
+    `;
+    
+    currentPopup = new maplibregl.Popup({ 
+      closeButton: false,
+      closeOnClick: false,
+      anchor: 'bottom'
+    })
+      .setLngLat(lngLat)
+      .setDOMContent(popupContent)
+      .addTo(map);
+  }
+  
+  function hideEventPopup() {
+    if (currentPopup) {
+      currentPopup.remove();
+      currentPopup = null;
+    }
+  }
+</script>
+
+<style>
+  #map-globe {
+    width: 100%;
+    height: 100%;
+  }
+  
+  .maplibregl-popup-content {
+    pointer-events: auto;
+  }
+  
+  .maplibregl-popup-tip {
+    border-top-color: #141414 !important;
+  }
+</style>

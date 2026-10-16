@@ -1,0 +1,132 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import MapGlobe from '../components/MapGlobe.astro';
+import LiveCounters from '../components/LiveCounters.astro';
+import MajorDevelopments from '../components/MajorDevelopments.astro';
+import WhatChanged from '../components/WhatChanged.astro';
+import OverlookedEvent from '../components/OverlookedEvent.astro';
+import { getCollection } from 'astro:content';
+---
+
+<BaseLayout title="HUMANITY — What Is Happening Around the World?" description="A live global map and evidence-based database of protests, conflicts, humanitarian crises, disasters and other major human events.">
+  <div class="min-h-screen">
+    <!-- Hero Section -->
+    <header class="relative border-b border-humanity-border bg-humanity-darker/80 backdrop-blur-sm sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <div class="flex items-center gap-3">
+            <svg class="w-8 h-8 text-humanity-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M2 12h20" />
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+            <span class="text-2xl font-bold tracking-tight text-humanity-text">HUMANITY</span>
+          </div>
+          <nav class="hidden md:flex items-center gap-6">
+            <a href="/" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Home</a>
+            <a href="/map" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Map</a>
+            <a href="/events" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Live Events</a>
+            <a href="/protests" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Protests</a>
+            <a href="/conflicts" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Conflicts</a>
+            <a href="/human-cost" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Human Cost</a>
+            <a href="/countries" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Countries</a>
+            <a href="/timelines" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Timelines</a>
+            <a href="/methodology" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Methodology</a>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <!-- Hero Tagline -->
+      <section class="text-center animate-fade-in">
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-humanity-text mb-4">
+          What is happening to people around the world?
+        </h1>
+        <p class="text-lg sm:text-xl text-humanity-textMuted max-w-3xl mx-auto">
+          A structured global event intelligence platform. Every event traced to sources. Every claim verified.
+        </p>
+      </section>
+
+      <!-- Live Global Counters -->
+      <section aria-label="Live Global Counters">
+        <LiveCounters />
+      </section>
+
+      <!-- Live Map -->
+      <section aria-label="Live Global Map">
+        <div class="card">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-humanity-text">Live Global Map</h2>
+            <a href="/map" class="link text-sm">Explore full map →</a>
+          </div>
+          <MapGlobe class="map-container" />
+        </div>
+      </section>
+
+      <!-- What Changed? -->
+      <section aria-label="What Changed in the Last 24 Hours">
+        <WhatChanged />
+      </section>
+
+      <!-- Major Developments -->
+      <section aria-label="Major Developments">
+        <MajorDevelopments />
+      </section>
+
+      <!-- Overlooked Event -->
+      <section aria-label="Overlooked Event">
+        <OverlookedEvent />
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-humanity-border bg-humanity-darker/80 backdrop-blur-sm mt-16">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div>
+            <h3 class="font-bold text-humanity-text mb-4">HUMANITY</h3>
+            <p class="text-humanity-textMuted text-sm leading-relaxed">
+              The world, measured through human events. An autonomous global event intelligence platform.
+            </p>
+          </div>
+          <div>
+            <h4 class="font-medium text-humanity-text mb-3">Explore</h4>
+            <ul class="space-y-2 text-sm text-humanity-textMuted">
+              <li><a href="/map" class="link">Live Map</a></li>
+              <li><a href="/events" class="link">Live Events</a></li>
+              <li><a href="/countries" class="link">Countries</a></li>
+              <li><a href="/conflicts" class="link">Conflicts</a></li>
+              <li><a href="/human-cost" class="link">Human Cost</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-medium text-humanity-text mb-3">Understand</h4>
+            <ul class="space-y-2 text-sm text-humanity-textMuted">
+              <li><a href="/methodology" class="link">Methodology</a></li>
+              <li><a href="/timelines" class="link">Timelines</a></li>
+              <li><a href="/protests" class="link">Protests</a></li>
+              <li><a href="/daily-brief" class="link">Daily Brief</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-medium text-humanity-text mb-3">Data & Sources</h4>
+            <ul class="space-y-2 text-sm text-humanity-textMuted">
+              <li><a href="/sources" class="link">Source Registry</a></li>
+              <li><a href="/api" class="link">API (coming soon)</a></li>
+              <li><a href="/github" class="link">GitHub</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="mt-8 pt-8 border-t border-humanity-border flex flex-col md:flex-row items-center justify-between gap-4">
+          <p class="text-sm text-humanity-textMuted">
+            © 2026 HUMANITY. Open source. Free first. Built with evidence.
+          </p>
+          <p class="text-sm text-humanity-textMuted">
+            Data from GDELT, ReliefWeb, UN, NGOs & global news. <a href="/methodology" class="link">View methodology</a>
+          </p>
+        </div>
+      </div>
+    </footer>
+  </div>
+</BaseLayout>

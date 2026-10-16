@@ -1,0 +1,327 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Live Events | HUMANITY" description="Browse all detected human events worldwide. Filter by type, country, date, and severity.">
+  <div class="min-h-screen">
+    <header class="border-b border-humanity-border bg-humanity-darker/80 backdrop-blur-sm sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <div class="flex items-center gap-3">
+            <a href="/" class="flex items-center gap-3">
+              <svg class="w-8 h-8 text-humanity-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M2 12h20" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+              <span class="text-2xl font-bold tracking-tight text-humanity-text">HUMANITY</span>
+            </a>
+            <span class="text-humanity-textMuted">/</span>
+            <span class="text-humanity-text">Live Events</span>
+          </div>
+          <nav class="hidden md:flex items-center gap-6">
+            <a href="/" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Home</a>
+            <a href="/map" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Map</a>
+            <a href="/events" class="text-humanity-accent font-medium text-sm">Live Events</a>
+            <a href="/protests" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Protests</a>
+            <a href="/conflicts" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Conflicts</a>
+            <a href="/human-cost" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Human Cost</a>
+            <a href="/countries" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Countries</a>
+            <a href="/timelines" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Timelines</a>
+            <a href="/methodology" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Methodology</a>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-humanity-text mb-2">Live Events</h1>
+        <p class="text-humanity-textMuted">All detected human events worldwide. Data updated automatically.</p>
+      </div>
+
+      <!-- Filters -->
+      <div class="card mb-8">
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="flex-1 min-w-[200px]">
+            <label class="block text-sm text-humanity-textMuted mb-1">Search events</label>
+            <input type="text" id="search-input" placeholder="Search by title, location, country..." class="input" />
+          </div>
+          <div>
+            <label class="block text-sm text-humanity-textMuted mb-1">Event Type</label>
+            <select id="type-filter" class="input">
+              <option value="">All Types</option>
+              <option value="PROTEST">Protest</option>
+              <option value="CONFLICT">Conflict</option>
+              <option value="ATTACK">Attack</option>
+              <option value="CASUALTY">Casualty</option>
+              <option value="DISPLACEMENT">Displacement</option>
+              <option value="DISASTER">Disaster</option>
+              <option value="REPRESSION">Repression</option>
+              <option value="HUMANITARIAN">Humanitarian</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-humanity-textMuted mb-1">Country</label>
+            <select id="country-filter" class="input">
+              <option value="">All Countries</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-humanity-textMuted mb-1">Severity</label>
+            <select id="severity-filter" class="input">
+              <option value="">All Severities</option>
+              <option value="10">10 - Unprecedented</option>
+              <option value="9">9 - Catastrophic</option>
+              <option value="8">8 - Extreme</option>
+              <option value="7">7 - Critical</option>
+              <option value="6">6 - Severe</option>
+              <option value="5">5 - Serious</option>
+              <option value="4">4 - Significant</option>
+              <option value="3">3 - Moderate</option>
+              <option value="2">2 - Low</option>
+              <option value="1">1 - Minimal</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-humanity-textMuted mb-1">Date Range</label>
+            <select id="date-filter" class="input">
+              <option value="">All Time</option>
+              <option value="1">Last 24 hours</option>
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
+              <option value="90">Last 90 days</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div id="events-container" class="space-y-4">
+        <div class="card text-center py-12">
+          <div class="animate-pulse-soft text-humanity-textMuted">Loading events...</div>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div id="pagination" class="flex items-center justify-center gap-2 mt-8"></div>
+    </main>
+  </div>
+
+<script>
+  let allEvents = [];
+  let currentPage = 1;
+  const pageSize = 20;
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadEvents();
+    setupFilters();
+  });
+
+  async function loadEvents() {
+    const container = document.getElementById('events-container');
+    try {
+      // Try to load from generated data
+      const response = await fetch('/data/events/all.json');
+      if (response.ok) {
+        allEvents = await response.json();
+      } else {
+        // Fallback to mock data
+        allEvents = getMockEvents();
+      }
+      populateCountryFilter();
+      renderEvents();
+    } catch {
+      allEvents = getMockEvents();
+      populateCountryFilter();
+      renderEvents();
+    }
+  }
+
+  function getMockEvents() {
+    return [
+      {
+        id: '1', slug: '2026/10/08/protest-paris-france', title: 'Nationwide protests across France over pension reform',
+        event_type: 'PROTEST', country_name: 'France', country_code: 'FR', city: 'Paris',
+        start_time: '2026-10-08T10:00:00Z', severity: 6, confidence: 'HIGH',
+        sources: [{}, {}, {}], summary: 'Hundreds of thousands demonstrate in Paris, Lyon, Marseille...',
+        human_impact: { participants: '12,000–20,000', injuries: '14', arrests: '7' }
+      },
+      {
+        id: '2', slug: '2026/10/08/conflict-sudan-khartoum', title: 'Intense fighting in Khartoum enters third week',
+        event_type: 'CONFLICT', country_name: 'Sudan', country_code: 'SD', city: 'Khartoum',
+        start_time: '2026-10-08T06:00:00Z', severity: 9, confidence: 'HIGH',
+        sources: [{}, {}, {}, {}], summary: 'RSF and SAF continue heavy artillery exchanges...',
+        human_impact: { deaths: '45–67', injuries: '120–180' }
+      },
+      {
+        id: '3', slug: '2026/10/08/airstrike-gaza-city', title: 'Airstrike on residential building in Gaza City',
+        event_type: 'ATTACK', country_name: 'Palestine', country_code: 'PS', city: 'Gaza City',
+        start_time: '2026-10-08T02:30:00Z', severity: 8, confidence: 'MEDIUM',
+        sources: [{}, {}], summary: 'Israeli airstrike hits multi-story residential building...',
+        human_impact: { deaths: '23–31', injuries: '45–52' }
+      },
+      {
+        id: '4', slug: '2026/10/07/displacement-congo-goma', title: 'Mass displacement near Goma as M23 advances',
+        event_type: 'DISPLACEMENT', country_name: 'DR Congo', country_code: 'CD', city: 'Goma',
+        start_time: '2026-10-07T14:00:00Z', severity: 8, confidence: 'HIGH',
+        sources: [{}, {}], summary: 'Over 150,000 people flee fighting between M23 rebels and FARDC...',
+        human_impact: { displaced: '150,000–180,000' }
+      },
+      {
+        id: '5', slug: '2026/10/07/earthquake-afghanistan-herat', title: 'Magnitude 6.3 earthquake strikes western Afghanistan',
+        event_type: 'DISASTER', country_name: 'Afghanistan', country_code: 'AF', city: 'Herat',
+        start_time: '2026-10-07T11:30:00Z', severity: 9, confidence: 'VERIFIED',
+        sources: [{}, {}, {}], summary: 'Powerful quake destroys villages in Herat province...',
+        human_impact: { deaths: '2,000–2,400', injuries: '9,000–12,000' }
+      }
+    ];
+  }
+
+  function populateCountryFilter() {
+    const select = document.getElementById('country-filter');
+    const countries = [...new Set(allEvents.map(e => e.country_name).filter(Boolean))].sort();
+    countries.forEach(country => {
+      const option = document.createElement('option');
+      option.value = country;
+      option.textContent = country;
+      select.appendChild(option);
+    });
+  }
+
+  function setupFilters() {
+    const filters = ['search-input', 'type-filter', 'country-filter', 'severity-filter', 'date-filter'];
+    filters.forEach(id => {
+      document.getElementById(id).addEventListener('input', () => {
+        currentPage = 1;
+        renderEvents();
+      });
+    });
+  }
+
+  function getFilteredEvents() {
+    const search = document.getElementById('search-input').value.toLowerCase();
+    const type = document.getElementById('type-filter').value;
+    const country = document.getElementById('country-filter').value;
+    const severity = document.getElementById('severity-filter').value;
+    const dateRange = document.getElementById('date-filter').value;
+
+    return allEvents.filter(event => {
+      if (search && !event.title.toLowerCase().includes(search) && 
+          !event.city?.toLowerCase().includes(search) && 
+          !event.country_name.toLowerCase().includes(search)) {
+        return false;
+      }
+      if (type && event.event_type !== type) return false;
+      if (country && event.country_name !== country) return false;
+      if (severity && event.severity < parseInt(severity)) return false;
+      if (dateRange) {
+        const eventDate = new Date(event.start_time);
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - parseInt(dateRange));
+        if (eventDate < cutoff) return false;
+      }
+      return true;
+    }).sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+  }
+
+  function renderEvents() {
+    const container = document.getElementById('events-container');
+    const pagination = document.getElementById('pagination');
+    const filtered = getFilteredEvents();
+    
+    const totalPages = Math.ceil(filtered.length / pageSize);
+    const start = (currentPage - 1) * pageSize;
+    const pageEvents = filtered.slice(start, start + pageSize);
+
+    if (pageEvents.length === 0) {
+      container.innerHTML = `
+        <div class="card text-center py-12">
+          <h3 class="text-lg font-medium text-humanity-text mb-2">No events found</h3>
+          <p class="text-humanity-textMuted">Try adjusting your filters or search terms.</p>
+        </div>
+      `;
+      pagination.innerHTML = '';
+      return;
+    }
+
+    container.innerHTML = pageEvents.map(event => `
+      <article class="event-card event-card-${event.event_type.toLowerCase()} p-4">
+        <div class="flex items-start gap-4">
+          <div class="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center text-xl" style="background: ${getEventColor(event.event_type)}20;">
+            <span>${getEventIcon(event.event_type)}</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <h3 class="font-semibold text-humanity-text truncate">
+                <a href="/event/${event.slug}" class="link hover:text-humanity-accent">${event.title}</a>
+              </h3>
+              <span class="badge-${event.event_type.toLowerCase()}">${getEventTypeLabel(event.event_type)}</span>
+              <span class="badge-confidence-${event.confidence.toLowerCase()}">${event.confidence}</span>
+            </div>
+            <div class="flex items-center gap-4 text-sm text-humanity-textMuted mb-2">
+              <span>📍 ${event.city || 'Unknown'}, ${event.country_name}</span>
+              <span>📅 ${formatDate(event.start_time)}</span>
+              <span>📰 ${event.sources?.length || 0} sources</span>
+              <span>Severity: ${event.severity}/10</span>
+            </div>
+            <p class="text-sm text-humanity-textMuted line-clamp-2">${event.summary || 'No summary available.'}</p>
+            ${renderHumanImpact(event)}
+          </div>
+        </div>
+      </article>
+    `).join('');
+
+    // Pagination
+    if (totalPages > 1) {
+      pagination.innerHTML = `
+        <button ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(${currentPage - 1})" class="btn-secondary">Previous</button>
+        <span class="px-4 text-humanity-textMuted">Page ${currentPage} of ${totalPages}</span>
+        <button ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${currentPage + 1})" class="btn-secondary">Next</button>
+      `;
+    } else {
+      pagination.innerHTML = '';
+    }
+  }
+
+  function changePage(page) {
+    currentPage = page;
+    renderEvents();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function renderHumanImpact(event) {
+    const impacts = event.human_impact || {};
+    const parts = [];
+    if (impacts.deaths) parts.push(`<span class="text-red-400">☠ ${impacts.deaths}</span>`);
+    if (impacts.injuries) parts.push(`<span class="text-orange-400">🤕 ${impacts.injuries}</span>`);
+    if (impacts.arrests) parts.push(`<span class="text-violet-400">🚔 ${impacts.arrests}</span>`);
+    if (impacts.displaced) parts.push(`<span class="text-amber-400">🏃 ${impacts.displaced}</span>`);
+    if (impacts.participants) parts.push(`<span class="text-blue-400">✊ ${impacts.participants}</span>`);
+    if (parts.length === 0) return '';
+    return `<div class="flex flex-wrap gap-3 mt-2">${parts.join('')}</div>`;
+  }
+
+  function getEventIcon(type) {
+    const icons = { PROTEST: '✊', CONFLICT: '⚔️', ATTACK: '💥', CASUALTY: '☠️', DISPLACEMENT: '🏃', DISASTER: '🌪️', REPRESSION: '🚔', HUMANITARIAN: '🏥' };
+    return icons[type] || '📍';
+  }
+
+  function getEventColor(type) {
+    const colors = { PROTEST: '#3b82f6', CONFLICT: '#ef4444', ATTACK: '#dc2626', CASUALTY: '#b91c1c', DISPLACEMENT: '#f97316', DISASTER: '#0ea5e9', REPRESSION: '#7c3aed', HUMANITARIAN: '#10b981' };
+    return colors[type] || '#888888';
+  }
+
+  function getEventTypeLabel(type) {
+    const labels = { PROTEST: 'Protest', CONFLICT: 'Conflict', ATTACK: 'Attack', CASUALTY: 'Casualty', DISPLACEMENT: 'Displacement', DISASTER: 'Disaster', REPRESSION: 'Repression', HUMANITARIAN: 'Humanitarian' };
+    return labels[type] || type;
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return 'Unknown';
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  // Make changePage global
+  window.changePage = changePage;
+</script>
