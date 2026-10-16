@@ -36,6 +36,15 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
       window.fetch = (input, init) =>
         nativeFetch(typeof input === 'string' ? withBasePath(input) : input, init);
 
+      // Rewrite the actual attributes as well as intercepting clicks. This makes
+      // links work with keyboard navigation, context menus, and browsers where a
+      // click target is not an Element node.
+      if (basePath) {
+        document.querySelectorAll('a[href^="/"]').forEach((link) => {
+          link.setAttribute('href', withBasePath(link.getAttribute('href')));
+        });
+      }
+
       document.addEventListener(
         'click',
         (event) => {
