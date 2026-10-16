@@ -28,7 +28,7 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
       // GitHub Pages serves this repository beneath /humanity. Keep root-relative
       // links and data requests working there while remaining a no-op at a domain root.
       const withBasePath = (value) =>
-        basePath && typeof value === 'string' && value.startsWith('/')
+        basePath && typeof value === 'string' && value.startsWith('/') && !value.startsWith(`${basePath}/`)
           ? `${basePath}${value}`
           : value;
 
