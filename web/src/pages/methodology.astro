@@ -204,7 +204,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <div class="mt-6 p-4 rounded" style="background: #2d1515; border: 1px solid #ef444440;">
             <h4 class="font-medium text-humanity-text mb-2">Structured Output Only</h4>
             <p class="text-sm text-humanity-textMuted">We never ask for free-form prose. We request JSON with strict schema validation (Pydantic). Malformed output is rejected and retried.</p>
-            <pre class="mt-3 p-3 rounded text-xs overflow-x-auto" style="background: #050505;"><code>{"event_type": "PROTEST", "claims": [{"type": "participants", "min": 10000, "max": 20000, "source_id": "..."}], "confidence_score": 82}</code></pre>
+            <pre class="mt-3 p-3 rounded text-xs overflow-x-auto" style="background: #050505;"><code>&#123;"event_type": "PROTEST", "claims": [&#123;"type": "participants", "min": 10000, "max": 20000, "source_id": "..."&#125;], "confidence_score": 82&#125;</code></pre>
           </div>
         </div>
       </section>
