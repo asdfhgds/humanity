@@ -1,7 +1,5 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getCollection } from 'astro:content';
-import EventCard from '../../components/EventCard.astro';
 
 export async function getStaticPaths() {
   // For now, return empty paths - we'll use client-side rendering
@@ -358,3 +356,4 @@ const slugStr = Array.isArray(slug) ? slug.join('/') : slug;
     return labels[type] || type;
   }
 </script>
+</BaseLayout>
