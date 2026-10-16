@@ -4,6 +4,7 @@ interface Props {
   description?: string;
 }
 const { title, description } = Astro.props;
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 <!doctype html>
 <html lang="en">
@@ -23,5 +24,41 @@ const { title, description } = Astro.props;
   </head>
   <body class="bg-humanity-darker text-humanity-text min-h-screen font-sans antialiased">
     <slot />
+    <script is:inline define:vars={{ basePath }}>
+      // GitHub Pages serves this repository beneath /humanity. Keep root-relative
+      // links and data requests working there while remaining a no-op at a domain root.
+      const withBasePath = (value) =>
+        basePath && typeof value === 'string' && value.startsWith('/')
+          ? `${basePath}${value}`
+          : value;
+
+      const nativeFetch = window.fetch.bind(window);
+      window.fetch = (input, init) =>
+        nativeFetch(typeof input === 'string' ? withBasePath(input) : input, init);
+
+      document.addEventListener(
+        'click',
+        (event) => {
+          if (!basePath || event.defaultPrevented || event.button !== 0) return;
+          const target = event.target instanceof Element ? event.target : null;
+          const link = target?.closest('a[href^="/"]');
+          if (link && !link.hasAttribute('download') && !event.metaKey && !event.ctrlKey && !event.shiftKey) {
+            event.preventDefault();
+            window.location.assign(withBasePath(link.getAttribute('href')));
+            return;
+          }
+
+          const actionTarget = target?.closest('[onclick*="window.location.href=\'/"]');
+          const action = actionTarget?.getAttribute('onclick');
+          const match = action?.match(/window\\.location\\.href='([^']+)'/);
+          if (match?.[1]?.startsWith('/')) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            window.location.assign(withBasePath(match[1]));
+          }
+        },
+        true,
+      );
+    </script>
   </body>
 </html>
