@@ -25,8 +25,8 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
   <body class="bg-humanity-darker text-humanity-text min-h-screen font-sans antialiased">
     <slot />
     <script is:inline define:vars={{ basePath }}>
-      // GitHub Pages serves this repository beneath /humanity. Keep root-relative
-      // links and data requests working there while remaining a no-op at a domain root.
+      // Bundled client scripts keep data requests portable between GitHub Pages
+      // and a root-domain deployment. Static links are rewritten at build time.
       const withBasePath = (value) =>
         basePath && typeof value === 'string' && value.startsWith('/') && !value.startsWith(`${basePath}/`)
           ? `${basePath}${value}`
@@ -35,22 +35,6 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
       const nativeFetch = window.fetch.bind(window);
       window.fetch = (input, init) =>
         nativeFetch(typeof input === 'string' ? withBasePath(input) : input, init);
-
-      // Rewrite actual attributes. This supports normal clicks, keyboard
-      // navigation, context menus, and links rendered later by client scripts.
-      if (basePath) {
-        const rewriteLinks = (root = document) => {
-          root.querySelectorAll?.('a[href^="/"]').forEach((link) => {
-            link.setAttribute('href', withBasePath(link.getAttribute('href')));
-          });
-        };
-        rewriteLinks();
-        new MutationObserver((mutations) => {
-          mutations.forEach((mutation) => mutation.addedNodes.forEach((node) => {
-            if (node instanceof Element) rewriteLinks(node);
-          }));
-        }).observe(document.body, { childList: true, subtree: true });
-      }
     </script>
   </body>
 </html>
