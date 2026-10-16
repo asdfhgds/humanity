@@ -124,7 +124,7 @@ jobs:
 
       - name: Generate Daily Brief
         run: |
-          python -m app.cli run --daily-brief-only
+          python -c "from app.publishing.publisher import EventPublisher; EventPublisher().generate_daily_brief()"
 
       - name: Commit Daily Brief
         run: |

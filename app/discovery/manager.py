@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 from app.config import get_enabled_sources, get_settings
 from app.sources.adapter import RSSAdapter, ReliefWebAdapter
+from app.sources.fetcher import SourceFetcher, fetch_from_multiple_sources
 from app.discovery.gdelt import run_gdelt_discovery, GDELTDiscovery
 from app.utils import canonicalize_url, compute_article_hash
 from app.models.schemas import Source, SourceType, IngestionRun
