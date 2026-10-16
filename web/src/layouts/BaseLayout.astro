@@ -36,38 +36,21 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
       window.fetch = (input, init) =>
         nativeFetch(typeof input === 'string' ? withBasePath(input) : input, init);
 
-      // Rewrite the actual attributes as well as intercepting clicks. This makes
-      // links work with keyboard navigation, context menus, and browsers where a
-      // click target is not an Element node.
+      // Rewrite actual attributes. This supports normal clicks, keyboard
+      // navigation, context menus, and links rendered later by client scripts.
       if (basePath) {
-        document.querySelectorAll('a[href^="/"]').forEach((link) => {
-          link.setAttribute('href', withBasePath(link.getAttribute('href')));
-        });
+        const rewriteLinks = (root = document) => {
+          root.querySelectorAll?.('a[href^="/"]').forEach((link) => {
+            link.setAttribute('href', withBasePath(link.getAttribute('href')));
+          });
+        };
+        rewriteLinks();
+        new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => mutation.addedNodes.forEach((node) => {
+            if (node instanceof Element) rewriteLinks(node);
+          }));
+        }).observe(document.body, { childList: true, subtree: true });
       }
-
-      document.addEventListener(
-        'click',
-        (event) => {
-          if (!basePath || event.defaultPrevented || event.button !== 0) return;
-          const target = event.target instanceof Element ? event.target : null;
-          const link = target?.closest('a[href^="/"]');
-          if (link && !link.hasAttribute('download') && !event.metaKey && !event.ctrlKey && !event.shiftKey) {
-            event.preventDefault();
-            window.location.assign(withBasePath(link.getAttribute('href')));
-            return;
-          }
-
-          const actionTarget = target?.closest('[onclick*="window.location.href=\'/"]');
-          const action = actionTarget?.getAttribute('onclick');
-          const match = action?.match(/window\\.location\\.href='([^']+)'/);
-          if (match?.[1]?.startsWith('/')) {
-            event.preventDefault();
-            event.stopImmediatePropagation();
-            window.location.assign(withBasePath(match[1]));
-          }
-        },
-        true,
-      );
     </script>
   </body>
 </html>
