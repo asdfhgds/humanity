@@ -4,6 +4,7 @@ import asyncio
 import csv
 import gzip
 import io
+import sys
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 import httpx
@@ -17,6 +18,11 @@ from app.datastore import get_source_store, get_ingestion_run_store
 GDELT_EVENT_URL = "http://data.gdeltproject.org/events/"
 GDELT_GKG_URL = "http://data.gdeltproject.org/gkg/"
 GDELT_MASTER_URL = "http://data.gdeltproject.org/gdeltv2/masterfilelist.txt"
+
+try:
+    csv.field_size_limit(sys.maxsize)
+except OverflowError:
+    csv.field_size_limit(2**31 - 1)
 
 
 CAMEO_CODES = {

@@ -430,8 +430,8 @@ def health():
     console.print("[green]Health check complete[/green]")
 
 
-@app.command()
-def run(
+@app.command(name="legacy-run", hidden=True)
+def legacy_run(
     hours: int = typer.Option(6, help="Hours back for discovery"),
     max_events: int = typer.Option(1000, help="Max events to discover"),
     extract_limit: int = typer.Option(50, help="Max sources to extract"),
