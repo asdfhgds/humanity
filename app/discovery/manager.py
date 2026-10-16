@@ -165,23 +165,25 @@ class DiscoveryManager:
                             await adapter.close()
                         except Exception as e:
                             print(f"ReliefWeb discovery error: {e}")
-                    
-                    run.articles_seen = all_gdelt_events + total_rss_articles if 'total_rss_articles' in locals() else all_gdelt_events
-                    run.candidates_created = all_gdelt_events + (total_rss_articles if 'total_rss_articles' in locals() else 0) + (total_reliefweb_articles if 'total_reliefweb_articles' in locals() else 0)
-                    run.sources_succeeded = all_sources_created
-                    
-                    run.finished_at = datetime.utcnow()
-                    run.status = "completed"
-                    self.run_store.update(run.id, run.model_dump(mode="json"))
-                    
-                    return {
-                        "run_id": run.id,
-                        "gdelt_events": all_gdelt_events,
-                        "rss_articles_fetched": total_rss_articles if 'total_rss_articles' in locals() else 0,
-                        "reliefweb_articles_fetched": total_reliefweb_articles if 'total_reliefweb_articles' in locals() else 0,
-                        "sources_created": all_sources_created,
-                    }
-                    
+                except Exception as e:
+                    print(f"ReliefWeb discovery error: {e}")
+
+            run.articles_seen = all_gdelt_events + total_rss_articles if 'total_rss_articles' in locals() else all_gdelt_events
+            run.candidates_created = all_gdelt_events + (total_rss_articles if 'total_rss_articles' in locals() else 0) + (total_reliefweb_articles if 'total_reliefweb_articles' in locals() else 0)
+            run.sources_succeeded = all_sources_created
+
+            run.finished_at = datetime.utcnow()
+            run.status = "completed"
+            self.run_store.update(run.id, run.model_dump(mode="json"))
+
+            return {
+                "run_id": run.id,
+                "gdelt_events": all_gdelt_events,
+                "rss_articles_fetched": total_rss_articles if 'total_rss_articles' in locals() else 0,
+                "reliefweb_articles_fetched": total_reliefweb_articles if 'total_reliefweb_articles' in locals() else 0,
+                "sources_created": all_sources_created,
+            }
+
         except Exception as e:
             run.finished_at = datetime.utcnow()
             run.status = "failed"
