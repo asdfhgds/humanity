@@ -158,6 +158,7 @@ class EventPublisher:
         if event.publication_status in (PublicationStatus.HELD, PublicationStatus.REJECTED):
             # Still update global stats to reflect the change
             self._update_global_stats()
+            self._update_public_indexes()
             return {"published": False, "decision": event.publication_status.value.upper(), "scores": {}, "publication_status": event.publication_status.value}
         
         # Score the event
@@ -189,6 +190,7 @@ class EventPublisher:
             self.event_store.update(event.id, {"publication_status": PublicationStatus.HELD.value, "visibility": False})
             self._remove_public_artifacts(event)
             self._update_global_stats()
+            self._update_public_indexes()
             return {"published": False, "decision": "HOLD", "scores": {}, "publication_status": "held", "publication_reason": assessment.reasons}
         scores = self.scorer.score_event(event, sources)
         decision = decide_publish(event, scores, self.source_store)
@@ -197,6 +199,7 @@ class EventPublisher:
         if decision == "HOLD":
             self.event_store.update(event.id, {"publication_status": PublicationStatus.HELD.value})
             self._update_global_stats()
+            self._update_public_indexes()
             return {"published": False, "decision": "HOLD", "scores": scores, "publication_status": PublicationStatus.HELD.value}
         
         pub_status = PublicationStatus.PUBLISHED_WITH_WARNING if decision == "AUTO_PUBLISH_WARNING" else PublicationStatus.PUBLISHED
@@ -251,6 +254,7 @@ class EventPublisher:
         
         # Update global stats
         self._update_global_stats()
+        self._update_public_indexes()
         
         return {"published": True, "decision": decision, "scores": scores, "slug": event.slug, "publication_status": pub_status.value}
 
@@ -423,6 +427,104 @@ class EventPublisher:
         
         with open(stats_file, "w") as f:
             json.dump(stats, f, ensure_ascii=False, indent=2)
+
+    def _update_public_indexes(self) -> None:
+        """Build the collection feeds consumed by the static public site.
+
+        Individual event files are useful for detail views, but list, country,
+        conflict, and human-cost pages need stable aggregate feeds as well.  All
+        values are derived exclusively from events that passed publication.
+        """
+        published_events = sorted(
+            self.event_store.get_publicly_visible(),
+            key=lambda event: event.start_time,
+            reverse=True,
+        )
+        event_data = [self.build_event_page_data(event) for event in published_events]
+
+        def write_json(relative_path: str, payload: Any) -> None:
+            destination = self.web_data_dir / relative_path
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            with open(destination, "w", encoding="utf-8") as output:
+                json.dump(payload, output, ensure_ascii=False, indent=2)
+
+        write_json("events/all.json", event_data)
+        write_json("events/recent.json", event_data[:100])
+        for event_type in EventType:
+            write_json(
+                f"events/type/{event_type.value}.json",
+                [item for item in event_data if item["event_type"] == event_type.value],
+            )
+
+        countries: Dict[str, Dict[str, Any]] = {}
+        for event in published_events:
+            country = countries.setdefault(
+                event.country_code,
+                {
+                    "code": event.country_code,
+                    "name": event.country_name,
+                    "region": event.region or "Unknown",
+                    "events": 0,
+                    "protests": 0,
+                    "conflicts": 0,
+                    "deaths": 0,
+                    "displaced": 0,
+                    "recent": event.start_time.isoformat(),
+                },
+            )
+            country["events"] += 1
+            country["protests"] += int(event.event_type == EventType.PROTEST)
+            country["conflicts"] += int(event.event_type == EventType.CONFLICT)
+            country["deaths"] += event.deaths_max or event.deaths_min or 0
+            country["displaced"] += event.displaced_max or event.displaced_min or 0
+        write_json("countries/all.json", sorted(countries.values(), key=lambda item: item["events"], reverse=True))
+
+        conflict_groups: Dict[str, List[Event]] = {}
+        for event in published_events:
+            if event.conflict_id:
+                conflict_groups.setdefault(event.conflict_id, []).append(event)
+        conflicts = []
+        for conflict_id, events in conflict_groups.items():
+            conflicts.append(
+                {
+                    "name": conflict_id.replace("-", " ").title(),
+                    "countries": ", ".join(sorted({event.country_name for event in events})),
+                    "status": "Active" if any(event.status.value in ("developing", "ongoing") for event in events) else "Ended",
+                    "events": len(events),
+                    "deaths": sum(event.deaths_max or event.deaths_min or 0 for event in events),
+                    "displaced": sum(event.displaced_max or event.displaced_min or 0 for event in events),
+                    "since": min(event.start_time for event in events).strftime("%b %Y"),
+                    "slug": conflict_id,
+                }
+            )
+        write_json("conflicts/all.json", conflicts)
+
+        def impact_item(event: Event) -> Dict[str, Any]:
+            return {
+                "name": event.title,
+                "slug": event.slug,
+                "date": event.start_time.strftime("%Y-%m-%d"),
+                "deaths": {"min": event.deaths_min or 0, "max": event.deaths_max or event.deaths_min or 0, "sources": ["Published event records"]},
+                "injuries": {"min": event.injured_min or 0, "max": event.injured_max or event.injured_min or 0},
+                "displaced": event.displaced_max or event.displaced_min or 0,
+                "children": 0,
+                "hospitals": 0,
+                "source": "Published event records",
+            }
+
+        write_json(
+            "human-cost/global.json",
+            {
+                "total_deaths": sum(event.deaths_max or event.deaths_min or 0 for event in published_events),
+                "total_injuries": sum(event.injured_max or event.injured_min or 0 for event in published_events),
+                "total_displaced": sum(event.displaced_max or event.displaced_min or 0 for event in published_events),
+                "total_arrested": sum(event.arrested_max or event.arrested_min or 0 for event in published_events),
+                "hospitals_affected": 0,
+                "children_affected": 0,
+                "conflicts": [impact_item(event) for event in published_events if event.event_type == EventType.CONFLICT],
+                "disasters": [impact_item(event) for event in published_events if event.event_type == EventType.DISASTER],
+            },
+        )
 
     def generate_daily_brief(self) -> Dict[str, Any]:
         """Generate daily briefing."""
