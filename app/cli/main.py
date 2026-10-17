@@ -10,7 +10,7 @@ from rich.table import Table
 
 from app.discovery.manager import run_discovery
 from app.discovery.gdelt import run_gdelt_discovery
-from app.extraction.gemini import GeminiExtractor
+from app.extraction.gemini import GeminiExtractor, validate_extraction_result
 from app.clustering.cluster import EventClusterer
 from app.scoring.score import EventScorer, decide_publish
 from app.publishing.publisher import EventPublisher

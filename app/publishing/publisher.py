@@ -136,6 +136,7 @@ class EventPublisher:
             "status_label": status_map.get(event.status.value, event.status.value),
             "confidence": event.confidence.value,
             "confidence_label": confidence_map.get(event.confidence.value, event.confidence.value),
+            "publication_status": event.publication_status.value,
             "human_impact": human_impact,
             "sources": source_list,
             "claims": claims_by_type,

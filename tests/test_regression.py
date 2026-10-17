@@ -1166,6 +1166,10 @@ class TestIdempotencyAndRevisions:
         with open(event_files[0], "r", encoding="utf-8") as f:
             event_data = json.load(f)
         assert event_data["publication_status"] in ["published", "published_with_warning"]
+        with open("web/public/data/events/all.json", "r", encoding="utf-8") as f:
+            indexed_events = json.load(f)
+        indexed_event = next(item for item in indexed_events if item["id"] == event.id)
+        assert indexed_event["publication_status"] == result["publication_status"]
 
         # Verify map GeoJSON has the event
         map_file = "web/public/data/map/events.geojson"

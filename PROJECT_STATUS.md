@@ -6,7 +6,10 @@ Editorial redesign release verification — static site release gates complete.
 
 ## Status
 
-READY TO PUBLISH — live ingestion and deployment have not been verified.
+NOT READY TO DEPLOY — the merged deployment and ingestion workflows failed.
+Local corrective changes now pass the site check, build, and Python tests, but
+they have not been pushed or merged. Live ingestion has not yet been rerun
+after the corrections, and the public event feed remains empty.
 
 ## Completed
 
@@ -148,3 +151,11 @@ Phase 3, Milestone 3.1 — Live Source Verification.
 - Re-audited final output: 13 pages, 314 local references, no missing local routes/assets/fragments, and no synthetic test story. The current published event feeds are empty and map GeoJSON is an empty FeatureCollection.
 - Local browser preview after framework migration: the homepage rendered with its licensed archival lead image and correct editorial background/type. Responsive checks at 375x812 and 1280x900 found no horizontal overflow. All expected routes and local assets returned HTTP 200, the map initialized on scroll and fetched OpenStreetMap tiles, and there were no HTTP error responses or JavaScript exceptions. Browser viewport changes cancelled two in-flight requests; no assets failed.
 - All requested local validation gates now pass. This supersedes the prior Astro-advisory blocker. The static site is ready to publish; deployment was not requested or attempted. Live ingestion still depends on configured external credentials and the scheduled workflow, and the published feed is currently empty.
+
+### Post-merge workflow failure investigation (2026-10-17)
+
+- Deployment run [39033430844](https://github.com/asdfhgds/humanity/actions/runs/39033430844) failed at `npm run build`: `daily-brief.astro` and other pages imported `web/src/lib/client-utils.ts`, but the generic `.gitignore` `lib/` rule had excluded that source file from the merged commit. The deploy job was skipped.
+- Autonomous pipeline run [39029658531](https://github.com/asdfhgds/humanity/actions/runs/39029658531) successfully fetched content from 197 RSS articles and created 197 source records; GDELT returned zero articles. Gemini was configured in the workflow. Extraction began on the first of 50 sources and returned a result, but the CLI crashed with `NameError: validate_extraction_result is not defined` before validation, event creation, claim creation, or publication. No event was published or held, and the remaining extraction, state-persistence, and site-build steps were skipped. Tavily was disabled and had no key; this was not the cause of the run failure.
+- Corrective local changes: scope the Python `lib/` ignore pattern to `/lib/` so the frontend helper is included; restore event parsing, path, escaping and element helpers; import the already-existing extraction validator into the CLI; and include each event's publication status in the public index. The latter is required by Astro's static event-route filter and prevents published event links from resolving to absent pages. A regression assertion verifies the indexed status is a published status.
+- Validation after these changes: `npm run check` passed with 0 errors, warnings, or hints; `GITHUB_ACTIONS=true npm run build` passed and generated 13 pages with the current empty feed; `python -m pytest tests -q` passed (66 tests, 493 existing deprecation warnings); `python -m app.cli --help` passed. The known MapLibre chunk-size warning remains. The production run's mock-free live extraction has not been rerun.
+- These fixes are only in the local worktree; they have not been committed, pushed, or merged. No workflow was triggered and no deployment occurred. The deployment gate remains closed until the fixes reach `master`, the workflows are rerun successfully, and live publication is verified without bypassing evidence requirements.
