@@ -36,8 +36,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="mb-8">
-        <h1 class="text-3xl font-bold text-humanity-text mb-2">Live Events</h1>
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]" aria-hidden="true"></span>
+          <h1 class="text-3xl font-bold text-humanity-text mb-2">Live Events</h1>
+        </div>
         <p class="text-humanity-textMuted">All detected human events worldwide. Data updated automatically.</p>
+        <p id="events-refresh-status" class="mt-2 text-xs text-humanity-textMuted" aria-live="polite">Checking for new reports…</p>
       </div>
 
       <!-- Filters -->
@@ -59,6 +63,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
               <option value="DISASTER">Disaster</option>
               <option value="REPRESSION">Repression</option>
               <option value="HUMANITARIAN">Humanitarian</option>
+              <option value="DIPLOMACY">Diplomacy</option>
+              <option value="PEACE_PROCESS">Peace process</option>
             </select>
           </div>
           <div>
@@ -109,112 +115,90 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </div>
 
 <script>
-  let allEvents = [];
+  import { escapeHtml, eventPath, parsePublishedEvents, requireElement, sitePath, type PublishedEvent } from '../lib/client-utils';
+
+  let allEvents: PublishedEvent[] = [];
   let currentPage = 1;
   const pageSize = 20;
 
   document.addEventListener('DOMContentLoaded', async () => {
+    const requestedType = new URLSearchParams(window.location.search).get('type');
+    const typeFilter = requireElement('type-filter', 'select');
+    if (requestedType && [...typeFilter.options].some(option => option.value === requestedType)) {
+      typeFilter.value = requestedType;
+    }
     await loadEvents();
     setupFilters();
+    window.setInterval(loadEvents, 60_000);
   });
 
   async function loadEvents() {
-    const container = document.getElementById('events-container');
+    const container = requireElement('events-container', 'div');
     try {
-      // Try to load from generated data
-      const response = await fetch('/data/events/all.json');
-      if (response.ok) {
-        allEvents = await response.json();
-      } else {
-        // Fallback to mock data
-        allEvents = getMockEvents();
+      const response = await fetch(`${sitePath('data/events/all.json')}?updated=${Date.now()}`, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`Events feed request failed (${response.status})`);
+      const events = parsePublishedEvents(await response.json());
+      allEvents = events;
+      populateCountryFilter();
+      renderEvents();
+      requireElement('events-refresh-status', 'p').textContent =
+        `Checked ${new Date().toLocaleTimeString()} · refreshes every minute`;
+    } catch (error) {
+      console.error('Could not refresh published events:', error);
+      requireElement('events-refresh-status', 'p').textContent =
+        allEvents.length ? 'Could not refresh; showing the latest available reports.' : 'Live reports are temporarily unavailable.';
+      if (!allEvents.length) {
+        container.innerHTML = '<div class="card p-8 text-center text-humanity-textMuted">The live events feed is temporarily unavailable. Please try again shortly.</div>';
       }
-      populateCountryFilter();
-      renderEvents();
-    } catch {
-      allEvents = getMockEvents();
-      populateCountryFilter();
-      renderEvents();
     }
   }
 
-  function getMockEvents() {
-    return [
-      {
-        id: '1', slug: '2026/10/08/protest-paris-france', title: 'Nationwide protests across France over pension reform',
-        event_type: 'PROTEST', country_name: 'France', country_code: 'FR', city: 'Paris',
-        start_time: '2026-10-08T10:00:00Z', severity: 6, confidence: 'HIGH',
-        sources: [{}, {}, {}], summary: 'Hundreds of thousands demonstrate in Paris, Lyon, Marseille...',
-        human_impact: { participants: '12,000–20,000', injuries: '14', arrests: '7' }
-      },
-      {
-        id: '2', slug: '2026/10/08/conflict-sudan-khartoum', title: 'Intense fighting in Khartoum enters third week',
-        event_type: 'CONFLICT', country_name: 'Sudan', country_code: 'SD', city: 'Khartoum',
-        start_time: '2026-10-08T06:00:00Z', severity: 9, confidence: 'HIGH',
-        sources: [{}, {}, {}, {}], summary: 'RSF and SAF continue heavy artillery exchanges...',
-        human_impact: { deaths: '45–67', injuries: '120–180' }
-      },
-      {
-        id: '3', slug: '2026/10/08/airstrike-gaza-city', title: 'Airstrike on residential building in Gaza City',
-        event_type: 'ATTACK', country_name: 'Palestine', country_code: 'PS', city: 'Gaza City',
-        start_time: '2026-10-08T02:30:00Z', severity: 8, confidence: 'MEDIUM',
-        sources: [{}, {}], summary: 'Israeli airstrike hits multi-story residential building...',
-        human_impact: { deaths: '23–31', injuries: '45–52' }
-      },
-      {
-        id: '4', slug: '2026/10/07/displacement-congo-goma', title: 'Mass displacement near Goma as M23 advances',
-        event_type: 'DISPLACEMENT', country_name: 'DR Congo', country_code: 'CD', city: 'Goma',
-        start_time: '2026-10-07T14:00:00Z', severity: 8, confidence: 'HIGH',
-        sources: [{}, {}], summary: 'Over 150,000 people flee fighting between M23 rebels and FARDC...',
-        human_impact: { displaced: '150,000–180,000' }
-      },
-      {
-        id: '5', slug: '2026/10/07/earthquake-afghanistan-herat', title: 'Magnitude 6.3 earthquake strikes western Afghanistan',
-        event_type: 'DISASTER', country_name: 'Afghanistan', country_code: 'AF', city: 'Herat',
-        start_time: '2026-10-07T11:30:00Z', severity: 9, confidence: 'VERIFIED',
-        sources: [{}, {}, {}], summary: 'Powerful quake destroys villages in Herat province...',
-        human_impact: { deaths: '2,000–2,400', injuries: '9,000–12,000' }
-      }
-    ];
-  }
-
   function populateCountryFilter() {
-    const select = document.getElementById('country-filter');
-    const countries = [...new Set(allEvents.map(e => e.country_name).filter(Boolean))].sort();
+    const select = requireElement('country-filter', 'select');
+    const selectedCountry = select.value;
+    select.length = 1;
+    const countries = [...new Set(allEvents.map(e => e.country_name).filter((country): country is string => Boolean(country)))].sort();
     countries.forEach(country => {
       const option = document.createElement('option');
       option.value = country;
       option.textContent = country;
       select.appendChild(option);
     });
+    select.value = selectedCountry;
   }
 
   function setupFilters() {
     const filters = ['search-input', 'type-filter', 'country-filter', 'severity-filter', 'date-filter'];
     filters.forEach(id => {
-      document.getElementById(id).addEventListener('input', () => {
+      requireElement(id, id === 'search-input' ? 'input' : 'select').addEventListener('input', () => {
         currentPage = 1;
         renderEvents();
       });
     });
+    requireElement('pagination', 'div').addEventListener('click', (event) => {
+      if (!(event.target instanceof Element)) return;
+      const button = event.target.closest<HTMLButtonElement>('button[data-page]');
+      if (!button || button.disabled) return;
+      changePage(Number(button.dataset.page));
+    });
   }
 
   function getFilteredEvents() {
-    const search = document.getElementById('search-input').value.toLowerCase();
-    const type = document.getElementById('type-filter').value;
-    const country = document.getElementById('country-filter').value;
-    const severity = document.getElementById('severity-filter').value;
-    const dateRange = document.getElementById('date-filter').value;
+    const search = requireElement('search-input', 'input').value.toLowerCase();
+    const type = requireElement('type-filter', 'select').value;
+    const country = requireElement('country-filter', 'select').value;
+    const severity = requireElement('severity-filter', 'select').value;
+    const dateRange = requireElement('date-filter', 'select').value;
 
     return allEvents.filter(event => {
-      if (search && !event.title.toLowerCase().includes(search) && 
-          !event.city?.toLowerCase().includes(search) && 
-          !event.country_name.toLowerCase().includes(search)) {
+      if (search && !String(event.title || '').toLowerCase().includes(search) &&
+          !String(event.city || '').toLowerCase().includes(search) &&
+          !String(event.country_name || '').toLowerCase().includes(search)) {
         return false;
       }
       if (type && event.event_type !== type) return false;
       if (country && event.country_name !== country) return false;
-      if (severity && event.severity < parseInt(severity)) return false;
+      if (severity && (event.severity ?? 0) < parseInt(severity)) return false;
       if (dateRange) {
         const eventDate = new Date(event.start_time);
         const cutoff = new Date();
@@ -222,15 +206,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         if (eventDate < cutoff) return false;
       }
       return true;
-    }).sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+    }).sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
   }
 
   function renderEvents() {
-    const container = document.getElementById('events-container');
-    const pagination = document.getElementById('pagination');
+    const container = requireElement('events-container', 'div');
+    const pagination = requireElement('pagination', 'div');
     const filtered = getFilteredEvents();
     
     const totalPages = Math.ceil(filtered.length / pageSize);
+    currentPage = totalPages ? Math.min(currentPage, totalPages) : 1;
     const start = (currentPage - 1) * pageSize;
     const pageEvents = filtered.slice(start, start + pageSize);
 
@@ -245,83 +230,80 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       return;
     }
 
-    container.innerHTML = pageEvents.map(event => `
-      <article class="event-card event-card-${event.event_type.toLowerCase()} p-4">
-        <div class="flex items-start gap-4">
-          <div class="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center text-xl" style="background: ${getEventColor(event.event_type)}20;">
-            <span>${getEventIcon(event.event_type)}</span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 mb-1">
-              <h3 class="font-semibold text-humanity-text truncate">
-                <a href="/event/${event.slug}" class="link hover:text-humanity-accent">${event.title}</a>
-              </h3>
-              <span class="badge-${event.event_type.toLowerCase()}">${getEventTypeLabel(event.event_type)}</span>
-              <span class="badge-confidence-${event.confidence.toLowerCase()}">${event.confidence}</span>
+    container.innerHTML = pageEvents.map(event => {
+      const href = eventPath(event.slug);
+      const eventTitle = href
+        ? `<a href="${href}" class="hover:text-humanity-accent">${escapeHtml(event.title)}</a>`
+        : escapeHtml(event.title);
+      const eventType = String(event.event_type || 'EVENT');
+      const eventTypeLabel = escapeHtml(getEventTypeLabel(eventType));
+      const confidence = String(event.confidence || 'LOW');
+      return `
+        <article class="overflow-hidden rounded-2xl border border-humanity-border bg-humanity-card transition-colors hover:border-humanity-accent/40">
+          <div class="grid md:grid-cols-[minmax(12rem,0.85fr)_1.5fr]">
+            <div class="relative flex min-h-52 items-end overflow-hidden bg-gradient-to-br from-humanity-accent/20 via-humanity-darker to-humanity-card p-5">
+              <div class="absolute inset-0 opacity-30" aria-hidden="true" style="background-image: radial-gradient(circle at 70% 25%, rgba(200,210,220,.32) 0 1px, transparent 2px), linear-gradient(135deg, transparent 45%, rgba(200,210,220,.12) 46%, transparent 47%); background-size: 26px 26px, 100% 100%;"></div>
+              <span class="relative rounded-full border border-white/15 bg-black/30 px-3 py-1 text-xs font-medium text-white">${eventTypeLabel} · Illustrative category art</span>
             </div>
-            <div class="flex items-center gap-4 text-sm text-humanity-textMuted mb-2">
-              <span>📍 ${event.city || 'Unknown'}, ${event.country_name}</span>
-              <span>📅 ${formatDate(event.start_time)}</span>
-              <span>📰 ${event.sources?.length || 0} sources</span>
-              <span>Severity: ${event.severity}/10</span>
+            <div class="min-w-0 p-5 sm:p-6">
+              <div class="mb-3 flex flex-wrap items-center gap-2">
+                <span class="badge-${escapeHtml(eventType.toLowerCase())}">${eventTypeLabel}</span>
+                <span class="badge-confidence-${escapeHtml(confidence.toLowerCase())}">${escapeHtml(event.confidence || 'Reported')}</span>
+                <span class="text-xs text-humanity-textMuted">Severity ${Number.isFinite(event.severity) ? event.severity : '—'}/10</span>
+              </div>
+              <h2 class="text-xl font-semibold leading-snug text-humanity-text">${eventTitle}</h2>
+              <p class="mt-2 text-sm leading-relaxed text-humanity-textMuted line-clamp-3">${escapeHtml(event.summary || 'Details are still emerging.')}</p>
+              <div class="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-humanity-textMuted">
+                <span>${escapeHtml([event.city, event.country_name].filter(Boolean).join(', ') || 'Location unconfirmed')}</span>
+                <span>${escapeHtml(formatDate(event.start_time))}</span>
+                <span>${Number.isSafeInteger(event.sources?.length) ? event.sources?.length : 0} sources</span>
+              </div>
+              ${renderHumanImpact(event)}
             </div>
-            <p class="text-sm text-humanity-textMuted line-clamp-2">${event.summary || 'No summary available.'}</p>
-            ${renderHumanImpact(event)}
           </div>
-        </div>
-      </article>
-    `).join('');
+        </article>
+      `;
+    }).join('');
 
     // Pagination
     if (totalPages > 1) {
       pagination.innerHTML = `
-        <button ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(${currentPage - 1})" class="btn-secondary">Previous</button>
+        <button data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''} class="btn-secondary">Previous</button>
         <span class="px-4 text-humanity-textMuted">Page ${currentPage} of ${totalPages}</span>
-        <button ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${currentPage + 1})" class="btn-secondary">Next</button>
+        <button data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''} class="btn-secondary">Next</button>
       `;
     } else {
       pagination.innerHTML = '';
     }
   }
 
-  function changePage(page) {
+  function changePage(page: number) {
     currentPage = page;
     renderEvents();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function renderHumanImpact(event) {
+  function renderHumanImpact(event: PublishedEvent) {
     const impacts = event.human_impact || {};
     const parts = [];
-    if (impacts.deaths) parts.push(`<span class="text-red-400">☠ ${impacts.deaths}</span>`);
-    if (impacts.injuries) parts.push(`<span class="text-orange-400">🤕 ${impacts.injuries}</span>`);
-    if (impacts.arrests) parts.push(`<span class="text-violet-400">🚔 ${impacts.arrests}</span>`);
-    if (impacts.displaced) parts.push(`<span class="text-amber-400">🏃 ${impacts.displaced}</span>`);
-    if (impacts.participants) parts.push(`<span class="text-blue-400">✊ ${impacts.participants}</span>`);
+    if (impacts.deaths) parts.push(`<span class="text-red-400">☠ ${escapeHtml(impacts.deaths)}</span>`);
+    if (impacts.injuries) parts.push(`<span class="text-orange-400">🤕 ${escapeHtml(impacts.injuries)}</span>`);
+    if (impacts.arrests) parts.push(`<span class="text-violet-400">🚔 ${escapeHtml(impacts.arrests)}</span>`);
+    if (impacts.displaced) parts.push(`<span class="text-amber-400">🏃 ${escapeHtml(impacts.displaced)}</span>`);
+    if (impacts.participants) parts.push(`<span class="text-blue-400">✊ ${escapeHtml(impacts.participants)}</span>`);
     if (parts.length === 0) return '';
     return `<div class="flex flex-wrap gap-3 mt-2">${parts.join('')}</div>`;
   }
 
-  function getEventIcon(type) {
-    const icons = { PROTEST: '✊', CONFLICT: '⚔️', ATTACK: '💥', CASUALTY: '☠️', DISPLACEMENT: '🏃', DISASTER: '🌪️', REPRESSION: '🚔', HUMANITARIAN: '🏥' };
-    return icons[type] || '📍';
+  function getEventTypeLabel(type: string) {
+    const labels: Record<string, string> = { PROTEST: 'Protest', CONFLICT: 'Conflict', ATTACK: 'Attack', CASUALTY: 'Casualty', DISPLACEMENT: 'Displacement', DISASTER: 'Disaster', REPRESSION: 'Repression', HUMANITARIAN: 'Humanitarian', DIPLOMACY: 'Diplomacy', PEACE_PROCESS: 'Peace process' };
+    return labels[type] || String(type || 'Event');
   }
 
-  function getEventColor(type) {
-    const colors = { PROTEST: '#3b82f6', CONFLICT: '#ef4444', ATTACK: '#dc2626', CASUALTY: '#b91c1c', DISPLACEMENT: '#f97316', DISASTER: '#0ea5e9', REPRESSION: '#7c3aed', HUMANITARIAN: '#10b981' };
-    return colors[type] || '#888888';
-  }
-
-  function getEventTypeLabel(type) {
-    const labels = { PROTEST: 'Protest', CONFLICT: 'Conflict', ATTACK: 'Attack', CASUALTY: 'Casualty', DISPLACEMENT: 'Displacement', DISASTER: 'Disaster', REPRESSION: 'Repression', HUMANITARIAN: 'Humanitarian' };
-    return labels[type] || type;
-  }
-
-  function formatDate(dateStr) {
+  function formatDate(dateStr: string | undefined) {
     if (!dateStr) return 'Unknown';
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
-  // Make changePage global
-  window.changePage = changePage;
 </script>
+</BaseLayout>

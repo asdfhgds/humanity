@@ -442,7 +442,7 @@ class TestExtraction:
 # ===== Integration Tests =====
 
 class TestIntegration:
-    def test_full_pipeline_mock(self, event_store, source_store, claim_store):
+    def test_full_pipeline_mock(self, event_store, source_store, claim_store, isolated_publication_paths):
         """Test the full pipeline with mock data."""
         import os, shutil
         # Clear global data directories
@@ -518,7 +518,7 @@ class TestIntegration:
         assert event_data["human_impact"]["deaths"] == format_range(50, 70)
         assert len(event_data["sources"]) == 3
     
-    def test_conflict_resolution_conflicting_claims(self, event_store, source_store, claim_store):
+    def test_conflict_resolution_conflicting_claims(self, event_store, source_store, claim_store, isolated_publication_paths):
         """Test that conflicting casualty reports are preserved."""
         import os, shutil
         # Clear global data directories
@@ -663,7 +663,7 @@ class TestIntegration:
 class TestPublicationBoundary:
     """Tests to verify HELD/REJECTED events never leak into public outputs."""
 
-    def test_held_event_excluded_from_public_outputs(self, event_store, source_store, claim_store):
+    def test_held_event_excluded_from_public_outputs(self, event_store, source_store, claim_store, isolated_publication_paths):
         """Events with HOLD decision must not appear in any public artifact."""
         import os, shutil, json, glob
         # Clear global data directories
@@ -720,7 +720,7 @@ class TestPublicationBoundary:
         assert result["publication_status"] == "held"
 
         # Verify NO public artifacts were created for this event
-        event_files = glob.glob("web/public/data/events/*.json")
+        event_files = glob.glob("web/public/data/events/????_??_??_*.json")
         assert len(event_files) == 0, f"Expected 0 event files, got {len(event_files)}: {event_files}"
 
         # Verify map GeoJSON doesn't contain this event
@@ -738,7 +738,7 @@ class TestPublicationBoundary:
                 stats = json.load(f)
             assert stats["total_events"] == 0, f"Stats should be 0, got {stats['total_events']}"
 
-    def test_auto_publish_event_included_in_public_outputs(self, event_store, source_store, claim_store):
+    def test_auto_publish_event_included_in_public_outputs(self, event_store, source_store, claim_store, isolated_publication_paths):
         """Events with AUTO_PUBLISH decision must appear in public artifacts."""
         import os, shutil, json, glob
         # Clear global data directories
@@ -804,7 +804,7 @@ class TestPublicationBoundary:
         assert result["publication_status"] in ["published", "published_with_warning"]
 
         # Verify event page was created
-        event_files = glob.glob("web/public/data/events/*.json")
+        event_files = glob.glob("web/public/data/events/????_??_??_*.json")
         assert len(event_files) >= 1, f"Expected at least 1 event file, got {len(event_files)}"
 
         # Verify event appears in map GeoJSON
@@ -829,7 +829,7 @@ class TestPublicationBoundary:
             country_data = json.load(f)
         assert country_data["event_count"] >= 1, f"Country index should count event, got {country_data['event_count']}"
 
-    def test_published_with_warning_event_shows_uncertainty(self, event_store, source_store, claim_store):
+    def test_published_with_warning_event_shows_uncertainty(self, event_store, source_store, claim_store, isolated_publication_paths):
         """Events with AUTO_PUBLISH_WARNING must show uncertainty in public output."""
         import os, shutil, json, glob
         # Clear global data directories
@@ -890,14 +890,14 @@ class TestPublicationBoundary:
         assert result["publication_status"] == "published_with_warning"
 
         # Verify event page has publish_warning flag
-        event_files = glob.glob("web/public/data/events/*.json")
+        event_files = glob.glob("web/public/data/events/????_??_??_*.json")
         assert len(event_files) >= 1
         with open(event_files[0], "r", encoding="utf-8") as f:
             event_data = json.load(f)
         assert event_data.get("publish_warning") is True, "Published with warning event should have publish_warning=True"
         assert event_data.get("publication_status") == "published_with_warning"
 
-    def test_held_events_do_not_affect_public_counters(self, event_store, source_store, claim_store):
+    def test_held_events_do_not_affect_public_counters(self, event_store, source_store, claim_store, isolated_publication_paths):
         """HELD events must not increment public counters or summaries."""
         import os, shutil, json
         # Clear global data directories
@@ -1010,7 +1010,7 @@ class TestPublicationBoundary:
 class TestIdempotencyAndRevisions:
     """Tests for idempotency and publication revision handling."""
 
-    def test_idempotent_ingestion_updates_not_duplicates(self, event_store, source_store, claim_store):
+    def test_idempotent_ingestion_updates_not_duplicates(self, event_store, source_store, claim_store, isolated_publication_paths):
         """Re-ingestion with same canonical_id updates existing event, no duplicates."""
         import os, shutil
         # Clear global data directories
@@ -1100,7 +1100,10 @@ class TestIdempotencyAndRevisions:
         assert updated.deaths_max == 250
         assert updated.publication_status in ["published", "published_with_warning"]
 
-    def test_publication_status_change_updates_all_artifacts(self, event_store, source_store, claim_store):
+    @pytest.mark.parametrize("publication_status", ["held", "rejected"])
+    def test_publication_status_change_updates_all_artifacts(
+        self, event_store, source_store, claim_store, isolated_publication_paths, publication_status
+    ):
         """When publication status changes, all public artifacts update consistently."""
         import os, shutil, json
         # Clear global data directories
@@ -1158,7 +1161,7 @@ class TestIdempotencyAndRevisions:
         assert result["publication_status"] in ["published", "published_with_warning"]
 
         # Verify event page exists
-        event_files = glob.glob("web/public/data/events/*.json")
+        event_files = glob.glob("web/public/data/events/????_??_??_*.json")
         assert len(event_files) == 1
         with open(event_files[0], "r", encoding="utf-8") as f:
             event_data = json.load(f)
@@ -1172,23 +1175,27 @@ class TestIdempotencyAndRevisions:
         assert event.id in feature_ids
 
         # Now simulate status change to HELD (e.g., new evidence contradicts)
-        event_store.update(event.id, {"publication_status": "held", "visibility": False})
+        event_store.update(event.id, {"publication_status": publication_status, "visibility": False})
 
         # Re-publish should not create new artifacts for HELD event
         updated_event = event_store.get(event.id)
         result = publisher.publish_event(updated_event)
         assert result["published"] is False
-        assert result["decision"] == "HELD"
-        assert result["publication_status"] == "held"
+        assert result["decision"] == publication_status.upper()
+        assert result["publication_status"] == publication_status
 
-        # Verify event page still exists (it was already created) but status is updated
-        # The publisher doesn't delete existing files, but new HELD events won't create new ones
-        # Map should still have the feature (historical record), but stats should exclude it
+        # A status change must remove every generated public reference to the event.
+        assert not os.path.exists(event_files[0])
         stats_file = "web/public/data/stats/global.json"
         with open(stats_file, "r", encoding="utf-8") as f:
             stats = json.load(f)
-        # Stats should only count publicly visible events
         assert stats["total_events"] == 0, f"Stats should be 0 after event held, got {stats['total_events']}"
+        with open("web/public/data/events/all.json", "r", encoding="utf-8") as f:
+            assert json.load(f) == []
+        with open(map_file, "r", encoding="utf-8") as f:
+            assert json.load(f)["features"] == []
+        assert not os.path.exists("web/public/data/countries/us.json")
+        assert not os.path.exists("web/public/data/timelines/us.json")
 
 
 if __name__ == "__main__":

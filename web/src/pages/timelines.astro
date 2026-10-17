@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import StoryImage from '../components/StoryImage.astro';
 ---
 
 <BaseLayout title="Timelines | HUMANITY" description="Chronological timelines of human events by country, conflict, and topic. Filter by event type, severity, and date range.">
@@ -35,12 +36,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     </header>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-humanity-text mb-2 flex items-center gap-3">
-          <span style="color: #7c3aed;">📅</span>
-          Timelines
-        </h1>
-        <p class="text-humanity-textMuted">Chronological views of human events. Filter by country, conflict, event type, and date range.</p>
+      <div class="mb-8 grid items-center gap-6 border-b border-humanity-border pb-8 sm:grid-cols-[1fr_22rem]">
+        <div><p class="eyebrow">Chronology and change</p><h1 class="editorial-title mt-2 text-4xl font-semibold">Timelines</h1>
+        <p class="mt-3 text-humanity-textMuted">Follow published event records by place, type and date. Filters narrow the monitored record; they do not represent a complete history.</p>
+        <p id="timeline-refresh-status" class="mt-2 text-xs text-humanity-textMuted" aria-live="polite">Checking the event feed…</p></div>
+        <StoryImage image="conflict" />
       </div>
 
       <!-- Timeline Selector -->
@@ -133,99 +133,104 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </div>
 
 <script>
+  import { escapeHtml, eventPath, parsePublishedEvents, requireElement, sitePath, type PublishedEvent } from '../lib/client-utils';
+
   let currentTimeline = 'global';
-  let allEvents = [];
+  interface TimelineEvent extends PublishedEvent {
+    date: string;
+    type: string;
+    location: string;
+    deaths?: unknown;
+    injuries?: unknown;
+    displaced?: unknown;
+  }
+  let allEvents: TimelineEvent[] = [];
   let currentPage = 1;
   const pageSize = 50;
 
   document.addEventListener('DOMContentLoaded', async () => {
     await loadTimeline('global');
     setupFilters();
+    window.setInterval(() => loadTimeline(currentTimeline), 60_000);
   });
 
   function setupFilters() {
-    document.getElementById('timeline-select').addEventListener('change', (e) => {
-      currentTimeline = e.target.value;
+    requireElement('timeline-select', 'select').addEventListener('change', (event) => {
+      if (!(event.currentTarget instanceof HTMLSelectElement)) return;
+      currentTimeline = event.currentTarget.value;
       currentPage = 1;
       loadTimeline(currentTimeline);
     });
     ['type-filter', 'year-filter', 'severity-filter'].forEach(id => {
-      document.getElementById(id).addEventListener('change', () => {
+      requireElement(id, 'select').addEventListener('change', () => {
         currentPage = 1;
         renderTimeline();
       });
     });
+    requireElement('timeline-pagination', 'div').addEventListener('click', (event) => {
+      if (!(event.target instanceof Element)) return;
+      const button = event.target.closest<HTMLButtonElement>('button[data-page]');
+      if (button && !button.disabled) changePage(Number(button.dataset.page));
+    });
   }
 
-  async function loadTimeline(timelineId) {
-    const tbody = document.getElementById('timeline-body');
+  async function loadTimeline(timelineId: string) {
+    const tbody = requireElement('timeline-body', 'tbody');
     tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-humanity-textMuted">Loading timeline...</td></tr>';
     
     try {
-      const response = await fetch(`/data/timelines/${timelineId}.json`);
-      if (response.ok) {
-        allEvents = await response.json();
-      } else {
-        allEvents = getMockTimeline(timelineId);
+      const response = await fetch(`${sitePath('data/events/all.json')}?updated=${Date.now()}`, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`Timeline feed request failed (${response.status})`);
+      const events = parsePublishedEvents(await response.json());
+      const countryCodes: Record<string, string> = {
+        ukraine: 'UA', gaza: 'PS', sudan: 'SD', myanmar: 'MM', syria: 'SY',
+        france: 'FR', iran: 'IR', afghanistan: 'AF', drc: 'CD',
+      };
+      const countryCode = countryCodes[timelineId];
+      allEvents = events
+        .filter(event => !countryCode || event.country_code === countryCode)
+        .map(event => ({
+          ...event,
+          date: event.start_time?.slice(0, 10) || '',
+          type: event.event_type,
+          location: [event.city, event.country_name].filter(Boolean).join(', ') || 'Location unconfirmed',
+          deaths: event.human_impact?.deaths,
+          injuries: event.human_impact?.injuries,
+          displaced: event.human_impact?.displaced,
+        }));
+      renderTimeline();
+      requireElement('timeline-refresh-status', 'p').textContent =
+        `Checked ${new Date().toLocaleTimeString()} · refreshes every minute`;
+    } catch (error) {
+      console.error('Could not refresh published timeline:', error);
+      requireElement('timeline-refresh-status', 'p').textContent =
+        allEvents.length ? 'Could not refresh; showing the latest available reports.' : 'Timeline data is temporarily unavailable.';
+      if (!allEvents.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-humanity-textMuted">The timeline feed is temporarily unavailable.</td></tr>';
       }
-      renderTimeline();
-    } catch {
-      allEvents = getMockTimeline(timelineId);
-      renderTimeline();
     }
   }
 
-  function getMockTimeline(timelineId) {
-    const timelines = {
-      global: [
-        { date: '2026-10-08', title: 'Nationwide protests across France over pension reform', type: 'PROTEST', severity: 6, location: 'Paris, France', deaths: 0, injuries: 14, displaced: 0 },
-        { date: '2026-10-08', title: 'Intense fighting in Khartoum enters third week', type: 'CONFLICT', severity: 9, location: 'Khartoum, Sudan', deaths: 56, injuries: 150, displaced: 0 },
-        { date: '2026-10-08', title: 'Airstrike on residential building in Gaza City', type: 'ATTACK', severity: 8, location: 'Gaza City, Palestine', deaths: 27, injuries: 48, displaced: 0 },
-        { date: '2026-10-07', title: 'Magnitude 6.3 earthquake strikes western Afghanistan', type: 'DISASTER', severity: 9, location: 'Herat, Afghanistan', deaths: 2200, injuries: 10500, displaced: 50000 },
-        { date: '2026-10-07', title: 'Mass displacement near Goma as M23 advances', type: 'DISPLACEMENT', severity: 8, location: 'Goma, DR Congo', deaths: 0, injuries: 0, displaced: 165000 },
-        { date: '2026-10-07', title: 'General strike paralyzes Buenos Aires over inflation', type: 'PROTEST', severity: 7, location: 'Buenos Aires, Argentina', deaths: 0, injuries: 0, displaced: 0 },
-        { date: '2026-10-06', title: 'Climate activists block highways in Berlin', type: 'PROTEST', severity: 4, location: 'Berlin, Germany', deaths: 0, injuries: 0, displaced: 0 },
-        { date: '2026-10-05', title: 'Indigenous rights march in São Paulo', type: 'PROTEST', severity: 5, location: 'São Paulo, Brazil', deaths: 0, injuries: 0, displaced: 0 },
-        { date: '2026-10-05', title: 'M23 rebels capture strategic town in North Kivu', type: 'CONFLICT', severity: 7, location: 'North Kivu, DR Congo', deaths: 34, injuries: 78, displaced: 12000 },
-        { date: '2026-10-04', title: 'Mass arrests of opposition activists in Minsk', type: 'REPRESSION', severity: 6, location: 'Minsk, Belarus', deaths: 0, injuries: 12, displaced: 0 },
-      ],
-      ukraine: [
-        { date: '2026-10-08', title: 'Russian missile strikes on Kyiv energy infrastructure', type: 'ATTACK', severity: 7, location: 'Kyiv, Ukraine', deaths: 12, injuries: 45, displaced: 0 },
-        { date: '2026-10-07', title: 'Ukrainian counteroffensive advances near Bakhmut', type: 'CONFLICT', severity: 8, location: 'Bakhmut, Ukraine', deaths: 89, injuries: 234, displaced: 0 },
-        { date: '2026-10-05', title: 'Drone attack on Moscow oil refinery', type: 'ATTACK', severity: 6, location: 'Moscow, Russia', deaths: 0, injuries: 3, displaced: 0 },
-        { date: '2026-10-03', title: 'Zelenskyy visits frontline positions in Donetsk', type: 'HUMANITARIAN', severity: 4, location: 'Donetsk, Ukraine', deaths: 0, injuries: 0, displaced: 0 },
-        { date: '2026-10-01', title: 'UN reports 10,000+ civilian deaths since 2022', type: 'CASUALTY', severity: 8, location: 'Ukraine', deaths: 10000, injuries: 20000, displaced: 0 },
-      ],
-      gaza: [
-        { date: '2026-10-08', title: 'Airstrike on residential building in Gaza City', type: 'ATTACK', severity: 8, location: 'Gaza City, Palestine', deaths: 27, injuries: 48, displaced: 0 },
-        { date: '2026-10-07', title: 'Ground offensive expands in northern Gaza', type: 'CONFLICT', severity: 9, location: 'Northern Gaza', deaths: 156, injuries: 340, displaced: 50000 },
-        { date: '2026-10-06', title: 'Hospital siege ends after 14 days', type: 'HUMANITARIAN', severity: 7, location: 'Al-Shifa Hospital, Gaza', deaths: 45, injuries: 120, displaced: 0 },
-        { date: '2026-10-04', title: 'Aid convoy reaches northern Gaza after weeks', type: 'HUMANITARIAN', severity: 5, location: 'Gaza', deaths: 0, injuries: 0, displaced: 0 },
-        { date: '2026-10-02', title: 'UNRWA school shelter hit, dozens killed', type: 'ATTACK', severity: 8, location: 'Nuseirat, Gaza', deaths: 34, injuries: 78, displaced: 0 },
-      ]
-    };
-    return timelines[timelineId] || timelines.global;
-  }
-
   function getFilteredEvents() {
-    const type = document.getElementById('type-filter').value;
-    const year = document.getElementById('year-filter').value;
-    const severity = document.getElementById('severity-filter').value;
+    const type = requireElement('type-filter', 'select').value;
+    const year = requireElement('year-filter', 'select').value;
+    const severity = requireElement('severity-filter', 'select').value;
 
     return allEvents.filter(event => {
       if (type && event.type !== type) return false;
       if (year && !event.date.startsWith(year)) return false;
-      if (severity && event.severity < parseInt(severity)) return false;
+      if (severity && (event.severity ?? 0) < parseInt(severity)) return false;
       return true;
-    }).sort((a, b) => new Date(b.date) - new Date(a.date));
+    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
 
   function renderTimeline() {
-    const tbody = document.getElementById('timeline-body');
-    const pagination = document.getElementById('timeline-pagination');
+    const tbody = requireElement('timeline-body', 'tbody');
+    const pagination = requireElement('timeline-pagination', 'div');
     const filtered = getFilteredEvents();
     
     const totalPages = Math.ceil(filtered.length / pageSize);
+    currentPage = totalPages ? Math.min(currentPage, totalPages) : 1;
     const start = (currentPage - 1) * pageSize;
     const pageEvents = filtered.slice(start, start + pageSize);
 
@@ -235,67 +240,75 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       return;
     }
 
-    tbody.innerHTML = pageEvents.map(event => `
-      <tr class="hover:bg-humanity-card/50" onclick="window.location.href='/event/${event.slug || `2026/10/08/${event.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 60)}`}'">
-        <td class="p-4 text-humanity-textMuted font-mono">${formatDate(event.date)}</td>
-        <td class="p-4">
-          <a href="/event/${event.slug || `2026/10/08/${event.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 60)}`}" class="link hover:text-humanity-accent font-medium">${event.title}</a>
-        </td>
-        <td class="p-4"><span class="badge-${event.type.toLowerCase()}">${getTypeLabel(event.type)}</span></td>
-        <td class="p-4">
-          <span class="px-2 py-1 rounded text-xs font-medium" style="background: ${getSeverityColor(event.severity)}20; color: ${getSeverityColor(event.severity)}; border: 1px solid ${getSeverityColor(event.severity)}40;">
-            ${event.severity}/10
-          </span>
-        </td>
-        <td class="p-4 text-humanity-textMuted">${event.location}</td>
-        <td class="p-4 text-sm">
-          ${renderImpact(event)}
-        </td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = pageEvents.map(event => {
+      const eventUrl = eventPath(event.slug);
+      const eventType = String(event.type || 'EVENT');
+      const eventTypeClass = escapeHtml(eventType.toLowerCase());
+      const eventTitle = escapeHtml(event.title);
+      return `
+        <tr class="hover:bg-humanity-card/50">
+          <td class="p-4 text-humanity-textMuted font-mono">${escapeHtml(formatDate(event.date))}</td>
+          <td class="p-4">
+            ${eventUrl
+              ? `<a href="${eventUrl}" class="link hover:text-humanity-accent font-medium">${eventTitle}</a>`
+              : `<span class="font-medium">${eventTitle}</span>`}
+          </td>
+          <td class="p-4"><span class="badge-${eventTypeClass}">${escapeHtml(getTypeLabel(eventType))}</span></td>
+          <td class="p-4">
+            <span class="px-2 py-1 rounded text-xs font-medium" style="background: ${getSeverityColor(event.severity)}20; color: ${getSeverityColor(event.severity)}; border: 1px solid ${getSeverityColor(event.severity)}40;">
+              ${Number.isFinite(event.severity) ? event.severity : '—'}/10
+            </span>
+          </td>
+          <td class="p-4 text-humanity-textMuted">${escapeHtml(event.location)}</td>
+          <td class="p-4 text-sm">
+            ${renderImpact(event)}
+          </td>
+        </tr>
+      `;
+    }).join('');
 
     if (totalPages > 1) {
       pagination.innerHTML = `
-        <button ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(${currentPage - 1})" class="btn-secondary text-sm">Previous</button>
+        <button data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''} class="btn-secondary text-sm">Previous</button>
         <span class="px-4 text-humanity-textMuted text-sm">Page ${currentPage} of ${totalPages} (${filtered.length} events)</span>
-        <button ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${currentPage + 1})" class="btn-secondary text-sm">Next</button>
+        <button data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''} class="btn-secondary text-sm">Next</button>
       `;
     } else {
       pagination.innerHTML = '';
     }
   }
 
-  function changePage(page) {
+  function changePage(page: number) {
     currentPage = page;
     renderTimeline();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function renderImpact(event) {
+  function renderImpact(event: TimelineEvent) {
     const parts = [];
-    if (event.deaths > 0) parts.push(`<span class="text-red-400">☠ ${event.deaths.toLocaleString()}</span>`);
-    if (event.injuries > 0) parts.push(`<span class="text-orange-400">🤕 ${event.injuries.toLocaleString()}</span>`);
-    if (event.displaced > 0) parts.push(`<span class="text-amber-400">🏃 ${event.displaced.toLocaleString()}</span>`);
+    if (event.deaths) parts.push(`<span class="text-red-400">☠ ${escapeHtml(event.deaths)}</span>`);
+    if (event.injuries) parts.push(`<span class="text-orange-400">🤕 ${escapeHtml(event.injuries)}</span>`);
+    if (event.displaced) parts.push(`<span class="text-amber-400">🏃 ${escapeHtml(event.displaced)}</span>`);
     return parts.join(' ') || '<span class="text-humanity-textMuted">—</span>';
   }
 
-  function getTypeLabel(type) {
-    const labels = { PROTEST: 'Protest', CONFLICT: 'Conflict', ATTACK: 'Attack', CASUALTY: 'Casualty', DISPLACEMENT: 'Displacement', DISASTER: 'Disaster', REPRESSION: 'Repression', HUMANITARIAN: 'Humanitarian' };
-    return labels[type] || type;
+  function getTypeLabel(type: string) {
+    const labels: Record<string, string> = { PROTEST: 'Protest', CONFLICT: 'Conflict', ATTACK: 'Attack', CASUALTY: 'Casualty', DISPLACEMENT: 'Displacement', DISASTER: 'Disaster', REPRESSION: 'Repression', HUMANITARIAN: 'Humanitarian' };
+    return labels[type] || String(type || 'Event');
   }
 
-  function getSeverityColor(severity) {
-    if (severity >= 8) return '#ef4444';
-    if (severity >= 6) return '#f97316';
-    if (severity >= 4) return '#f97316';
+  function getSeverityColor(severity: number | undefined) {
+    const value = severity ?? 0;
+    if (value >= 8) return '#ef4444';
+    if (value >= 6) return '#f97316';
+    if (value >= 4) return '#f97316';
     return '#3b82f6';
   }
 
-  function formatDate(dateStr) {
+  function formatDate(dateStr: string | undefined) {
     if (!dateStr) return 'Unknown';
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
-  window.changePage = changePage;
 </script>
 </BaseLayout>

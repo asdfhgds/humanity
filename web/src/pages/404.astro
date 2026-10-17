@@ -1,0 +1,17 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Page not found | HUMANITY" description="The requested HUMANITY page could not be found. Browse current event reports, the map or our methodology.">
+  <main class="mx-auto flex min-h-[65vh] max-w-4xl flex-col justify-center px-4 py-16 sm:px-6 lg:px-8">
+    <p class="eyebrow">404 · Page not found</p>
+    <h1 class="editorial-title mt-4 text-5xl font-bold">This page isn’t here.</h1>
+    <p class="mt-4 max-w-2xl leading-relaxed text-humanity-textMuted">The address may have changed, or the requested event may no longer be published. No event data is inferred from this URL.</p>
+    <nav class="mt-8 flex flex-wrap gap-3" aria-label="Useful destinations">
+      <a href="/" class="btn-primary">Go to HUMANITY home</a>
+      <a href="/events" class="btn-secondary">Browse published reports</a>
+      <a href="/map" class="btn-secondary">Open the global map</a>
+      <a href="/methodology" class="btn-secondary">Read the methodology</a>
+    </nav>
+  </main>
+</BaseLayout>

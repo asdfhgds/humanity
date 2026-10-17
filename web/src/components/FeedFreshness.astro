@@ -1,0 +1,18 @@
+---
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+
+let updatedAt: string | null = null;
+try {
+  const statsPath = resolve(process.cwd(), 'public', 'data', 'stats', 'global.json');
+  const stats = JSON.parse(await readFile(statsPath, 'utf8'));
+  if (typeof stats.last_updated === 'string') updatedAt = stats.last_updated;
+} catch (error) {
+  if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
+}
+---
+
+<p class="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-humanity-textMuted" aria-live="polite">
+  <span class="h-2 w-2 rounded-full {updatedAt ? 'bg-emerald-400' : 'bg-amber-400'}" aria-hidden="true"></span>
+  {updatedAt ? `Published data last updated ${new Date(updatedAt).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' })} UTC` : 'Published data update time is unavailable'}
+</p>

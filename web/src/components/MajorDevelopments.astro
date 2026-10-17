@@ -1,235 +1,133 @@
----
-interface Props {}
----
-<div class="card">
-  <div class="flex items-center justify-between mb-6">
-    <h2 class="text-2xl font-bold text-humanity-text">Major Developments</h2>
-    <a href="/events" class="link text-sm">View all events →</a>
+<section aria-labelledby="latest-heading">
+  <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div><p class="eyebrow">Across the published record</p><h2 id="latest-heading" class="editorial-title mt-2 text-3xl font-semibold sm:text-4xl">Latest developments</h2><p class="mt-2 text-sm text-humanity-textMuted">Recent reports from monitored sources. Archive images below provide context; they do not depict the events described.</p></div>
+    <a href="/events" class="link text-sm">All published reports →</a>
   </div>
-  <div id="major-developments" class="space-y-4">
-    <div class="text-center py-8 text-humanity-textMuted">
-      <div class="animate-pulse-soft">Loading major developments...</div>
-    </div>
+  <div id="major-developments" class="latest-grid">
+    <p class="col-span-full border-y border-humanity-border py-6 text-sm text-humanity-textMuted">Loading published reports…</p>
   </div>
-</div>
+  <p id="news-refresh-status" class="mt-4 text-xs text-humanity-textMuted" aria-live="polite">Checking for updates…</p>
+</section>
 
 <script>
-  document.addEventListener('DOMContentLoaded', async () => {
-    const container = document.getElementById('major-developments');
-    if (!container) return;
-    
-    try {
-      const response = await fetch('/data/events/recent.json');
-      if (response.ok) {
-        const events = await response.json();
-        renderEvents(events.slice(0, 6));
-      } else {
-        renderMockEvents();
-      }
-    } catch {
-      renderMockEvents();
-    }
+  import { editorialImages, type EditorialImageKey } from '../data/editorial-images';
+  import { escapeHtml, eventPath, sitePath } from '../lib/client-utils';
+
+  interface PublishedEvent {
+    slug?: string;
+    title: string;
+    event_type?: string;
+    confidence_label?: string;
+    confidence?: string;
+    city?: string;
+    country_name?: string;
+    start_time?: string;
+    summary?: string;
+    description?: string;
+    sources?: unknown[];
+  }
+
+  const NEWS_REFRESH_MS = 60_000;
+  const imageByType: Record<string, EditorialImageKey> = {
+    PROTEST: 'protest',
+    CONFLICT: 'conflict',
+    ATTACK: 'conflict',
+    CASUALTY: 'conflict',
+    DISPLACEMENT: 'displacement',
+    DISASTER: 'disaster',
+    REPRESSION: 'protest',
+    HUMANITARIAN: 'humanitarian',
+    DIPLOMACY: 'diplomacy',
+    PEACE_PROCESS: 'diplomacy',
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    refreshMajorDevelopments();
+    window.setInterval(refreshMajorDevelopments, NEWS_REFRESH_MS);
   });
-  
-  function renderEvents(events) {
+
+  async function refreshMajorDevelopments() {
     const container = document.getElementById('major-developments');
-    
-    if (!events || events.length === 0) {
-      container.innerHTML = `
-        <div class="text-center py-8 text-humanity-textMuted">
-          No major developments at this time.
-        </div>
-      `;
+    const status = document.getElementById('news-refresh-status');
+    if (!container || !status) return;
+
+    try {
+      const response = await fetch(`${sitePath('data/events/recent.json')}?updated=${Date.now()}`, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`News feed request failed (${response.status})`);
+      const data: unknown = await response.json();
+      if (!Array.isArray(data) || !data.every(isPublishedEvent)) throw new Error('News feed has an invalid format');
+      renderEvents(container, data.slice(0, 6));
+      status.textContent = `Checked ${new Date().toLocaleTimeString()} · refreshes every minute`;
+    } catch (error) {
+      console.error('Could not refresh published news:', error);
+      status.textContent = container.dataset.loaded
+        ? 'News feed could not be refreshed; showing the latest data available.'
+        : 'Current reports could not be loaded. Please try again later.';
+      if (!container.dataset.loaded) {
+        container.innerHTML = '<p class="col-span-full border-y border-humanity-border py-6 text-sm text-humanity-textMuted">Published reports are temporarily unavailable. Please try again shortly.</p>';
+      }
+    }
+  }
+
+  function isPublishedEvent(value: unknown): value is PublishedEvent {
+    return Boolean(value && typeof value === 'object' && 'title' in value && typeof value.title === 'string');
+  }
+
+  function renderEvents(container: HTMLElement, events: PublishedEvent[]) {
+    container.dataset.loaded = 'true';
+    if (!events.length) {
+      container.innerHTML = '<p class="col-span-full border-y border-humanity-border py-6 text-sm text-humanity-textMuted">No published reports are available yet.</p>';
       return;
     }
-    
-    container.innerHTML = events.map(event => `
-      <article class="event-card event-card-${event.event_type.toLowerCase()} p-4 hover:shadow-lg transition-shadow">
-        <div class="flex items-start gap-4">
-          <div class="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center text-xl" style="background: ${getEventColor(event.event_type)}20;">
-            <span>${getEventIcon(event.event_type)}</span>
+
+    container.innerHTML = events.map((event) => {
+      const href = eventPath(event.slug);
+      const title = href
+        ? `<a href="${href}" class="hover:text-humanity-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-humanity-accent">${escapeHtml(event.title)}</a>`
+        : escapeHtml(event.title);
+      const type = String(event.event_type || 'EVENT');
+      const typeLabel = escapeHtml(getEventTypeLabel(type));
+      const image = editorialImages[imageByType[type] || 'conflict'];
+      const sourceCount = Number.isSafeInteger(event.sources?.length) ? event.sources?.length : 0;
+      const creator = 'creatorUrl' in image
+        ? `<a href="${escapeHtml(image.creatorUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(image.creator)}</a>`
+        : escapeHtml(image.creator);
+
+      return `
+        <article class="latest-story">
+          <figure class="latest-story__figure">
+            <img src="${sitePath(`images/editorial/${encodeURIComponent(image.file)}`)}" alt="${escapeHtml(image.alt)}" loading="lazy">
+            <figcaption>${escapeHtml(image.caption)} Photo: ${creator} · <a href="${escapeHtml(image.commonsUrl)}" target="_blank" rel="noopener noreferrer">Wikimedia Commons</a> · <a href="${escapeHtml(image.licenseUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(image.license)}</a></figcaption>
+          </figure>
+          <div class="latest-story__body">
+            <p class="latest-story__type">${typeLabel} <span>·</span> ${escapeHtml(event.confidence_label || event.confidence || 'Reported')}</p>
+            <h3>${title}</h3>
+            <p class="latest-story__summary">${escapeHtml(event.summary || event.description || 'Details are still emerging.')}</p>
+            <p class="latest-story__meta">${escapeHtml([event.city, event.country_name].filter(Boolean).join(', ') || 'Location unconfirmed')} · ${escapeHtml(event.start_time ? new Date(event.start_time).toLocaleDateString() : 'Date unconfirmed')} · ${sourceCount} linked sources</p>
           </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 mb-1">
-              <h3 class="font-semibold text-humanity-text truncate">
-                <a href="/event/${event.slug}" class="link hover:text-humanity-accent">${event.title}</a>
-              </h3>
-              <span class="badge-${event.event_type.toLowerCase()}">${getEventTypeLabel(event.event_type)}</span>
-            </div>
-            <div class="flex items-center gap-4 text-sm text-humanity-textMuted mb-2">
-              <span>📍 ${event.city || 'Unknown'}, ${event.country_name}</span>
-              <span>📅 ${event.start_time ? new Date(event.start_time).toLocaleDateString() : 'Unknown'}</span>
-              <span>📰 ${event.sources?.length || 0} sources</span>
-            </div>
-            <p class="text-sm text-humanity-textMuted line-clamp-2">${event.summary || event.description?.slice(0, 200) || 'No summary available.'}</p>
-            ${renderHumanImpact(event)}
-          </div>
-        </div>
-      </article>
-    `).join('');
+        </article>
+      `;
+    }).join('');
   }
-  
-  function renderMockEvents() {
-    const mockEvents = [
-      {
-        slug: '2026/10/08/major-protest-paris',
-        title: 'Nationwide protests across France over pension reform',
-        event_type: 'PROTEST',
-        country_name: 'France',
-        city: 'Paris',
-        start_time: '2026-10-08T10:00:00Z',
-        sources: [{}, {}, {}],
-        summary: 'Hundreds of thousands demonstrate in Paris, Lyon, Marseille and other cities. Transport disrupted. 12,000–20,000 estimated in Paris alone.',
-        deaths_min: 0,
-        deaths_max: 0,
-        injured_min: 14,
-        injured_max: 14,
-        arrested_min: 7,
-        arrested_max: 7,
-        estimated_participants_min: 12000,
-        estimated_participants_max: 20000
-      },
-      {
-        slug: '2026/10/08/conflict-sudan-khartoum',
-        title: 'Intense fighting in Khartoum enters third week',
-        event_type: 'CONFLICT',
-        country_name: 'Sudan',
-        city: 'Khartoum',
-        start_time: '2026-10-08T06:00:00Z',
-        sources: [{}, {}, {}, {}],
-        summary: 'RSF and SAF continue heavy artillery exchanges in residential areas. Humanitarian access severely restricted. Civilian casualties mounting.',
-        deaths_min: 45,
-        deaths_max: 67,
-        injured_min: 120,
-        injured_max: 180
-      },
-      {
-        slug: '2026/10/08/airstrike-gaza-city',
-        title: 'Airstrike on residential building in Gaza City',
-        event_type: 'ATTACK',
-        country_name: 'Palestine',
-        city: 'Gaza City',
-        start_time: '2026-10-08T02:30:00Z',
-        sources: [{}, {}],
-        summary: 'Israeli airstrike hits multi-story residential building. Civil defense teams recovering victims. Death toll expected to rise.',
-        deaths_min: 23,
-        deaths_max: 31,
-        injured_min: 45,
-        injured_max: 52
-      },
-      {
-        slug: '2026/10/07/displacement-congo-goma',
-        title: 'Mass displacement near Goma as M23 advances',
-        event_type: 'DISPLACEMENT',
-        country_name: 'DR Congo',
-        city: 'Goma',
-        start_time: '2026-10-07T14:00:00Z',
-        sources: [{}, {}],
-        summary: 'Over 150,000 people flee fighting between M23 rebels and FARDC. IDP camps overwhelmed. Cholera risk rising.',
-        displaced_min: 150000,
-        displaced_max: 180000
-      },
-      {
-        slug: '2026/10/07/earthquake-afghanistan-herat',
-        title: 'Magnitude 6.3 earthquake strikes western Afghanistan',
-        event_type: 'DISASTER',
-        country_name: 'Afghanistan',
-        city: 'Herat',
-        start_time: '2026-10-07T11:30:00Z',
-        sources: [{}, {}, {}],
-        summary: 'Powerful quake destroys villages in Herat province. At least 2,000 dead, thousands injured. Rescue operations hampered by access.',
-        deaths_min: 2000,
-        deaths_max: 2400,
-        injured_min: 9000,
-        injured_max: 12000
-      },
-      {
-        slug: '2026/10/07/repression-belarus-minsk',
-        title: 'Mass arrests of opposition activists in Minsk',
-        event_type: 'REPRESSION',
-        country_name: 'Belarus',
-        city: 'Minsk',
-        start_time: '2026-10-07T08:00:00Z',
-        sources: [{}, {}],
-        summary: 'Security services detain 200+ activists ahead of election anniversary. Charges include "extremism" and "foreign agent" allegations.',
-        arrested_min: 200,
-        arrested_max: 250
-      }
-    ];
-    
-    renderEvents(mockEvents);
-  }
-  
-  function renderHumanImpact(event) {
-    const parts = [];
-    if (event.deaths_min || event.deaths_max) {
-      parts.push(`<span class="text-red-400">☠ ${formatRange(event.deaths_min, event.deaths_max)} deaths</span>`);
-    }
-    if (event.injured_min || event.injured_max) {
-      parts.push(`<span class="text-orange-400">🤕 ${formatRange(event.injured_min, event.injured_max)} injured</span>`);
-    }
-    if (event.arrested_min || event.arrested_max) {
-      parts.push(`<span class="text-violet-400">🚔 ${formatRange(event.arrested_min, event.arrested_max)} arrested</span>`);
-    }
-    if (event.displaced_min || event.displaced_max) {
-      parts.push(`<span class="text-amber-400">🏃 ${formatRange(event.displaced_min, event.displaced_max)} displaced</span>`);
-    }
-    if (event.estimated_participants_min || event.estimated_participants_max) {
-      parts.push(`<span class="text-blue-400">✊ ${formatRange(event.estimated_participants_min, event.estimated_participants_max)} participants</span>`);
-    }
-    if (parts.length === 0) return '';
-    return `<div class="flex flex-wrap gap-3 mt-2">${parts.join('')}</div>`;
-  }
-  
-  function formatRange(min, max) {
-    if (min && max) {
-      if (min === max) return min.toLocaleString();
-      return `${min.toLocaleString()}–${max.toLocaleString()}`;
-    }
-    if (min) return `≥${min.toLocaleString()}`;
-    if (max) return `≤${max.toLocaleString()}`;
-    return '—';
-  }
-  
-  function getEventIcon(type) {
-    const icons = {
-      PROTEST: '✊',
-      CONFLICT: '⚔️',
-      ATTACK: '💥',
-      CASUALTY: '☠️',
-      DISPLACEMENT: '🏃',
-      DISASTER: '🌪️',
-      REPRESSION: '🚔',
-      HUMANITARIAN: '🏥'
-    };
-    return icons[type] || '📍';
-  }
-  
-  function getEventColor(type) {
-    const colors = {
-      PROTEST: '#3b82f6',
-      CONFLICT: '#ef4444',
-      ATTACK: '#dc2626',
-      CASUALTY: '#b91c1c',
-      DISPLACEMENT: '#f97316',
-      DISASTER: '#0ea5e9',
-      REPRESSION: '#7c3aed',
-      HUMANITARIAN: '#10b981'
-    };
-    return colors[type] || '#888888';
-  }
-  
-  function getEventTypeLabel(type) {
-    const labels = {
-      PROTEST: 'Protest',
-      CONFLICT: 'Conflict',
-      ATTACK: 'Attack',
-      CASUALTY: 'Casualty',
-      DISPLACEMENT: 'Displacement',
-      DISASTER: 'Disaster',
-      REPRESSION: 'Repression',
-      HUMANITARIAN: 'Humanitarian'
-    };
-    return labels[type] || type;
+
+  function getEventTypeLabel(type: string) {
+    return String(type || 'EVENT').replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
   }
 </script>
+
+<style>
+  .latest-grid { display: grid; gap: 2rem; }
+  .latest-story { min-width: 0; }
+  .latest-story__figure { margin: 0; }
+  .latest-story__figure img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; background: #e9e4dc; }
+  .latest-story__figure figcaption { padding-top: .4rem; color: #68645f; font: 400 .66rem/1.4 system-ui, sans-serif; }
+  .latest-story__figure figcaption a { text-decoration: underline; text-underline-offset: 2px; }
+  .latest-story__body { padding-top: .8rem; }
+  .latest-story__type { color: #9d4935; font: 600 .68rem/1.4 system-ui, sans-serif; letter-spacing: .09em; text-transform: uppercase; }
+  .latest-story__type span { color: #88837a; }
+  .latest-story__body h3 { margin-top: .45rem; color: #202725; font: 600 1.35rem/1.2 Georgia, serif; text-wrap: balance; }
+  .latest-story__summary { margin-top: .55rem; color: #66635d; font-size: .9rem; line-height: 1.55; }
+  .latest-story__meta { margin-top: .8rem; border-top: 1px solid #d7d0c5; padding-top: .55rem; color: #66635d; font-size: .7rem; line-height: 1.5; }
+  @media (min-width: 640px) { .latest-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 2rem; row-gap: 2.5rem; } }
+  @media (min-width: 1024px) { .latest-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+</style>

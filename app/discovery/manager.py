@@ -244,6 +244,7 @@ class DiscoveryManager:
                                     publisher=source_name,
                                     title=article.title or "RSS Article",
                                     url=article.final_url,
+                                    image_url=article.image_url,
                                     canonical_url=canonicalize_url(article.final_url),
                                     published_at=article.published_at,
                                     retrieved_at=datetime.utcnow(),

@@ -1,0 +1,99 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Sources | HUMANITY" description="Browse the source registry configured for HUMANITY's event monitoring and evidence pipeline.">
+  <main class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+    <header class="mb-10 border-b border-humanity-border pb-8">
+      <p class="eyebrow">Transparency and provenance</p>
+      <h1 class="editorial-title mt-3 text-4xl font-bold sm:text-5xl">Source registry</h1>
+      <p class="mt-3 max-w-3xl leading-relaxed text-humanity-textMuted">This registry is generated from the project’s maintained source configuration. Being monitored does not mean a source or an individual claim has been independently verified. Each event record links to its reporting sources.</p>
+    </header>
+    <p id="sources-status" class="mb-5 text-sm text-humanity-textMuted" aria-live="polite">Loading the configured source registry…</p>
+    <div id="sources-list" class="divide-y divide-humanity-border border-y border-humanity-border">
+      <div class="py-8 text-sm text-humanity-textMuted">Retrieving registry…</div>
+    </div>
+    <button id="sources-retry" type="button" class="btn-secondary mt-5 hidden">Retry loading sources</button>
+    <p class="mt-8 text-sm text-humanity-textMuted">For how evidence is assessed, read the <a href="/methodology#sources" class="link">source acquisition methodology</a> and <a href="/methodology" class="link">full methodology</a>.</p>
+  </main>
+
+  <script>
+    import { escapeHtml, requireElement, safeExternalUrl, sitePath } from '../lib/client-utils';
+
+    interface RegistrySource {
+      name: string;
+      type: string;
+      country?: string;
+      language?: string;
+      roles?: string[];
+      enabled: boolean;
+      url?: string;
+    }
+
+    function isRegistrySource(value: unknown): value is RegistrySource {
+      if (!value || typeof value !== 'object') return false;
+      const source = value as Record<string, unknown>;
+      return typeof source.name === 'string' &&
+        typeof source.type === 'string' &&
+        typeof source.enabled === 'boolean' &&
+        (source.url === undefined || typeof source.url === 'string') &&
+        (source.country === undefined || typeof source.country === 'string') &&
+        (source.language === undefined || typeof source.language === 'string') &&
+        (source.roles === undefined || (Array.isArray(source.roles) && source.roles.every((role) => typeof role === 'string')));
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSources();
+      requireElement('sources-retry', 'button').addEventListener('click', loadSources);
+    });
+
+    async function loadSources() {
+      const status = requireElement('sources-status', 'p');
+      const list = requireElement('sources-list', 'div');
+      const retry = requireElement('sources-retry', 'button');
+      retry.classList.add('hidden');
+      status.textContent = 'Loading the configured source registry…';
+      try {
+        const controller = new AbortController();
+        const timer = window.setTimeout(() => controller.abort(), 10_000);
+        let response;
+        try {
+          response = await fetch(sitePath('data/sources/all.json'), { signal: controller.signal, cache: 'no-store' });
+        } finally {
+          window.clearTimeout(timer);
+        }
+        if (!response.ok) throw new Error(`Source registry request failed (${response.status})`);
+        const data: unknown = await response.json();
+        if (
+          !data ||
+          typeof data !== 'object' ||
+          !('sources' in data) ||
+          !Array.isArray(data.sources) ||
+          !data.sources.every(isRegistrySource)
+        ) throw new Error('Source registry has an invalid format');
+        const registry = data as { sources: RegistrySource[]; generated_at?: string };
+        if (!registry.sources.length) {
+          list.innerHTML = '<p class="py-8 text-sm text-humanity-textMuted">No sources are listed in the published registry.</p>';
+          status.textContent = 'Registry updated from the maintained source configuration.';
+          return;
+        }
+        list.innerHTML = registry.sources.map((source) => {
+          const url = safeExternalUrl(source.url);
+          return `<article class="grid gap-2 py-5 sm:grid-cols-[1fr_auto] sm:items-start">
+            <div><h2 class="font-semibold text-humanity-text">${escapeHtml(source.name)}</h2>
+            <p class="mt-1 text-sm text-humanity-textMuted">${escapeHtml(source.type)} · ${escapeHtml(source.country || 'Global')} · ${escapeHtml(source.language || 'Language unspecified')}</p>
+            <p class="mt-1 text-xs text-humanity-textMuted">${escapeHtml((source.roles || []).join(', '))}</p></div>
+            <div class="flex items-center gap-3 text-xs"><span class="${source.enabled ? 'text-emerald-300' : 'text-humanity-textMuted'}">${source.enabled ? 'Configured' : 'Disabled'}</span>
+            ${url ? `<a class="link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Source site ↗</a>` : ''}</div>
+          </article>`;
+        }).join('');
+        status.textContent = `Configured registry · ${registry.sources.length} sources · generated ${escapeHtml(registry.generated_at || 'time unavailable')}`;
+      } catch (error) {
+        console.error('Could not load the source registry:', error);
+        status.textContent = 'The source registry is temporarily unavailable. No substitute source list is shown.';
+        list.innerHTML = '';
+        retry.classList.remove('hidden');
+      }
+    }
+  </script>
+</BaseLayout>

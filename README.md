@@ -14,8 +14,8 @@ Not a traditional news aggregator. A **structured global event intelligence plat
 
 - **Live Global Map** - Interactive MapLibre globe showing protests, conflicts, attacks, casualties, displacement, disasters, repression, and humanitarian events
 - **Event Database** - Every event has a permanent URL with full source transparency
-- **Human Cost Pages** - Visual metrics for deaths, injuries, displacement with full provenance
-- **Country & Conflict Pages** - Dedicated pages with timelines, statistics, and context
+- **Human Cost Pages** - Source-linked event-level reported ranges, with no additive global casualty scoreboard
+- **Country & Conflict Pages** - Published-record counts and context without implying complete real-world coverage
 - **Daily Briefings** - Automated "What changed in the last 24 hours?" summaries
 - **Overlooked Events** - Significant events receiving little international coverage
 - **Share Cards** - Auto-generated social media cards for every event
@@ -147,10 +147,14 @@ Core entities:
 
 ### Free Tier (MVP)
 ```bash
-# GitHub Actions runs pipeline every 30 minutes
-# Generates static site to web/dist/
-# Deploys to Cloudflare Pages (free)
+# GitHub Actions runs the ingestion pipeline every 5 minutes (best-effort schedule)
+# Generates the Astro site in web/dist/
+# Deploys the refreshed site to GitHub Pages
 ```
+
+The site refreshes its published feeds in the browser every minute. This only
+fetches the most recently deployed data; it does not guarantee new reporting
+every minute. Scheduled GitHub Actions runs are also best-effort.
 
 ### Production (Phase 2+)
 - Cloudflare D1 for database

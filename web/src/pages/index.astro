@@ -1,132 +1,107 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import MapGlobe from '../components/MapGlobe.astro';
-import LiveCounters from '../components/LiveCounters.astro';
 import MajorDevelopments from '../components/MajorDevelopments.astro';
-import WhatChanged from '../components/WhatChanged.astro';
-import OverlookedEvent from '../components/OverlookedEvent.astro';
-import { getCollection } from 'astro:content';
+import StoryImage from '../components/StoryImage.astro';
+import FeedFreshness from '../components/FeedFreshness.astro';
+import LeadStory from '../components/LeadStory.astro';
 ---
 
-<BaseLayout title="HUMANITY — What Is Happening Around the World?" description="A live global map and evidence-based database of protests, conflicts, humanitarian crises, disasters and other major human events.">
+<BaseLayout title="HUMANITY — Global events, reported with context" description="A source-led record of events affecting people, with context, evidence and uncertainty kept visible.">
   <div class="min-h-screen">
-    <!-- Hero Section -->
-    <header class="relative border-b border-humanity-border bg-humanity-darker/80 backdrop-blur-sm sticky top-0 z-50">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between h-16">
-          <div class="flex items-center gap-3">
-            <svg class="w-8 h-8 text-humanity-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M2 12h20" />
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-            </svg>
-            <span class="text-2xl font-bold tracking-tight text-humanity-text">HUMANITY</span>
-          </div>
-          <nav class="hidden md:flex items-center gap-6">
-            <a href="/" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Home</a>
-            <a href="/map" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Map</a>
-            <a href="/events" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Live Events</a>
-            <a href="/protests" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Protests</a>
-            <a href="/conflicts" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Conflicts</a>
-            <a href="/human-cost" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Human Cost</a>
-            <a href="/countries" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Countries</a>
-            <a href="/timelines" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Timelines</a>
-            <a href="/methodology" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Methodology</a>
-          </nav>
-        </div>
+    <header class="masthead border-b border-humanity-border">
+      <div class="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-5 px-4 py-3 sm:px-6 lg:px-8">
+        <a href="/" class="font-serif text-2xl font-bold tracking-tight text-humanity-text" aria-label="HUMANITY home">HUMANITY<span class="text-humanity-accent">.</span></a>
+        <nav class="hidden flex-wrap items-center gap-x-6 gap-y-2 lg:flex" aria-label="Main navigation">
+          <a href="/events" class="masthead-link">Latest reports</a>
+          <a href="/map" class="masthead-link">Map</a>
+          <a href="/protests" class="masthead-link">Civic action</a>
+          <a href="/conflicts" class="masthead-link">Conflict</a>
+          <a href="/human-cost" class="masthead-link">Human cost</a>
+          <a href="/countries" class="masthead-link">Countries</a>
+          <a href="/methodology" class="masthead-link">Method</a>
+        </nav>
+        <a href="/daily-brief" class="text-sm font-semibold text-humanity-accent underline decoration-humanity-border underline-offset-4 hover:decoration-humanity-accent">The daily brief&nbsp; →</a>
       </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      <!-- Hero Tagline -->
-      <section class="text-center animate-fade-in">
-        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-humanity-text mb-4">
-          What is happening to people around the world?
-        </h1>
-        <p class="text-lg sm:text-xl text-humanity-textMuted max-w-3xl mx-auto">
-          A structured global event intelligence platform. Every event traced to sources. Every claim verified.
-        </p>
-      </section>
-
-      <!-- Live Global Counters -->
-      <section aria-label="Live Global Counters">
-        <LiveCounters />
-      </section>
-
-      <!-- Live Map -->
-      <section aria-label="Live Global Map">
-        <div class="card">
-          <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-humanity-text">Live Global Map</h2>
-            <a href="/map" class="link text-sm">Explore full map →</a>
+    <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <section class="homepage-hero grid gap-7 border-b border-humanity-border py-8 sm:py-12 lg:grid-cols-[.82fr_1.18fr] lg:items-center lg:gap-12 lg:py-16" aria-labelledby="homepage-heading">
+        <div class="max-w-2xl">
+          <p class="eyebrow">A public-interest record · Updated as reports are published</p>
+          <h1 id="homepage-heading" class="editorial-title mt-5 text-5xl font-semibold leading-[.99] sm:text-6xl lg:text-7xl">The world, seen through the lives it changes.</h1>
+          <p class="mt-5 max-w-xl text-lg leading-relaxed text-humanity-textMuted">A source-led account of protests, conflict, displacement and disaster. Follow what is known, what is still contested, and where the reporting comes from.</p>
+          <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
+            <a href="/events" class="btn-primary">Read the latest reports <span aria-hidden="true">→</span></a>
+            <a href="/map" class="link text-sm">Explore the global map</a>
           </div>
-          <MapGlobe class="map-container" />
+          <FeedFreshness />
+          <p class="mt-2 max-w-lg text-xs leading-relaxed text-humanity-textMuted">A monitored database, not a complete count of events worldwide. New reporting depends on the sources and publication schedule.</p>
         </div>
+        <StoryImage image="displacement" class="homepage-hero__image" priority />
       </section>
 
-      <!-- What Changed? -->
-      <section aria-label="What Changed in the Last 24 Hours">
-        <WhatChanged />
+      <section class="py-10 sm:py-14" aria-label="Lead report">
+        <LeadStory />
       </section>
 
-      <!-- Major Developments -->
-      <section aria-label="Major Developments">
+      <section class="border-y border-humanity-border py-10 sm:py-12" aria-labelledby="latest-heading">
         <MajorDevelopments />
       </section>
 
-      <!-- Overlooked Event -->
-      <section aria-label="Overlooked Event">
-        <OverlookedEvent />
+      <section class="grid gap-8 py-12 lg:grid-cols-[1.5fr_.7fr] lg:items-center sm:py-16" aria-labelledby="map-heading">
+        <div class="map-container editorial-map h-[25rem] sm:h-[34rem]">
+          <MapGlobe class="absolute inset-0 h-full w-full" />
+          <div class="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between bg-gradient-to-b from-black/70 to-transparent p-4 sm:p-5">
+            <div><p class="text-xs font-semibold uppercase tracking-[.18em] text-white/75">The global picture</p><p class="mt-1 text-sm font-medium text-white">Locations in the published record</p></div>
+            <a href="/map" class="pointer-events-auto border border-white/30 bg-black/50 px-3 py-2 text-xs text-white hover:bg-black/70">Open map ↗</a>
+          </div>
+        </div>
+        <div>
+          <p class="eyebrow">Place and context</p>
+          <h2 id="map-heading" class="editorial-title mt-3 text-3xl font-semibold leading-tight sm:text-4xl">Events are local. Their consequences rarely stop at a border.</h2>
+          <p class="mt-4 leading-relaxed text-humanity-textMuted">Explore geolocated published records, then follow links to source reporting and event-level context. A blank map is not evidence that nothing happened; monitoring and location data are incomplete.</p>
+          <a href="/map" class="link mt-5 inline-block">Explore mapped reports →</a>
+        </div>
+      </section>
+
+      <section class="border-t border-humanity-border py-10 sm:py-12" aria-labelledby="topics-heading">
+        <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div><p class="eyebrow">Reporting by subject</p><h2 id="topics-heading" class="editorial-title mt-2 text-3xl font-semibold sm:text-4xl">Follow the threads</h2></div>
+          <a href="/events" class="link text-sm">All published reports →</a>
+        </div>
+        <nav class="topic-index grid gap-x-10 sm:grid-cols-2" aria-label="Explore coverage by topic">
+          <a href="/protests"><span class="topic-index__number">01</span><span><strong>Protests & civic action</strong><small>Demonstrations, strikes and public movements</small></span><span aria-hidden="true">↗</span></a>
+          <a href="/conflicts"><span class="topic-index__number">02</span><span><strong>Conflict & security</strong><small>Incidents with source and uncertainty context</small></span><span aria-hidden="true">↗</span></a>
+          <a href="/human-cost"><span class="topic-index__number">03</span><span><strong>Human cost</strong><small>Reported impacts, ranges and attribution</small></span><span aria-hidden="true">↗</span></a>
+          <a href="/events?type=HUMANITARIAN"><span class="topic-index__number">04</span><span><strong>Humanitarian & displacement</strong><small>Needs, assistance and population movement</small></span><span aria-hidden="true">↗</span></a>
+          <a href="/events?type=DISASTER"><span class="topic-index__number">05</span><span><strong>Disasters & recovery</strong><small>Hazards, impacts and response</small></span><span aria-hidden="true">↗</span></a>
+          <a href="/events?type=DIPLOMACY"><span class="topic-index__number">06</span><span><strong>Peace & diplomacy</strong><small>Negotiations and peace-process reporting</small></span><span aria-hidden="true">↗</span></a>
+        </nav>
+      </section>
+
+      <section class="daily-brief-panel grid gap-6 border-y border-humanity-border py-8 sm:py-10 md:grid-cols-[1fr_auto] md:items-center" aria-labelledby="brief-heading">
+        <div><p class="eyebrow">A considered start to the day</p><h2 id="brief-heading" class="editorial-title mt-2 text-3xl font-semibold">The daily brief</h2><p class="mt-2 max-w-2xl leading-relaxed text-humanity-textMuted">A concise selection from eligible published records, with event dates, locations, confidence and linked sources. If evidence does not meet the publication threshold, no story is filled in to complete the list.</p></div>
+        <a href="/daily-brief" class="btn-secondary justify-self-start">Read the brief&nbsp; →</a>
+      </section>
+
+      <section class="grid gap-5 border-b border-humanity-border py-8 sm:py-10 md:grid-cols-[.7fr_1.3fr]" aria-labelledby="method-heading">
+        <div><p class="eyebrow">Evidence before certainty</p><h2 id="method-heading" class="editorial-title mt-2 text-2xl font-semibold sm:text-3xl">A record is not the whole story.</h2></div>
+        <div><p class="leading-relaxed text-humanity-textMuted">Sources can disagree, figures can change, and monitoring is never complete. We keep reported claims distinct from corroborated information, show uncertainty where it exists, and do not add overlapping impact figures into a false global total.</p><a href="/methodology" class="link mt-4 inline-block">Read our evidence and publication standards →</a></div>
       </section>
     </main>
-
-    <!-- Footer -->
-    <footer class="border-t border-humanity-border bg-humanity-darker/80 backdrop-blur-sm mt-16">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div>
-            <h3 class="font-bold text-humanity-text mb-4">HUMANITY</h3>
-            <p class="text-humanity-textMuted text-sm leading-relaxed">
-              The world, measured through human events. An autonomous global event intelligence platform.
-            </p>
-          </div>
-          <div>
-            <h4 class="font-medium text-humanity-text mb-3">Explore</h4>
-            <ul class="space-y-2 text-sm text-humanity-textMuted">
-              <li><a href="/map" class="link">Live Map</a></li>
-              <li><a href="/events" class="link">Live Events</a></li>
-              <li><a href="/countries" class="link">Countries</a></li>
-              <li><a href="/conflicts" class="link">Conflicts</a></li>
-              <li><a href="/human-cost" class="link">Human Cost</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 class="font-medium text-humanity-text mb-3">Understand</h4>
-            <ul class="space-y-2 text-sm text-humanity-textMuted">
-              <li><a href="/methodology" class="link">Methodology</a></li>
-              <li><a href="/timelines" class="link">Timelines</a></li>
-              <li><a href="/protests" class="link">Protests</a></li>
-              <li><a href="/daily-brief" class="link">Daily Brief</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 class="font-medium text-humanity-text mb-3">Data & Sources</h4>
-            <ul class="space-y-2 text-sm text-humanity-textMuted">
-              <li><a href="/sources" class="link">Source Registry</a></li>
-              <li><a href="/api" class="link">API (coming soon)</a></li>
-              <li><a href="/github" class="link">GitHub</a></li>
-            </ul>
-          </div>
-        </div>
-        <div class="mt-8 pt-8 border-t border-humanity-border flex flex-col md:flex-row items-center justify-between gap-4">
-          <p class="text-sm text-humanity-textMuted">
-            © 2026 HUMANITY. Open source. Free first. Built with evidence.
-          </p>
-          <p class="text-sm text-humanity-textMuted">
-            Data from GDELT, ReliefWeb, UN, NGOs & global news. <a href="/methodology" class="link">View methodology</a>
-          </p>
-        </div>
-      </div>
-    </footer>
   </div>
 </BaseLayout>
+
+<style>
+  .masthead-link { color: #66635d; font-size: .82rem; text-decoration: none; }
+  .masthead-link:hover { color: #202725; text-decoration: underline; text-underline-offset: .3rem; }
+  .homepage-hero__image :global(.story-image__photo) { aspect-ratio: 5 / 4; }
+  .editorial-map { height: 25rem; }
+  .topic-index a { display: grid; grid-template-columns: 2.1rem minmax(0, 1fr) 1rem; align-items: center; gap: .75rem; border-top: 1px solid #d7d0c5; padding: 1rem .25rem; color: #202725; text-decoration: none; }
+  .topic-index a:hover strong { color: #9d4935; }
+  .topic-index__number { align-self: start; color: #9d4935; font: 600 .72rem/1.5 system-ui, sans-serif; }
+  .topic-index strong { display: block; font: 600 1.05rem/1.3 system-ui, sans-serif; }
+  .topic-index small { display: block; margin-top: .25rem; color: #66635d; font: 400 .8rem/1.4 system-ui, sans-serif; }
+  @media (min-width: 640px) { .editorial-map { height: 34rem; } }
+</style>

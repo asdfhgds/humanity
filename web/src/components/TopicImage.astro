@@ -1,0 +1,114 @@
+---
+interface Props {
+  topic: 'global' | 'protests' | 'conflicts' | 'humanitarian' | 'displacement' | 'disasters' | 'diplomacy' | 'country';
+  label?: string;
+  class?: string;
+  aspect?: 'wide' | 'landscape' | 'square';
+}
+
+const { topic, label, class: className = '', aspect = 'landscape' } = Astro.props;
+const scenes = {
+  global: { title: 'A connected world', caption: 'Global event overview', icon: '◎', color: 'global' },
+  protests: { title: 'People in public space', caption: 'Civic action and public assembly', icon: '◉', color: 'protests' },
+  conflicts: { title: 'Communities under pressure', caption: 'Conflict reporting and context', icon: '⌁', color: 'conflicts' },
+  humanitarian: { title: 'Care and response', caption: 'Humanitarian response', icon: '＋', color: 'humanitarian' },
+  displacement: { title: 'Movement and shelter', caption: 'Displacement and refuge', icon: '⇢', color: 'displacement' },
+  disasters: { title: 'Landscapes in change', caption: 'Disasters and recovery', icon: '⌁', color: 'disasters' },
+  diplomacy: { title: 'Paths to dialogue', caption: 'Peace and diplomacy', icon: '↔', color: 'diplomacy' },
+  country: { title: 'Place and people', caption: 'Country event overview', icon: '◎', color: 'global' },
+};
+const scene = scenes[topic];
+---
+
+<figure class:list={['topic-visual', `topic-visual--${scene.color}`, `topic-visual--${aspect}`, className]} aria-label={label || scene.caption}>
+  <svg viewBox="0 0 720 420" role="img" aria-labelledby={`topic-title-${topic} topic-desc-${topic}`} preserveAspectRatio="xMidYMid slice">
+    <title id={`topic-title-${topic}`}>{scene.title}</title>
+    <desc id={`topic-desc-${topic}`}>Original abstract illustration representing {scene.caption.toLowerCase()}; it does not depict a specific real event.</desc>
+    <defs>
+      <linearGradient id={`sky-${topic}`} x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="var(--scene-light)" stop-opacity=".38" />
+        <stop offset="1" stop-color="var(--scene-deep)" stop-opacity=".2" />
+      </linearGradient>
+      <pattern id={`grid-${topic}`} width="48" height="48" patternUnits="userSpaceOnUse">
+        <path d="M48 0H0V48" fill="none" stroke="white" stroke-opacity=".08" stroke-width="1" />
+      </pattern>
+    </defs>
+    <rect width="720" height="420" fill="#111820" />
+    <rect width="720" height="420" fill={`url(#sky-${topic})`} />
+    <rect width="720" height="420" fill={`url(#grid-${topic})`} />
+    <path d="M-40 298C72 248 123 325 231 276s164-54 253-12 149 41 276-20v180H-40Z" fill="var(--scene-deep)" fill-opacity=".44" />
+    <path d="M-40 338c134-56 214 34 339-4s204-59 461-7v93H-40Z" fill="var(--scene-light)" fill-opacity=".17" />
+    <g fill="none" stroke="var(--scene-light)" stroke-opacity=".68" stroke-width="1.5">
+      <path d="M54 117c95-43 202-33 286 10s184 43 324-16" />
+      <path d="M33 145c105-38 202-20 290 19s180 31 338-18" />
+      <path d="M20 174c120-27 212-8 302 24s194 18 352-19" />
+    </g>
+    {topic === 'protests' ? (
+      <g fill="var(--scene-light)" fill-opacity=".8">
+        <circle cx="226" cy="250" r="15" /><path d="M211 270h30v68h-30z" />
+        <circle cx="294" cy="236" r="17" /><path d="M275 257h38v81h-38z" />
+        <circle cx="366" cy="250" r="14" /><path d="M350 270h32v68h-32z" />
+        <circle cx="432" cy="237" r="16" /><path d="M414 258h36v80h-36z" />
+        <path d="M298 182v46h28v-46zM437 177v42h25v-42z" fill="none" stroke="var(--scene-light)" stroke-width="4" />
+      </g>
+    ) : topic === 'conflicts' || topic === 'disasters' ? (
+      <g fill="none" stroke="var(--scene-light)" stroke-opacity=".68" stroke-width="3">
+        <path d="M155 337V237l64-38 62 38v100M278 337V212l72-53 75 53v125M425 337V247l59-34 62 34v90" />
+        <path d="M180 264h24v25h-24zm67 0h18v24h-18zm68-28h27v28h-27zm67 7h19v25h-19zm75 28h21v26h-21z" />
+      </g>
+    ) : topic === 'humanitarian' || topic === 'displacement' ? (
+      <g fill="none" stroke="var(--scene-light)" stroke-opacity=".75" stroke-width="3">
+        <path d="m190 337 68-112 68 112m-119-57h102m-91 30h81M390 337l70-105 70 105m-121-55h102m-91 29h81" />
+        <path d="M258 225v-25h30v25m172 7v-28h31v28" />
+      </g>
+    ) : topic === 'diplomacy' ? (
+      <g fill="none" stroke="var(--scene-light)" stroke-opacity=".78" stroke-width="3">
+        <path d="M166 337h390M202 337V226l158-75 158 75v111M228 237h264M246 257v80m50-80v80m54-80v80m54-80v80m50-80v80" />
+        <path d="m320 201 40-21 40 21" />
+      </g>
+    ) : (
+      <g fill="none" stroke="var(--scene-light)" stroke-opacity=".74" stroke-width="3">
+        <circle cx="360" cy="258" r="104" /><ellipse cx="360" cy="258" rx="48" ry="104" />
+        <path d="M259 258h202M279 208h162m-162 100h162M360 154v208" />
+        <path d="m315 244 28-20 20 11 15-18 27 12-8 24 20 17-23 19-29-8-20 18-27-16z" fill="var(--scene-light)" fill-opacity=".28" />
+      </g>
+    )}
+    <circle cx="564" cy="99" r="3" fill="var(--scene-light)" />
+    <circle cx="590" cy="121" r="2" fill="var(--scene-light)" fill-opacity=".6" />
+    <circle cx="533" cy="126" r="2" fill="var(--scene-light)" fill-opacity=".7" />
+    <text x="36" y="384" fill="white" fill-opacity=".76" font-family="system-ui, sans-serif" font-size="13" letter-spacing="2">{scene.caption.toUpperCase()}</text>
+  </svg>
+  <figcaption class="topic-visual__note"><span aria-hidden="true">{scene.icon}</span> Illustrative artwork · not event photography</figcaption>
+</figure>
+
+<style>
+  .topic-visual {
+    --scene-light: #9daebb;
+    --scene-deep: #334b5b;
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 16 / 10;
+    background: #111820;
+  }
+  .topic-visual--wide { aspect-ratio: 16 / 8; }
+  .topic-visual--square { aspect-ratio: 1; }
+  .topic-visual--protests { --scene-light: #94b9cb; --scene-deep: #244758; }
+  .topic-visual--conflicts { --scene-light: #ce9b90; --scene-deep: #603d3a; }
+  .topic-visual--humanitarian, .topic-visual--displacement { --scene-light: #b1c1a6; --scene-deep: #405948; }
+  .topic-visual--disasters { --scene-light: #d0ae83; --scene-deep: #665039; }
+  .topic-visual--diplomacy { --scene-light: #b3b7d2; --scene-deep: #41465f; }
+  .topic-visual svg { display: block; width: 100%; height: 100%; }
+  .topic-visual__note {
+    position: absolute;
+    right: .75rem;
+    bottom: .75rem;
+    padding: .35rem .6rem;
+    border: 1px solid rgb(255 255 255 / 16%);
+    border-radius: 999px;
+    background: rgb(5 10 14 / 76%);
+    color: rgb(255 255 255 / 78%);
+    font: 500 .65rem/1.2 system-ui, sans-serif;
+    letter-spacing: .025em;
+    backdrop-filter: blur(8px);
+  }
+</style>

@@ -1,0 +1,367 @@
+{
+  "generated_at": "2026-10-17T08:34:20.206362",
+  "sources": [
+    {
+      "name": "Reuters",
+      "url": "https://www.reuters.com/world/",
+      "type": "news",
+      "country": "global",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "Associated Press",
+      "url": "https://apnews.com/hub/world-news",
+      "type": "news",
+      "country": "global",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "BBC World",
+      "url": "https://www.bbc.com/news/world",
+      "type": "news",
+      "country": "global",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "Al Jazeera English",
+      "url": "https://www.aljazeera.com/news/",
+      "type": "news",
+      "country": "global",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "France 24 English",
+      "url": "https://www.france24.com/en/",
+      "type": "news",
+      "country": "global",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "Deutsche Welle English",
+      "url": "https://www.dw.com/en/top-stories/world/s-9097",
+      "type": "news",
+      "country": "global",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "The Guardian World",
+      "url": "https://www.theguardian.com/world",
+      "type": "news",
+      "country": "UK",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "Le Monde English",
+      "url": "https://www.lemonde.fr/en/",
+      "type": "news",
+      "country": "France",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "El País English",
+      "url": "https://english.elpais.com/",
+      "type": "news",
+      "country": "Spain",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "UN OCHA ReliefWeb",
+      "url": "https://reliefweb.int/updates",
+      "type": "un",
+      "country": "global",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence",
+        "structured_data"
+      ]
+    },
+    {
+      "name": "UNHCR Data",
+      "url": "https://data.unhcr.org/en/situations",
+      "type": "un",
+      "country": "global",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "WHO Emergencies",
+      "url": "https://www.who.int/emergencies",
+      "type": "un",
+      "country": "global",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "ACLED",
+      "url": "https://acleddata.com/data/",
+      "type": "ngo",
+      "country": "global",
+      "language": "en",
+      "enabled": false,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "UCDP",
+      "url": "https://ucdp.uu.se/downloads/",
+      "type": "academic",
+      "country": "global",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "ICRC",
+      "url": "https://www.icrc.org/en/where-we-work",
+      "type": "ngo",
+      "country": "global",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "GDELT GKG",
+      "url": "http://data.gdeltproject.org/gkg/index.html",
+      "type": "data_provider",
+      "country": "global",
+      "language": "multilingual",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "GDELT Events",
+      "url": "http://data.gdeltproject.org/events/index.html",
+      "type": "data_provider",
+      "country": "global",
+      "language": "multilingual",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "ReliefWeb API",
+      "url": "https://api.reliefweb.int/v2/reports",
+      "type": "api",
+      "country": "global",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence",
+        "structured_data"
+      ]
+    },
+    {
+      "name": "Reuters World RSS",
+      "url": "https://www.reuters.com/world/rss",
+      "type": "rss",
+      "country": "global",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "AP News World RSS",
+      "url": "https://apnews.com/rss/world",
+      "type": "rss",
+      "country": "global",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "BBC World RSS",
+      "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
+      "type": "rss",
+      "country": "global",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "Al Jazeera English RSS",
+      "url": "https://www.aljazeera.com/xml/rss/all.xml",
+      "type": "rss",
+      "country": "global",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "France 24 English RSS",
+      "url": "https://www.france24.com/en/rss",
+      "type": "rss",
+      "country": "global",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "Deutsche Welle RSS",
+      "url": "https://rss.dw.com/rdf/rss-en-all",
+      "type": "rss",
+      "country": "global",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "Guardian World RSS",
+      "url": "https://www.theguardian.com/world/rss",
+      "type": "rss",
+      "country": "UK",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "Le Monde English RSS",
+      "url": "https://www.lemonde.fr/rss/en_une.xml",
+      "type": "rss",
+      "country": "France",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "El País English RSS",
+      "url": "https://feeds.elpais.com/mrss-portada/en/portada",
+      "type": "rss",
+      "country": "Spain",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "ReliefWeb Updates RSS",
+      "url": "https://reliefweb.int/updates/rss.xml",
+      "type": "rss",
+      "country": "global",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "UN News RSS",
+      "url": "https://news.un.org/feed/subscribe/en/news/all/rss.xml",
+      "type": "rss",
+      "country": "global",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    },
+    {
+      "name": "ICRC News RSS",
+      "url": "https://www.icrc.org/en/rss.xml",
+      "type": "rss",
+      "country": "global",
+      "language": "en",
+      "enabled": true,
+      "roles": [
+        "discovery",
+        "evidence"
+      ]
+    }
+  ]
+}
