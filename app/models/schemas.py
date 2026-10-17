@@ -111,6 +111,7 @@ class Source(BaseModel):
     publisher: str
     title: str
     url: HttpUrl
+    image_url: Optional[HttpUrl] = None
     canonical_url: Optional[HttpUrl] = None
     published_at: Optional[datetime] = None
     retrieved_at: datetime = Field(default_factory=datetime.utcnow)

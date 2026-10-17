@@ -3,7 +3,7 @@ from app.datastore import EventStore, JSONDataStore, SourceStore, ClaimStore
 from app.models.schemas import Event, EventType, Source, SourceIndependence, SourceType
 from app.publishing.publisher import EventPublisher
 
-def test_insufficient_evidence_is_held(tmp_path):
+def test_insufficient_evidence_is_held(tmp_path, isolated_publication_paths):
     store = JSONDataStore(tmp_path); events, sources, claims = EventStore(store), SourceStore(store), ClaimStore(store)
     source = Source(publisher="Single", title="Report", url="https://single.example", source_type=SourceType.NEWS, independence_classification=SourceIndependence.UNKNOWN)
     sources.create(source)

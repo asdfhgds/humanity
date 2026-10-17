@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../../tailwind.config.mjs";
 
 @layer base {
   html {
@@ -10,10 +9,15 @@
   body {
     @apply bg-humanity-darker text-humanity-text;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    background-image: none;
+  }
+
+  h1, h2, h3, h4 {
+    text-wrap: balance;
   }
   
   ::selection {
-    @apply bg-humanity-accent/30 text-white;
+    @apply bg-humanity-accent/25 text-humanity-text;
   }
   
   :focus-visible {
@@ -22,47 +26,49 @@
 }
 
 @layer components {
-  .card {
-    @apply bg-humanity-card border border-humanity-border rounded-xl p-6 transition-all duration-200;
+  .card, .stat-card, .event-card {
+    @apply bg-humanity-card border border-humanity-border rounded-sm p-6 transition-colors duration-200;
   }
+
+  .stat-card { @apply text-center; }
+  .event-card { @apply relative overflow-hidden; }
   
   .card:hover {
-    @apply border-humanity-accent/50 shadow-lg shadow-humanity-accent/10;
+    @apply border-humanity-border;
   }
   
-  .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-humanity-darker;
+  .btn, .btn-primary, .btn-secondary {
+    @apply px-4 py-2 rounded-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-humanity-darker;
   }
   
   .btn-primary {
-    @apply btn bg-humanity-accent text-white hover:bg-humanity-accentHover focus:ring-humanity-accent;
+    @apply bg-humanity-accent text-white hover:bg-humanity-accentHover focus:ring-humanity-accent;
   }
   
   .btn-secondary {
-    @apply btn bg-humanity-card border border-humanity-border text-humanity-text hover:border-humanity-accent/50 focus:ring-humanity-accent;
+    @apply bg-humanity-card border border-humanity-border text-humanity-text hover:border-humanity-accent/50 focus:ring-humanity-accent;
   }
   
-  .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  .badge, .badge-protest, .badge-conflict, .badge-attack, .badge-casualty,
+  .badge-displacement, .badge-disaster, .badge-repression, .badge-humanitarian,
+  .badge-confidence-high, .badge-confidence-medium, .badge-confidence-low,
+  .badge-confidence-verified {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-sm text-xs font-medium;
   }
   
-  .badge-protest { @apply badge bg-blue-500/20 text-blue-400 border border-blue-500/30; }
-  .badge-conflict { @apply badge bg-red-500/20 text-red-400 border border-red-500/30; }
-  .badge-attack { @apply badge bg-red-600/20 text-red-500 border border-red-600/30; }
-  .badge-casualty { @apply badge bg-red-700/20 text-red-500 border border-red-700/30; }
-  .badge-displacement { @apply badge bg-orange-500/20 text-orange-400 border border-orange-500/30; }
-  .badge-disaster { @apply badge bg-sky-500/20 text-sky-400 border border-sky-500/30; }
-  .badge-repression { @apply badge bg-violet-500/20 text-violet-400 border border-violet-500/30; }
-  .badge-humanitarian { @apply badge bg-emerald-500/20 text-emerald-400 border border-emerald-500/30; }
+  .badge-protest { @apply border border-teal-700/20 bg-teal-100 text-teal-900; }
+  .badge-conflict { @apply border border-red-800/20 bg-red-100 text-red-900; }
+  .badge-attack { @apply border border-red-800/20 bg-red-100 text-red-900; }
+  .badge-casualty { @apply border border-red-800/20 bg-red-100 text-red-900; }
+  .badge-displacement { @apply border border-amber-800/20 bg-amber-100 text-amber-900; }
+  .badge-disaster { @apply border border-sky-800/20 bg-sky-100 text-sky-900; }
+  .badge-repression { @apply border border-violet-800/20 bg-violet-100 text-violet-900; }
+  .badge-humanitarian { @apply border border-emerald-800/20 bg-emerald-100 text-emerald-900; }
   
-  .badge-confidence-high { @apply badge bg-emerald-500/20 text-emerald-400 border border-emerald-500/30; }
-  .badge-confidence-medium { @apply badge bg-amber-500/20 text-amber-400 border border-amber-500/30; }
-  .badge-confidence-low { @apply badge bg-red-500/20 text-red-400 border border-red-500/30; }
-  .badge-confidence-verified { @apply badge bg-blue-500/20 text-blue-400 border border-blue-500/30; }
-  
-  .stat-card {
-    @apply card text-center;
-  }
+  .badge-confidence-high { @apply border border-emerald-800/20 bg-emerald-100 text-emerald-900; }
+  .badge-confidence-medium { @apply border border-amber-800/20 bg-amber-100 text-amber-900; }
+  .badge-confidence-low { @apply border border-red-800/20 bg-red-100 text-red-900; }
+  .badge-confidence-verified { @apply border border-blue-800/20 bg-blue-100 text-blue-900; }
   
   .stat-value {
     @apply text-4xl font-bold text-humanity-text;
@@ -70,10 +76,6 @@
   
   .stat-label {
     @apply text-sm text-humanity-textMuted mt-1;
-  }
-  
-  .event-card {
-    @apply card relative overflow-hidden;
   }
   
   .event-card::before {
@@ -91,19 +93,27 @@
   .event-card-humanitarian::before { @apply bg-emerald-500; }
   
   .map-container {
-    @apply relative w-full h-[600px] rounded-xl overflow-hidden border border-humanity-border;
+    @apply relative w-full h-[600px] rounded-sm overflow-hidden border border-humanity-border;
   }
   
   .map-container-sm {
-    @apply relative w-full h-[300px] rounded-xl overflow-hidden border border-humanity-border;
+    @apply relative w-full h-[300px] rounded-sm overflow-hidden border border-humanity-border;
   }
   
   .input {
-    @apply w-full px-4 py-2 bg-humanity-darker border border-humanity-border rounded-lg text-humanity-text placeholder-humanity-textMuted focus:border-humanity-accent focus:outline-none focus:ring-1 focus:ring-humanity-accent transition-colors;
+    @apply w-full px-4 py-2 bg-humanity-card border border-humanity-border rounded-sm text-humanity-text placeholder-humanity-textMuted focus:border-humanity-accent focus:outline-none focus:ring-1 focus:ring-humanity-accent transition-colors;
   }
   
   .link {
     @apply text-humanity-accent hover:text-humanity-accentHover underline-offset-2 hover:underline transition-colors;
+  }
+
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.2em] text-humanity-textMuted;
+  }
+
+  .editorial-title {
+    @apply font-serif tracking-tight text-humanity-text;
   }
 }
 
@@ -137,6 +147,16 @@
   @keyframes pulseSoft {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.6; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }
   }
   
   .scrollbar-thin {

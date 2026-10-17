@@ -73,7 +73,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </section>
 
       <!-- Source Acquisition -->
-      <section>
+      <section id="sources">
         <h2 class="text-2xl font-bold text-humanity-text mb-6 flex items-center gap-2">
           <span style="color: #3b82f6;">📡</span>
           Source Acquisition
@@ -389,7 +389,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <div class="card p-6">
             <h3 class="text-lg font-semibold text-humanity-text mb-4">Autonomous Schedule</h3>
             <ul class="space-y-2 text-sm text-humanity-textMuted">
-              <li><strong>Every 30 min:</strong> Discovery, processing, publishing</li>
+              <li><strong>Every 5 min:</strong> Best-effort source discovery, processing, and publishing</li>
+              <li><strong>Every minute:</strong> Open news feeds check for newly published data; source ingestion runs on its own schedule</li>
               <li><strong>Every 2–4 hrs:</strong> Recheck developing stories, update casualties</li>
               <li><strong>Every 6 hrs:</strong> Rebuild daily summaries, refresh rankings</li>
               <li><strong>Daily:</strong> Historical aggregation, sitemap, cleanup</li>
@@ -435,8 +436,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           This methodology is a living document. Code, configuration, and data pipelines are open source.
         </p>
         <div class="flex items-center justify-center gap-4">
-          <a href="https://github.com" class="btn-secondary" target="_blank">View on GitHub</a>
-          <a href="/api" class="btn-secondary">API Docs (Coming Soon)</a>
+          <a href="https://github.com/asdfhgds/humanity" class="btn-secondary" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+          <a href="/events" class="btn-secondary">Browse Events</a>
         </div>
       </section>
     </main>

@@ -1,5 +1,5 @@
 import { defineConfig } from 'astro/config';
-import tailwind from '@astrojs/tailwind';
+import tailwindcss from '@tailwindcss/vite';
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -36,12 +36,13 @@ function githubPagesPaths() {
 export default defineConfig({
   site: process.env.GITHUB_ACTIONS ? 'https://asdfhgds.github.io' : 'https://humanity.example',
   base: process.env.GITHUB_ACTIONS ? '/humanity' : '/',
-  integrations: [tailwind(), githubPagesPaths()],
+  integrations: [githubPagesPaths()],
   output: 'static',
   build: {
     assets: 'assets',
   },
   vite: {
+    plugins: [tailwindcss()],
     ssr: {
       noExternal: ['maplibre-gl'],
     },

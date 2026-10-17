@@ -4,33 +4,43 @@ interface Props {}
 <div class="card">
   <h2 class="text-2xl font-bold text-humanity-text mb-6">Live Global Counters</h2>
   <p class="text-sm text-humanity-textMuted mb-6">
-    Database metrics from monitored sources. Not real-world totals. <a href="/methodology" class="link">Methodology</a>
+    Counts describe published records in this database, not estimates of all activity. <a href="/methodology" class="link">Methodology</a>
   </p>
+  <p id="counters-refresh-status" class="mb-4 text-xs text-humanity-textMuted" aria-live="polite">Checking for updates…</p>
   <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4" id="counters">
     <!-- Counters will be populated by JS -->
   </div>
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', async () => {
-    const container = document.getElementById('counters');
-    if (!container) return;
-    
-    try {
-      const response = await fetch('/data/stats/global.json');
-      if (response.ok) {
-        const stats = await response.json();
-        renderCounters(stats);
-      } else {
-        renderMockCounters();
-      }
-    } catch {
-      renderMockCounters();
-    }
+  import { requireElement, sitePath } from '../lib/client-utils';
+
+  interface CounterStats {
+    [key: string]: unknown;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    refreshCounters();
+    window.setInterval(refreshCounters, 60_000);
   });
+
+  async function refreshCounters() {
+    const status = requireElement('counters-refresh-status', 'p');
+    try {
+      const response = await fetch(`${sitePath('data/stats/global.json')}?updated=${Date.now()}`, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`Counters request failed (${response.status})`);
+      const stats: unknown = await response.json();
+      if (!stats || typeof stats !== 'object' || Array.isArray(stats)) throw new Error('Counter data has an invalid format');
+      renderCounters(stats as CounterStats);
+      status.textContent = `Checked ${new Date().toLocaleTimeString()} · refreshes every minute`;
+    } catch (error) {
+      console.error('Could not load published counters:', error);
+      status.textContent = 'Counters are temporarily unavailable.';
+    }
+  }
   
-  function renderCounters(stats) {
-    const container = document.getElementById('counters');
+  function renderCounters(stats: CounterStats) {
+    const container = requireElement('counters', 'div');
     const counters = [
       { key: 'events_today', label: 'Events Today', icon: '📍', color: '#3b82f6' },
       { key: 'total_events', label: 'Total Events', icon: '📊', color: '#888888' },
@@ -38,49 +48,31 @@ interface Props {}
       { key: 'by_type.PROTEST', label: 'Protests', icon: '✊', color: '#3b82f6' },
       { key: 'by_type.CONFLICT', label: 'Conflicts', icon: '⚔️', color: '#ef4444' },
       { key: 'by_type.ATTACK', label: 'Attacks', icon: '💥', color: '#dc2626' },
-      { key: 'total_deaths_reported', label: 'Deaths Reported', icon: '☠️', color: '#ef4444' },
-      { key: 'total_injuries_reported', label: 'Injuries Reported', icon: '🤕', color: '#f97316' },
     ];
     
     container.innerHTML = counters.map(c => {
-      const value = getNestedValue(stats, c.key) || 0;
+      const rawValue = getNestedValue(stats, c.key);
+      const value = typeof rawValue === 'number' && Number.isFinite(rawValue)
+        ? formatNumber(rawValue)
+        : '—';
       return `
         <div class="stat-card" style="border-left: 3px solid ${c.color};">
           <div class="text-2xl mb-1">${c.icon}</div>
-          <div class="stat-value" style="color: ${c.color};">${formatNumber(value)}</div>
+          <div class="stat-value" style="color: ${c.color};">${value}</div>
           <div class="stat-label">${c.label}</div>
         </div>
       `;
     }).join('');
   }
   
-  function renderMockCounters() {
-    const container = document.getElementById('counters');
-    const mockData = [
-      { value: 247, label: 'Events Today', icon: '📍', color: '#3b82f6' },
-      { value: 12847, label: 'Total Events', icon: '📊', color: '#888888' },
-      { value: 87, label: 'Countries', icon: '🌍', color: '#0ea5e9' },
-      { value: 1247, label: 'Protests', icon: '✊', color: '#3b82f6' },
-      { value: 523, label: 'Conflicts', icon: '⚔️', color: '#ef4444' },
-      { value: 892, label: 'Attacks', icon: '💥', color: '#dc2626' },
-      { value: 12489, label: 'Deaths Reported', icon: '☠️', color: '#ef4444' },
-      { value: 34567, label: 'Injuries Reported', icon: '🤕', color: '#f97316' },
-    ];
-    
-    container.innerHTML = mockData.map(c => `
-      <div class="stat-card" style="border-left: 3px solid ${c.color};">
-        <div class="text-2xl mb-1">${c.icon}</div>
-        <div class="stat-value" style="color: ${c.color};">${formatNumber(c.value)}</div>
-        <div class="stat-label">${c.label}</div>
-      </div>
-    `).join('');
+  function getNestedValue(obj: CounterStats, path: string): unknown {
+    return path.split('.').reduce<unknown>((value, key) => {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+      return (value as Record<string, unknown>)[key];
+    }, obj);
   }
   
-  function getNestedValue(obj, path) {
-    return path.split('.').reduce((o, k) => (o || {})[k], obj);
-  }
-  
-  function formatNumber(num) {
+  function formatNumber(num: number) {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
     return num.toLocaleString();

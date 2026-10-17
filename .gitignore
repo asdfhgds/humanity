@@ -71,25 +71,8 @@ data/generated/*.json
 !data/locations/.gitkeep
 !data/generated/.gitkeep
 
-# Generated web data (keep structure)
-web/public/data/events/*.json
-web/public/data/map/*.json
-web/public/data/stats/*.json
-web/public/data/briefs/*.json
-web/public/data/timelines/*.json
-web/public/data/countries/*.json
-web/public/data/conflicts/*.json
-web/public/data/human-cost/*.json
-web/public/data/overlooked/*.json
-!web/public/data/events/.gitkeep
-!web/public/data/map/.gitkeep
-!web/public/data/stats/.gitkeep
-!web/public/data/briefs/.gitkeep
-!web/public/data/timelines/.gitkeep
-!web/public/data/countries/.gitkeep
-!web/public/data/conflicts/.gitkeep
-!web/public/data/human-cost/.gitkeep
-!web/public/data/overlooked/.gitkeep
+# Public feed data is committed by the ingestion workflow and copied into the
+# static site build; keep generated event and aggregate feeds trackable.
 
 # Secrets
 *.key

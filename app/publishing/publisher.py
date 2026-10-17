@@ -10,7 +10,7 @@ from app.models.schemas import Event, Source, Claim, EventType, ConfidenceLevel,
 from app.datastore import get_event_store, get_source_store, get_claim_store
 from app.scoring.score import EventScorer, decide_publish
 from app.utils import format_range, time_ago, clean_text, compute_article_hash
-from app.config import get_settings
+from app.config import get_settings, load_sources
 
 
 class EventPublisher:
@@ -61,6 +61,7 @@ class EventPublisher:
                 "publisher": source.publisher,
                 "title": source.title,
                 "url": str(source.url),
+                "image_url": str(source.image_url) if source.image_url else None,
                 "published_at": source.published_at.isoformat() if source.published_at else None,
                 "source_type": source.source_type.value,
                 "country": source.country,
@@ -243,15 +244,6 @@ class EventPublisher:
         with open(event_file, "w", encoding="utf-8") as f:
             json.dump(page_data, f, ensure_ascii=False, indent=2)
         
-        # Update map data
-        self._update_map_data(event, page_data)
-        
-        # Update country index
-        self._update_country_index(event, page_data)
-        
-        # Update timeline data
-        self._update_timeline_data(event, page_data)
-        
         # Update global stats
         self._update_global_stats()
         self._update_public_indexes()
@@ -264,137 +256,6 @@ class EventPublisher:
             path = self.web_data_dir / "events" / f"{event.slug.replace('/', '_')}.json"
             if path.exists():
                 path.unlink()
-
-    def _update_map_data(self, event: Event, page_data: Dict[str, Any]) -> None:
-        """Update map GeoJSON data."""
-        if event.latitude is None or event.longitude is None:
-            return
-        
-        map_file = self.web_data_dir / "map" / "events.geojson"
-        map_file.parent.mkdir(parents=True, exist_ok=True)
-        
-        feature = {
-            "type": "Feature",
-            "id": event.id,
-            "geometry": {
-                "type": "Point",
-                "coordinates": [event.longitude, event.latitude]
-            },
-            "properties": {
-                "id": event.id,
-                "slug": event.slug,
-                "title": event.title,
-                "event_type": event.event_type.value,
-                "country_code": event.country_code,
-                "country_name": event.country_name,
-                "city": event.city,
-                "date": event.start_time.strftime("%Y-%m-%d"),
-                "severity": event.severity,
-                "confidence": event.confidence.value,
-                "deaths": event.deaths_max or event.deaths_min,
-                "injuries": event.injured_max or event.injured_min,
-            }
-        }
-        
-        # Read existing
-        features = []
-        if map_file.exists():
-            try:
-                with open(map_file, "r") as f:
-                    data = json.load(f)
-                features = data.get("features", [])
-            except Exception:
-                features = []
-        
-        # Update or add
-        existing_idx = next((i for i, f in enumerate(features) if f.get("id") == event.id), None)
-        if existing_idx is not None:
-            features[existing_idx] = feature
-        else:
-            features.append(feature)
-        
-        # Keep only last 10000 events
-        features.sort(key=lambda f: f["properties"].get("date", ""), reverse=True)
-        features = features[:10000]
-        
-        geojson = {
-            "type": "FeatureCollection",
-            "features": features
-        }
-        
-        with open(map_file, "w") as f:
-            json.dump(geojson, f, ensure_ascii=False)
-
-    def _update_country_index(self, event: Event, page_data: Dict[str, Any]) -> None:
-        """Update country index."""
-        country_file = self.web_data_dir / "countries" / f"{event.country_code.lower()}.json"
-        country_file.parent.mkdir(parents=True, exist_ok=True)
-        
-        country_data = {
-            "code": event.country_code,
-            "name": event.country_name,
-            "last_event": page_data,
-            "updated_at": datetime.utcnow().isoformat(),
-        }
-        
-        # Load existing
-        existing = {}
-        if country_file.exists():
-            try:
-                with open(country_file, "r") as f:
-                    existing = json.load(f)
-            except Exception:
-                pass
-        
-        # Update event counts - only publicly visible events
-        events = self.event_store.get_publicly_visible()
-        country_events = [e for e in events if e.country_code == event.country_code]
-        country_data["event_count"] = len(country_events)
-        country_data["recent_events"] = [e.slug for e in country_events[:20]]
-        
-        # Count by type
-        type_counts = {}
-        for e in country_events:
-            type_counts[e.event_type.value] = type_counts.get(e.event_type.value, 0) + 1
-        country_data["type_counts"] = type_counts
-        
-        # Merge
-        country_data = {**existing, **country_data}
-        
-        with open(country_file, "w", encoding="utf-8") as f:
-            json.dump(country_data, f, ensure_ascii=False, indent=2)
-
-    def _update_timeline_data(self, event: Event, page_data: Dict[str, Any]) -> None:
-        """Update timeline data."""
-        timeline_file = self.web_data_dir / "timelines" / f"{event.country_code.lower()}.json"
-        timeline_file.parent.mkdir(parents=True, exist_ok=True)
-        
-        timeline_entry = {
-            "id": event.id,
-            "slug": event.slug,
-            "date": event.start_time.strftime("%Y-%m-%d"),
-            "title": event.title,
-            "event_type": event.event_type.value,
-            "severity": event.severity,
-            "city": event.city,
-        }
-        
-        timeline = []
-        if timeline_file.exists():
-            try:
-                with open(timeline_file, "r") as f:
-                    timeline = json.load(f)
-            except Exception:
-                pass
-        
-        # Add if not exists
-        if not any(e["id"] == event.id for e in timeline):
-            timeline.append(timeline_entry)
-        
-        timeline.sort(key=lambda e: e["date"], reverse=True)
-        
-        with open(timeline_file, "w") as f:
-            json.dump(timeline, f, ensure_ascii=False, indent=2)
 
     def _update_global_stats(self) -> None:
         """Update global statistics."""
@@ -416,8 +277,6 @@ class EventPublisher:
             "countries_affected": len(set(e.country_code for e in published_events)),
             "by_type": {},
             "by_severity": {},
-            "total_deaths_reported": sum(e.deaths_max or 0 for e in published_events),
-            "total_injuries_reported": sum(e.injured_max or 0 for e in published_events),
             "last_updated": datetime.utcnow().isoformat(),
         }
         
@@ -448,6 +307,22 @@ class EventPublisher:
             with open(destination, "w", encoding="utf-8") as output:
                 json.dump(payload, output, ensure_ascii=False, indent=2)
 
+        def remove_stale_json_files(folder: Path, keep: set[str]) -> None:
+            if not folder.exists():
+                return
+            for path in folder.glob("*.json"):
+                if path.name not in keep:
+                    path.unlink()
+
+        event_directory = self.web_data_dir / "events"
+        event_directory.mkdir(parents=True, exist_ok=True)
+        event_files = {
+            f"{event.slug.replace('/', '_')}.json"
+            for event in published_events
+            if event.slug
+        }
+        remove_stale_json_files(event_directory, event_files | {"all.json", "recent.json"})
+
         write_json("events/all.json", event_data)
         write_json("events/recent.json", event_data[:100])
         for event_type in EventType:
@@ -456,8 +331,38 @@ class EventPublisher:
                 [item for item in event_data if item["event_type"] == event_type.value],
             )
 
-        countries: Dict[str, Dict[str, Any]] = {}
+        map_features = []
         for event in published_events:
+            if event.latitude is None or event.longitude is None:
+                continue
+            map_features.append({
+                "type": "Feature",
+                "id": event.id,
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [event.longitude, event.latitude],
+                },
+                "properties": {
+                    "id": event.id,
+                    "slug": event.slug,
+                    "title": event.title,
+                    "event_type": event.event_type.value,
+                    "country_code": event.country_code,
+                    "country_name": event.country_name,
+                    "city": event.city,
+                    "date": event.start_time.strftime("%Y-%m-%d"),
+                    "severity": event.severity,
+                    "confidence": event.confidence.value,
+                    "deaths": event.deaths_max or event.deaths_min,
+                    "injuries": event.injured_max or event.injured_min,
+                },
+            })
+        write_json("map/events.geojson", {"type": "FeatureCollection", "features": map_features[:10000]})
+
+        countries: Dict[str, Dict[str, Any]] = {}
+        country_events: Dict[str, List[Event]] = {}
+        for event in published_events:
+            country_events.setdefault(event.country_code, []).append(event)
             country = countries.setdefault(
                 event.country_code,
                 {
@@ -467,17 +372,60 @@ class EventPublisher:
                     "events": 0,
                     "protests": 0,
                     "conflicts": 0,
-                    "deaths": 0,
-                    "displaced": 0,
                     "recent": event.start_time.isoformat(),
                 },
             )
             country["events"] += 1
             country["protests"] += int(event.event_type == EventType.PROTEST)
             country["conflicts"] += int(event.event_type == EventType.CONFLICT)
-            country["deaths"] += event.deaths_max or event.deaths_min or 0
-            country["displaced"] += event.displaced_max or event.displaced_min or 0
         write_json("countries/all.json", sorted(countries.values(), key=lambda item: item["events"], reverse=True))
+
+        country_directory = self.web_data_dir / "countries"
+        country_directory.mkdir(parents=True, exist_ok=True)
+        keep_country_files = {"all.json"}
+        for country_code, events in country_events.items():
+            latest_event = events[0]
+            type_counts: Dict[str, int] = {}
+            for event in events:
+                type_counts[event.event_type.value] = type_counts.get(event.event_type.value, 0) + 1
+            relative_path = f"countries/{country_code.lower()}.json"
+            keep_country_files.add(f"{country_code.lower()}.json")
+            write_json(
+                relative_path,
+                {
+                    "code": country_code,
+                    "name": latest_event.country_name,
+                    "last_event": self.build_event_page_data(latest_event),
+                    "updated_at": datetime.utcnow().isoformat(),
+                    "event_count": len(events),
+                    "recent_events": [event.slug for event in events[:20]],
+                    "type_counts": type_counts,
+                },
+            )
+        remove_stale_json_files(country_directory, keep_country_files)
+
+        timeline_directory = self.web_data_dir / "timelines"
+        timeline_directory.mkdir(parents=True, exist_ok=True)
+        keep_timeline_files: set[str] = set()
+        for country_code, events in country_events.items():
+            relative_path = f"timelines/{country_code.lower()}.json"
+            keep_timeline_files.add(f"{country_code.lower()}.json")
+            write_json(
+                relative_path,
+                [
+                    {
+                        "id": event.id,
+                        "slug": event.slug,
+                        "date": event.start_time.strftime("%Y-%m-%d"),
+                        "title": event.title,
+                        "event_type": event.event_type.value,
+                        "severity": event.severity,
+                        "city": event.city,
+                    }
+                    for event in events
+                ],
+            )
+        remove_stale_json_files(timeline_directory, keep_timeline_files)
 
         conflict_groups: Dict[str, List[Event]] = {}
         for event in published_events:
@@ -491,8 +439,6 @@ class EventPublisher:
                     "countries": ", ".join(sorted({event.country_name for event in events})),
                     "status": "Active" if any(event.status.value in ("developing", "ongoing") for event in events) else "Ended",
                     "events": len(events),
-                    "deaths": sum(event.deaths_max or event.deaths_min or 0 for event in events),
-                    "displaced": sum(event.displaced_max or event.displaced_min or 0 for event in events),
                     "since": min(event.start_time for event in events).strftime("%b %Y"),
                     "slug": conflict_id,
                 }
@@ -500,27 +446,50 @@ class EventPublisher:
         write_json("conflicts/all.json", conflicts)
 
         def impact_item(event: Event) -> Dict[str, Any]:
-            return {
+            sources = self.source_store.get_by_event(event.id)
+            item = {
                 "name": event.title,
                 "slug": event.slug,
                 "date": event.start_time.strftime("%Y-%m-%d"),
-                "deaths": {"min": event.deaths_min or 0, "max": event.deaths_max or event.deaths_min or 0, "sources": ["Published event records"]},
-                "injuries": {"min": event.injured_min or 0, "max": event.injured_max or event.injured_min or 0},
-                "displaced": event.displaced_max or event.displaced_min or 0,
-                "children": 0,
-                "hospitals": 0,
-                "source": "Published event records",
+                "country": event.country_name,
+                "city": event.city,
+                "confidence": event.confidence.value,
+                "source_count": len(sources),
+                "source_names": sorted({source.publisher for source in sources if source.publisher}),
             }
+            for key, low, high in (
+                ("deaths", "deaths_min", "deaths_max"),
+                ("injuries", "injured_min", "injured_max"),
+                ("displaced", "displaced_min", "displaced_max"),
+            ):
+                minimum = getattr(event, low)
+                maximum = getattr(event, high)
+                if minimum is not None or maximum is not None:
+                    item[key] = {"min": minimum, "max": maximum}
+            return item
+
+        source_registry = [
+            {
+                "name": source.name,
+                "url": str(source.url),
+                "type": source.type,
+                "country": source.country,
+                "language": source.language,
+                "enabled": source.enabled,
+                "roles": source.roles,
+            }
+            for sources in load_sources().values()
+            for source in sources
+        ]
+        write_json("sources/all.json", {
+            "generated_at": datetime.utcnow().isoformat(),
+            "sources": source_registry,
+        })
 
         write_json(
             "human-cost/global.json",
             {
-                "total_deaths": sum(event.deaths_max or event.deaths_min or 0 for event in published_events),
-                "total_injuries": sum(event.injured_max or event.injured_min or 0 for event in published_events),
-                "total_displaced": sum(event.displaced_max or event.displaced_min or 0 for event in published_events),
-                "total_arrested": sum(event.arrested_max or event.arrested_min or 0 for event in published_events),
-                "hospitals_affected": 0,
-                "children_affected": 0,
+                "generated_at": datetime.utcnow().isoformat(),
                 "conflicts": [impact_item(event) for event in published_events if event.event_type == EventType.CONFLICT],
                 "disasters": [impact_item(event) for event in published_events if event.event_type == EventType.DISASTER],
             },

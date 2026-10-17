@@ -1,0 +1,69 @@
+---
+import { editorialImages, type EditorialImageKey } from '../data/editorial-images';
+
+interface Props {
+  image: EditorialImageKey;
+  class?: string;
+  imageClass?: string;
+  showCaption?: boolean;
+  priority?: boolean;
+}
+
+const { image, class: className = '', imageClass = '', showCaption = true, priority = false } = Astro.props;
+const asset = editorialImages[image];
+const creatorUrl = 'creatorUrl' in asset ? asset.creatorUrl : undefined;
+const imageBasePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+<figure class:list={['story-image', className]}>
+  <img
+    src={`${imageBasePath}/images/editorial/${asset.file}`}
+    alt={asset.alt}
+    class:list={['story-image__photo', imageClass]}
+    loading={priority ? 'eager' : 'lazy'}
+    fetchpriority={priority ? 'high' : 'auto'}
+    data-editorial-photo
+  />
+  <div class="story-image__fallback" hidden role="img" aria-label={asset.alt}>Photograph unavailable</div>
+  {showCaption && (
+    <figcaption class="story-image__caption">
+      <span>{asset.caption}</span>
+      <span class="story-image__credit">
+      Photo: {creatorUrl ? <a href={creatorUrl} target="_blank" rel="noopener noreferrer">{asset.creator}</a> : asset.creator} · <a href={asset.commonsUrl} target="_blank" rel="noopener noreferrer">Wikimedia Commons</a> ·
+        <a href={asset.licenseUrl} target="_blank" rel="noopener noreferrer">{asset.license}</a>
+      </span>
+    </figcaption>
+  )}
+</figure>
+
+<script>
+  document.addEventListener('error', (event) => {
+    const image = event.target;
+    if (!(image instanceof HTMLImageElement) || !image.hasAttribute('data-editorial-photo')) return;
+    image.hidden = true;
+    const fallback = image.nextElementSibling;
+    if (fallback instanceof HTMLElement) fallback.hidden = false;
+  }, true);
+</script>
+
+<style>
+  .story-image { min-width: 0; }
+  .story-image__photo { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; }
+  .story-image__fallback {
+    min-height: 14rem;
+    display: grid;
+    place-items: center;
+    background: #e9e4dc;
+    color: #5d5a54;
+    font: 500 .9rem/1.4 system-ui, sans-serif;
+  }
+  .story-image__fallback[hidden], .story-image__photo[hidden] { display: none; }
+  .story-image__caption {
+    display: grid;
+    gap: .25rem;
+    padding-top: .55rem;
+    color: #68645f;
+    font: 400 .7rem/1.45 system-ui, sans-serif;
+  }
+  .story-image__credit { color: #77716a; }
+  .story-image__credit a { text-decoration: underline; text-underline-offset: 2px; }
+</style>

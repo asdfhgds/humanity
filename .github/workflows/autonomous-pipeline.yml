@@ -2,8 +2,8 @@ name: HUMANITY Autonomous Pipeline
 
 on:
   schedule:
-    # Every 30 minutes
-    - cron: '*/30 * * * *'
+    # GitHub Actions schedules are best-effort; five minutes is the shortest supported interval.
+    - cron: '*/5 * * * *'
     # Daily at 02:00 UTC for daily brief
     - cron: '0 2 * * *'
   workflow_dispatch:
@@ -11,7 +11,7 @@ on:
       hours_back:
         description: 'Hours back for discovery'
         required: false
-        default: '6'
+        default: '1'
       force_publish:
         description: 'Force publish all events'
         required: false
@@ -23,6 +23,8 @@ concurrency:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
   discover-and-publish:
@@ -65,7 +67,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: web/package-lock.json
 
@@ -76,7 +78,11 @@ jobs:
 
       - name: Run Discovery Pipeline
         run: |
-          python -m app.cli run --hours ${{ github.event.inputs.hours_back || '6' }}
+          python -m app.cli run --hours ${{ github.event.inputs.hours_back || '1' }}
+
+      - name: Generate Daily Brief
+        run: |
+          python -c "from app.publishing.publisher import EventPublisher; EventPublisher().generate_daily_brief()"
 
       - name: Persist validated state and generated public data
         run: |
@@ -91,48 +97,22 @@ jobs:
           cd web
           npm run build
 
-      - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v4
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: humanity-build
           path: web/dist/
-          retention-days: 7
 
-  daily-brief:
-    name: Generate Daily Brief
+  deploy-site:
+    name: Deploy Updated Site
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    
-    env:
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      GEMINI_MODEL: ${{ secrets.GEMINI_MODEL || 'gemini-flash-latest' }}
-
+    needs: discover-and-publish
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-
-      - name: Install Python dependencies
-        run: |
-          pip install --upgrade pip
-          pip install -e .
-
-      - name: Generate Daily Brief
-        run: |
-          python -c "from app.publishing.publisher import EventPublisher; EventPublisher().generate_daily_brief()"
-
-      - name: Commit Daily Brief
-        run: |
-          git config user.name "HUMANITY Bot"
-          git config user.email "humanity-bot@users.noreply.github.com"
-          git add web/public/data/briefs/
-          git diff --staged --quiet || git commit -m "🤖 Daily brief: $(date +%Y-%m-%d)"
-          git push
+      - id: deployment
+        name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
 
   health-check:
     name: Source Health Check

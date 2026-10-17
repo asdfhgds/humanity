@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import StoryImage from '../components/StoryImage.astro';
 ---
 
 <BaseLayout title="Countries | HUMANITY" description="Browse events by country. View protests, conflicts, humanitarian events, and human impact for every nation.">
@@ -19,6 +20,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             <span class="text-humanity-textMuted">/</span>
             <span class="text-humanity-text">Countries</span>
           </div>
+          <button id="countries-retry" type="button" class="btn-secondary mt-5 hidden">Retry loading countries</button>
           <nav class="hidden md:flex items-center gap-6">
             <a href="/" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Home</a>
             <a href="/map" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Map</a>
@@ -36,11 +38,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="mb-8">
-        <h1 class="text-3xl font-bold text-humanity-text mb-2 flex items-center gap-3">
-          <span style="color: #0ea5e9;">🌍</span>
-          Countries
-        </h1>
-        <p class="text-humanity-textMuted">Browse events by country. Every nation with detected human events.</p>
+        <div class="grid items-center gap-6 border-b border-humanity-border pb-8 sm:grid-cols-[1fr_22rem]">
+          <div><p class="eyebrow">Places and people</p><h1 class="editorial-title mt-2 text-4xl font-bold">Countries</h1><p class="mt-3 text-humanity-textMuted">Browse places represented in the published event database.</p></div>
+          <StoryImage image="geography" />
+        </div>
       </div>
 
       <!-- Search -->
@@ -64,8 +65,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <div>
             <label class="block text-sm text-humanity-textMuted mb-1">Sort by</label>
             <select id="sort-filter" class="input">
-              <option value="events">Most Events</option>
-              <option value="deaths">Most Deaths</option>
+              <option value="events">Most published events</option>
               <option value="name">Alphabetical</option>
               <option value="recent">Most Recent</option>
             </select>
@@ -74,7 +74,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </div>
 
       <!-- Countries Grid -->
-      <div id="countries-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div id="countries-grid" class="country-index grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6">
         <div class="card text-center py-12 col-span-full">
           <div class="animate-pulse-soft text-humanity-textMuted">Loading countries...</div>
         </div>
@@ -83,65 +83,75 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </div>
 
 <script>
-  let allCountries = [];
+  import { escapeHtml, requireElement, sitePath } from '../lib/client-utils';
+
+  interface CountryRecord {
+    name: string;
+    code: string;
+    region?: string;
+    events?: number;
+    protests?: number;
+    conflicts?: number;
+    recent?: string;
+  }
+
+  function isCountryRecord(value: unknown): value is CountryRecord {
+    if (!value || typeof value !== 'object') return false;
+    const record = value as Record<string, unknown>;
+    return typeof record.name === 'string' &&
+      typeof record.code === 'string' &&
+      (record.region === undefined || typeof record.region === 'string') &&
+      (record.events === undefined || typeof record.events === 'number') &&
+      (record.protests === undefined || typeof record.protests === 'number') &&
+      (record.conflicts === undefined || typeof record.conflicts === 'number') &&
+      (record.recent === undefined || typeof record.recent === 'string');
+  }
+
+  let allCountries: CountryRecord[] = [];
 
   document.addEventListener('DOMContentLoaded', async () => {
     await loadCountries();
     setupFilters();
+    requireElement('countries-retry', 'button').addEventListener('click', loadCountries);
   });
 
   async function loadCountries() {
-    const grid = document.getElementById('countries-grid');
+    const grid = requireElement('countries-grid', 'div');
+    const retry = requireElement('countries-retry', 'button');
+    retry.classList.add('hidden');
     try {
-      const response = await fetch('/data/countries/all.json');
-      if (response.ok) {
-        allCountries = await response.json();
-      } else {
-        allCountries = getMockCountries();
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 10_000);
+      let response;
+      try {
+        response = await fetch(sitePath('data/countries/all.json'), { signal: controller.signal, cache: 'no-store' });
+      } finally {
+        window.clearTimeout(timeout);
       }
+      if (!response.ok) throw new Error(`Country feed request failed (${response.status})`);
+      const countries: unknown = await response.json();
+      if (!Array.isArray(countries) || countries.some((country: unknown) => !isCountryRecord(country))) {
+        throw new Error('Country feed has an invalid format');
+      }
+      allCountries = countries as CountryRecord[];
       renderCountries();
-    } catch {
-      allCountries = getMockCountries();
-      renderCountries();
+    } catch (error) {
+      console.error('Could not load published country data:', error);
+      grid.innerHTML = '<div class="col-span-full border-y border-humanity-border py-12 text-center"><h2 class="font-semibold text-humanity-text">Country data is unavailable</h2><p class="mt-2 text-sm text-humanity-textMuted">We could not load the published country feed. Please try again later.</p></div>';
+      retry.classList.remove('hidden');
     }
-  }
-
-  function getMockCountries() {
-    return [
-      { code: 'UA', name: 'Ukraine', region: 'Europe', events: 2847, protests: 12, conflicts: 2847, deaths: 500000, displaced: 6500000, recent: '2026-10-08' },
-      { code: 'PS', name: 'Palestine', region: 'Asia', events: 1203, protests: 45, conflicts: 892, deaths: 40000, displaced: 1900000, recent: '2026-10-08' },
-      { code: 'SD', name: 'Sudan', region: 'Africa', events: 892, protests: 23, conflicts: 892, deaths: 15000, displaced: 8500000, recent: '2026-10-08' },
-      { code: 'MM', name: 'Myanmar', region: 'Asia', events: 2156, protests: 156, conflicts: 1890, deaths: 50000, displaced: 2700000, recent: '2026-10-07' },
-      { code: 'FR', name: 'France', region: 'Europe', events: 342, protests: 298, conflicts: 0, deaths: 0, displaced: 0, recent: '2026-10-08' },
-      { code: 'CD', name: 'DR Congo', region: 'Africa', events: 1423, protests: 34, conflicts: 1234, deaths: 12000, displaced: 6900000, recent: '2026-10-07' },
-      { code: 'SY', name: 'Syria', region: 'Asia', events: 3421, protests: 89, conflicts: 3120, deaths: 500000, displaced: 13000000, recent: '2026-10-06' },
-      { code: 'YE', name: 'Yemen', region: 'Asia', events: 567, protests: 12, conflicts: 489, deaths: 377000, displaced: 4500000, recent: '2026-10-05' },
-      { code: 'AF', name: 'Afghanistan', region: 'Asia', events: 678, protests: 23, conflicts: 456, deaths: 15000, displaced: 3200000, recent: '2026-10-07' },
-      { code: 'ET', name: 'Ethiopia', region: 'Africa', events: 534, protests: 67, conflicts: 389, deaths: 25000, displaced: 4100000, recent: '2026-10-06' },
-      { code: 'IR', name: 'Iran', region: 'Asia', events: 234, protests: 189, conflicts: 0, deaths: 120, displaced: 0, recent: '2026-10-08' },
-      { code: 'AR', name: 'Argentina', region: 'Americas', events: 156, protests: 142, conflicts: 0, deaths: 5, displaced: 0, recent: '2026-10-07' },
-      { code: 'BR', name: 'Brazil', region: 'Americas', events: 289, protests: 234, conflicts: 0, deaths: 34, displaced: 12000, recent: '2026-10-06' },
-      { code: 'NG', name: 'Nigeria', region: 'Africa', events: 1123, protests: 89, conflicts: 890, deaths: 40000, displaced: 3500000, recent: '2026-10-06' },
-      { code: 'CO', name: 'Colombia', region: 'Americas', events: 789, protests: 234, conflicts: 456, deaths: 450000, displaced: 7800000, recent: '2026-10-05' },
-      { code: 'DE', name: 'Germany', region: 'Europe', events: 123, protests: 112, conflicts: 0, deaths: 0, displaced: 0, recent: '2026-10-06' },
-      { code: 'IN', name: 'India', region: 'Asia', events: 456, protests: 389, conflicts: 23, deaths: 234, displaced: 56000, recent: '2026-10-05' },
-      { code: 'PK', name: 'Pakistan', region: 'Asia', events: 345, protests: 156, conflicts: 189, deaths: 5600, displaced: 1200000, recent: '2026-10-05' },
-      { code: 'SO', name: 'Somalia', region: 'Africa', events: 456, protests: 12, conflicts: 434, deaths: 12000, displaced: 2900000, recent: '2026-10-05' },
-      { code: 'ML', name: 'Mali', region: 'Africa', events: 345, protests: 23, conflicts: 312, deaths: 8000, displaced: 560000, recent: '2026-10-05' },
-      { code: 'BF', name: 'Burkina Faso', region: 'Africa', events: 234, protests: 34, conflicts: 210, deaths: 12000, displaced: 2100000, recent: '2026-10-05' },
-    ];
   }
 
   function setupFilters() {
     ['search-input', 'region-filter', 'sort-filter'].forEach(id => {
-      document.getElementById(id).addEventListener('input', renderCountries);
+      requireElement(id, id === 'search-input' ? 'input' : 'select').addEventListener('input', renderCountries);
     });
   }
 
   function getFilteredCountries() {
-    const search = document.getElementById('search-input').value.toLowerCase();
-    const region = document.getElementById('region-filter').value;
-    const sort = document.getElementById('sort-filter').value;
+    const search = requireElement('search-input', 'input').value.toLowerCase();
+    const region = requireElement('region-filter', 'select').value;
+    const sort = requireElement('sort-filter', 'select').value;
 
     let filtered = allCountries.filter(c => {
       if (search && !c.name.toLowerCase().includes(search)) return false;
@@ -150,14 +160,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     });
 
     switch (sort) {
-      case 'deaths':
-        filtered.sort((a, b) => (b.deaths || 0) - (a.deaths || 0));
-        break;
       case 'name':
         filtered.sort((a, b) => a.name.localeCompare(b.name));
         break;
       case 'recent':
-        filtered.sort((a, b) => new Date(b.recent) - new Date(a.recent));
+        filtered.sort((a, b) => new Date(b.recent || 0).getTime() - new Date(a.recent || 0).getTime());
         break;
       default:
         filtered.sort((a, b) => (b.events || 0) - (a.events || 0));
@@ -167,66 +174,54 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   }
 
   function renderCountries() {
-    const grid = document.getElementById('countries-grid');
+    const grid = requireElement('countries-grid', 'div');
     const filtered = getFilteredCountries();
 
     if (filtered.length === 0) {
-      grid.innerHTML = `<div class="card text-center py-12 col-span-full"><h3 class="text-lg font-medium text-humanity-text mb-2">No countries found</h3><p class="text-humanity-textMuted">Try adjusting your filters.</p></div>`;
+      grid.innerHTML = '<div class="col-span-full border-y border-humanity-border py-12 text-center"><h3 class="text-lg font-medium text-humanity-text mb-2">No countries found</h3><p class="text-humanity-textMuted">Try adjusting your filters.</p></div>';
       return;
     }
 
     grid.innerHTML = filtered.map(c => `
-      <article class="card p-5 hover:shadow-lg transition-shadow" onclick="window.location.href='/country/${c.code.toLowerCase()}'">
+      <article class="country-entry border-t border-humanity-border py-5">
         <div class="flex items-start justify-between mb-3">
           <div class="flex items-center gap-3">
-            <span class="text-2xl">${getFlagEmoji(c.code)}</span>
+            <span class="rounded border border-humanity-border px-2 py-1 font-mono text-xs text-humanity-textMuted">${escapeHtml(c.code)}</span>
             <div>
-              <h3 class="font-semibold text-humanity-text">${c.name}</h3>
-              <p class="text-xs text-humanity-textMuted">${c.region}</p>
+              <h3 class="font-semibold text-humanity-text">${escapeHtml(c.name)}</h3>
+              <p class="text-xs text-humanity-textMuted">${escapeHtml(c.region || 'Region unspecified')}</p>
             </div>
           </div>
-          ${c.conflicts > 0 ? '<span class="badge bg-red-500/20 text-red-400 border border-red-500/30">Conflict</span>' : ''}
+          ${(c.conflicts ?? 0) > 0 ? '<span class="badge bg-red-500/20 text-red-400 border border-red-500/30">Conflict records</span>' : ''}
         </div>
         
-        <div class="grid grid-cols-2 gap-3 mb-3">
-          <div class="text-center p-2 rounded" style="background: #3b82f610;">
-            <div class="text-lg font-bold text-blue-400">${c.events.toLocaleString()}</div>
-            <div class="text-xs text-humanity-textMuted">Total Events</div>
+        <div class="grid grid-cols-2 gap-3 mb-3 border-y border-humanity-border py-3">
+        <div class="text-left">
+          <div class="text-lg font-bold text-humanity-accent">${typeof c.events === 'number' && Number.isSafeInteger(c.events) ? c.events.toLocaleString() : '—'}</div>
+            <div class="text-xs text-humanity-textMuted">Published events</div>
           </div>
-          <div class="text-center p-2 rounded" style="background: #ef444410;">
-            <div class="text-lg font-bold text-red-400">${(c.deaths || 0).toLocaleString()}</div>
-            <div class="text-xs text-humanity-textMuted">Deaths</div>
-          </div>
-          <div class="text-center p-2 rounded" style="background: #3b82f610;">
-            <div class="text-lg font-bold text-blue-400">${c.protests.toLocaleString()}</div>
+        <div class="text-left">
+          <div class="text-lg font-bold text-humanity-accent">${typeof c.protests === 'number' && Number.isSafeInteger(c.protests) ? c.protests.toLocaleString() : '—'}</div>
             <div class="text-xs text-humanity-textMuted">Protests</div>
-          </div>
-          <div class="text-center p-2 rounded" style="background: #f9731610;">
-            <div class="text-lg font-bold text-orange-400">${(c.displaced || 0).toLocaleString()}</div>
-            <div class="text-xs text-humanity-textMuted">Displaced</div>
           </div>
         </div>
 
         <div class="text-xs text-humanity-textMuted">
-          Last event: ${formatDate(c.recent)}
+          Latest event date in feed: ${escapeHtml(formatDate(c.recent))}
         </div>
       </article>
     `).join('');
   }
 
-  function getFlagEmoji(code) {
-    // Simple flag emoji approximation
-    const flags = {
-      'UA': '🇺🇦', 'PS': '🇵🇸', 'SD': '🇸🇩', 'MM': '🇲🇲', 'FR': '🇫🇷',
-      'CD': '🇨🇩', 'SY': '🇸🇾', 'YE': '🇾🇪', 'AF': '🇦🇫', 'ET': '🇪🇹',
-      'IR': '🇮🇷', 'AR': '🇦🇷', 'BR': '🇧🇷', 'NG': '🇳🇬', 'CO': '🇨🇴',
-      'DE': '🇩🇪', 'IN': '🇮🇳', 'PK': '🇵🇰', 'SO': '🇸🇴', 'ML': '🇲🇱', 'BF': '🇧🇫'
-    };
-    return flags[code] || '🏳️';
-  }
-
-  function formatDate(dateStr) {
+  function formatDate(dateStr: string | undefined) {
     if (!dateStr) return 'Unknown';
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 </script>
+
+<style>
+  .country-index { border-bottom: 1px solid #d7d0c5; }
+  .country-entry { min-width: 0; }
+  @media (min-width: 640px) { .country-entry:nth-child(2) { border-top: 1px solid #d7d0c5; } }
+</style>
+</BaseLayout>

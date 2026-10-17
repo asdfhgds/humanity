@@ -1,9 +1,27 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 
 export async function getStaticPaths() {
-  // For now, return empty paths - we'll use client-side rendering
-  return [];
+  const indexPath = resolve(process.cwd(), 'public', 'data', 'events', 'all.json');
+  let publishedEvents;
+  try {
+    publishedEvents = JSON.parse(await readFile(indexPath, 'utf8'));
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return [];
+    throw error;
+  }
+  if (!Array.isArray(publishedEvents)) throw new Error('The published events index must contain an array');
+
+  return publishedEvents
+    .filter((event) =>
+      event &&
+      typeof event.slug === 'string' &&
+      event.slug.length > 0 &&
+      (event.publication_status === 'published' || event.publication_status === 'published_with_warning'),
+    )
+    .map((event) => ({ params: { slug: event.slug } }));
 }
 
 const { slug } = Astro.params;
@@ -32,21 +50,36 @@ const slugStr = Array.isArray(slug) ? slug.join('/') : slug;
   </div>
 
 <script>
+  import { escapeHtml, eventPath, parsePublishedEvent, parsePublishedEvents, requireElement, safeExternalUrl, sitePath, type PublishedEvent, type PublishedClaim, type PublishedSource } from '../../lib/client-utils';
+
   document.addEventListener('DOMContentLoaded', async () => {
-    const container = document.getElementById('event-container');
-    if (!container) return;
+    const container = requireElement('event-container', 'div');
     
     try {
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
+      const eventIndex = pathParts.lastIndexOf('event');
+      const slugStr = pathParts.slice(eventIndex + 1).map(decodeURIComponent).join('/');
       // Convert slug back to file path
       const fileSlug = slugStr.replace(/\//g, '_');
-      const response = await fetch(`/data/events/${fileSlug}.json`);
-      
-      if (!response.ok) {
-        throw new Error('Event not found');
+      let response = await fetch(sitePath(`data/events/${fileSlug}.json`));
+      let event: PublishedEvent;
+      if (response.ok) {
+        event = parsePublishedEvent(await response.json());
+      } else {
+        response = await fetch(sitePath('data/events/all.json'));
+        if (!response.ok) throw new Error('Event data could not be loaded');
+        const indexedEvents = parsePublishedEvents(await response.json());
+        const matchedEvent = indexedEvents.find(item => item.slug === slugStr);
+        if (!matchedEvent) throw new Error('Event not found');
+        event = matchedEvent;
       }
-      
-      const event = await response.json();
-      renderEvent(event);
+      let allEvents: PublishedEvent[] = [];
+      if (event.related_events?.length) {
+        const eventsResponse = await fetch(sitePath('data/events/all.json'));
+        if (!eventsResponse.ok) throw new Error('Related event index could not be loaded');
+        allEvents = parsePublishedEvents(await eventsResponse.json());
+      }
+      renderEvent(event, allEvents);
       
       // Update page title
       document.title = `${event.title} | HUMANITY`;
@@ -58,6 +91,7 @@ const slugStr = Array.isArray(slug) ? slug.join('/') : slug;
       }
       
     } catch (error) {
+      console.error('Could not load published event record:', error);
       container.innerHTML = `
         <div class="card text-center py-12">
           <h2 class="text-xl font-semibold text-humanity-text mb-2">Event Not Found</h2>
@@ -68,10 +102,10 @@ const slugStr = Array.isArray(slug) ? slug.join('/') : slug;
     }
   });
   
-  function renderEvent(event) {
-    const container = document.getElementById('event-container');
+  function renderEvent(event: PublishedEvent, allEvents: PublishedEvent[]) {
+    const container = requireElement('event-container', 'div');
     
-    const typeColors = {
+    const typeColors: Record<string, string> = {
       PROTEST: '#3b82f6',
       CONFLICT: '#ef4444',
       ATTACK: '#dc2626',
@@ -83,7 +117,9 @@ const slugStr = Array.isArray(slug) ? slug.join('/') : slug;
     };
     
     const color = typeColors[event.event_type] || '#888888';
-    const typeLabel = event.event_type.replace('_', ' ');
+    const typeLabel = escapeHtml(String(event.event_type || 'Event').replaceAll('_', ' '));
+    const confidence = String(event.confidence || 'LOW');
+    const sourceCount = event.sources?.length ?? 0;
     
     container.innerHTML = `
       <article class="space-y-8">
@@ -91,22 +127,22 @@ const slugStr = Array.isArray(slug) ? slug.join('/') : slug;
         <header class="space-y-4">
           <div class="flex flex-wrap items-center gap-3">
             <span class="px-3 py-1 rounded-full text-sm font-medium text-white" style="background: ${color};">${typeLabel}</span>
-            <span class="px-3 py-1 rounded-full text-sm font-medium badge-confidence-${event.confidence.toLowerCase()}">${event.confidence}</span>
+            <span class="px-3 py-1 rounded-full text-sm font-medium badge-confidence-${escapeHtml(confidence.toLowerCase())}">${escapeHtml(event.confidence || 'Reported')}</span>
             ${event.publish_warning ? '<span class="px-3 py-1 rounded-full text-sm font-medium bg-amber-500/20 text-amber-400 border border-amber-500/30">⚠️ Developing Story</span>' : ''}
           </div>
           
-          <h1 class="text-3xl sm:text-4xl font-bold text-humanity-text leading-tight">${event.title}</h1>
+          <h1 class="text-3xl sm:text-4xl font-bold text-humanity-text leading-tight">${escapeHtml(event.title)}</h1>
           
           <div class="flex flex-wrap items-center gap-4 text-sm text-humanity-textMuted border-t border-humanity-border pt-4">
-            <span>📍 ${event.city || 'Unknown location'}, ${event.country_name}</span>
-            <span>📅 ${formatDate(event.start_time)}${event.end_time ? ` – ${formatDate(event.end_time)}` : ''}</span>
-            <span>📰 ${event.sources?.length || 0} source${event.sources?.length !== 1 ? 's' : ''}</span>
-            ${event.severity ? `<span>Severity: ${event.severity}/10</span>` : ''}
+            <span>📍 ${escapeHtml([event.city, event.country_name].filter(Boolean).join(', ') || 'Unknown location')}</span>
+            <span>📅 ${escapeHtml(formatDate(event.start_time))}${event.end_time ? ` – ${escapeHtml(formatDate(event.end_time))}` : ''}</span>
+            <span>📰 ${Number.isSafeInteger(sourceCount) ? sourceCount : 0} source${sourceCount !== 1 ? 's' : ''}</span>
+            ${Number.isFinite(event.severity) ? `<span>Severity: ${event.severity}/10</span>` : ''}
           </div>
         </header>
 
         <!-- Map -->
-        ${event.latitude && event.longitude ? `
+        ${Number.isFinite(event.latitude) && Number.isFinite(event.longitude) ? `
         <section class="card p-0 overflow-hidden">
           <div id="event-map" class="map-container-sm"></div>
         </section>
@@ -119,7 +155,7 @@ const slugStr = Array.isArray(slug) ? slug.join('/') : slug;
         <section class="card">
           <h2 class="text-xl font-semibold text-humanity-text mb-4">Summary</h2>
           <div class="prose prose-invert max-w-none text-humanity-textMuted">
-            <p>${event.summary || event.description}</p>
+            <p>${escapeHtml(event.summary || event.description || 'No event summary is available.')}</p>
           </div>
         </section>
 
@@ -136,27 +172,27 @@ const slugStr = Array.isArray(slug) ? slug.join('/') : slug;
         ${renderClaims(event.claims)}
 
         <!-- Related -->
-        ${renderRelated(event)}
+        ${renderRelated(event, allEvents)}
 
         <!-- Metadata -->
         <footer class="border-t border-humanity-border pt-6 text-sm text-humanity-textMuted space-y-1">
-          <p>First detected: ${formatDateTime(event.first_detected_at)}</p>
-          <p>Last updated: ${formatDateTime(event.last_updated_at)}</p>
-          ${event.published_at ? `<p>Published: ${formatDateTime(event.published_at)}</p>` : ''}
-          <p>Event ID: <code class="text-humanity-textMuted/70">${event.id}</code></p>
-          ${event.canonical_id ? `<p>Canonical ID: <code class="text-humanity-textMuted/70">${event.canonical_id}</code></p>` : ''}
+          <p>First detected: ${escapeHtml(formatDateTime(event.first_detected_at))}</p>
+          <p>Last updated: ${escapeHtml(formatDateTime(event.last_updated_at))}</p>
+          ${event.published_at ? `<p>Published: ${escapeHtml(formatDateTime(event.published_at))}</p>` : ''}
+          <p>Event ID: <code class="text-humanity-textMuted/70">${escapeHtml(event.id)}</code></p>
+          ${event.canonical_id ? `<p>Canonical ID: <code class="text-humanity-textMuted/70">${escapeHtml(event.canonical_id)}</code></p>` : ''}
         </footer>
       </article>
     `;
     
     // Initialize map if coordinates exist
-    if (event.latitude && event.longitude) {
+    if (Number.isFinite(event.latitude) && Number.isFinite(event.longitude)) {
       setTimeout(() => initEventMap(event), 100);
     }
   }
   
-  function renderHumanImpact(event) {
-    const impacts = [];
+  function renderHumanImpact(event: PublishedEvent) {
+    const impacts: Array<{ icon: string; label: string; value: unknown; color: string }> = [];
     if (event.human_impact) {
       if (event.human_impact.deaths) impacts.push({ icon: '☠️', label: 'Deaths', value: event.human_impact.deaths, color: '#ef4444' });
       if (event.human_impact.injuries) impacts.push({ icon: '🤕', label: 'Injuries', value: event.human_impact.injuries, color: '#f97316' });
@@ -174,8 +210,8 @@ const slugStr = Array.isArray(slug) ? slug.join('/') : slug;
           ${impacts.map(i => `
             <div class="text-center p-4 rounded-lg" style="background: ${i.color}10; border: 1px solid ${i.color}30;">
               <div class="text-2xl mb-1">${i.icon}</div>
-              <div class="text-2xl font-bold text-humanity-text" style="color: ${i.color};">${i.value}</div>
-              <div class="text-xs text-humanity-textMuted">${i.label}</div>
+              <div class="text-2xl font-bold text-humanity-text" style="color: ${i.color};">${escapeHtml(i.value)}</div>
+              <div class="text-xs text-humanity-textMuted">${escapeHtml(i.label)}</div>
             </div>
           `).join('')}
         </div>
@@ -183,7 +219,7 @@ const slugStr = Array.isArray(slug) ? slug.join('/') : slug;
     `;
   }
   
-  function renderSection(title, items, icon, color) {
+  function renderSection(title: string, items: string[] | undefined, icon: string, color: string) {
     if (!items || items.length === 0) return '';
     return `
       <section class="card">
@@ -192,13 +228,13 @@ const slugStr = Array.isArray(slug) ? slug.join('/') : slug;
           ${title}
         </h2>
         <ul class="space-y-2 text-sm text-humanity-textMuted">
-          ${items.map(item => `<li class="flex items-start gap-2"><span class="text-${color}-400 mt-0.5">${icon}</span><span>${item}</span></li>`).join('')}
+          ${items.map(item => `<li class="flex items-start gap-2"><span class="text-${color}-400 mt-0.5">${icon}</span><span>${escapeHtml(item)}</span></li>`).join('')}
         </ul>
       </section>
     `;
   }
   
-  function renderSources(sources) {
+  function renderSources(sources: PublishedSource[] | undefined) {
     if (!sources || sources.length === 0) return '';
     return `
       <section class="card">
@@ -207,28 +243,32 @@ const slugStr = Array.isArray(slug) ? slug.join('/') : slug;
           Sources (${sources.length})
         </h2>
         <ul class="space-y-3">
-          ${sources.map(s => `
+          ${sources.map(s => {
+            const url = safeExternalUrl(s.url);
+            const title = escapeHtml(s.title);
+            return `
             <li class="p-3 rounded-lg border border-humanity-border hover:border-humanity-accent/50 transition-colors">
               <div class="flex items-start justify-between gap-4">
                 <div class="flex-1 min-w-0">
-                  <a href="${s.url}" target="_blank" rel="noopener" class="link font-medium text-humanity-text hover:text-humanity-accent">${s.title}</a>
+                  ${url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="link font-medium text-humanity-text hover:text-humanity-accent">${title}</a>` : `<span class="font-medium text-humanity-text">${title}</span>`}
                   <div class="flex items-center gap-3 mt-1 text-xs text-humanity-textMuted">
-                    <span>${s.publisher}</span>
-                    <span>${s.source_type}</span>
-                    ${s.published_at ? `<span>${formatDate(s.published_at)}</span>` : ''}
-                    ${s.country ? `<span>📍 ${s.country}</span>` : ''}
-                    ${s.language ? `<span>${s.language.toUpperCase()}</span>` : ''}
+                    <span>${escapeHtml(s.publisher)}</span>
+                    <span>${escapeHtml(s.source_type)}</span>
+                    ${s.published_at ? `<span>${escapeHtml(formatDate(s.published_at))}</span>` : ''}
+                    ${s.country ? `<span>📍 ${escapeHtml(s.country)}</span>` : ''}
+                    ${s.language ? `<span>${escapeHtml(String(s.language).toUpperCase())}</span>` : ''}
                   </div>
                 </div>
               </div>
             </li>
-          `).join('')}
+          `;
+          }).join('')}
         </ul>
       </section>
     `;
   }
   
-  function renderClaims(claims) {
+  function renderClaims(claims: Record<string, PublishedClaim[]> | undefined) {
     if (!claims || Object.keys(claims).length === 0) return '';
     
     return `
@@ -240,18 +280,18 @@ const slugStr = Array.isArray(slug) ? slug.join('/') : slug;
         <div class="space-y-4">
           ${Object.entries(claims).map(([type, claimList]) => `
             <div>
-              <h3 class="font-medium text-humanity-text mb-2 capitalize">${type.replace('_', ' ')}</h3>
+              <h3 class="font-medium text-humanity-text mb-2 capitalize">${escapeHtml(type.replace('_', ' '))}</h3>
               <div class="space-y-2">
                 ${claimList.map(claim => `
                   <div class="p-3 rounded-lg border border-humanity-border bg-humanity-darker/50">
                     <div class="flex items-start justify-between gap-2">
                       <div class="flex-1">
-                        <p class="text-sm text-humanity-text">${claim.subject} ${claim.predicate}: <strong>${claim.min_value !== undefined || claim.max_value !== undefined ? formatRange(claim.min_value, claim.max_value) + (claim.unit ? ' ' + claim.unit : '') : claim.value + (claim.unit ? ' ' + claim.unit : '')}</strong></p>
-                        <p class="text-xs text-humanity-textMuted mt-1">"${claim.source_quote.slice(0, 200)}${claim.source_quote.length > 200 ? '...' : ''}"</p>
+                        <p class="text-sm text-humanity-text">${escapeHtml(claim.subject)} ${escapeHtml(claim.predicate)}: <strong>${escapeHtml(claim.min_value !== undefined || claim.max_value !== undefined ? formatRange(claim.min_value, claim.max_value) + (claim.unit ? ' ' + claim.unit : '') : `${claim.value ?? 'Not reported'}${claim.unit ? ' ' + claim.unit : ''}`)}</strong></p>
+                        <p class="text-xs text-humanity-textMuted mt-1">"${escapeHtml(String(claim.source_quote || '').slice(0, 200))}${String(claim.source_quote || '').length > 200 ? '...' : ''}"</p>
                       </div>
                       <div class="flex items-center gap-2 text-xs">
-                        <span class="badge-confidence-${Math.round(claim.confidence * 100) > 70 ? 'high' : Math.round(claim.confidence * 100) > 40 ? 'medium' : 'low'}">${Math.round(claim.confidence * 100)}%</span>
-                        <span class="text-humanity-textMuted">${claim.verification_status.replace('_', ' ')}</span>
+                        <span class="badge-confidence-${Math.round((claim.confidence ?? 0) * 100) > 70 ? 'high' : Math.round((claim.confidence ?? 0) * 100) > 40 ? 'medium' : 'low'}">${Math.round((claim.confidence ?? 0) * 100)}%</span>
+                        <span class="text-humanity-textMuted">${escapeHtml(String(claim.verification_status || 'status unavailable').replace('_', ' '))}</span>
                       </div>
                     </div>
                   </div>
@@ -264,42 +304,49 @@ const slugStr = Array.isArray(slug) ? slug.join('/') : slug;
     `;
   }
   
-  function renderRelated(event) {
+  function renderRelated(event: PublishedEvent, allEvents: PublishedEvent[]) {
     const parts = [];
     if (event.related_events && event.related_events.length > 0) {
       parts.push(`
         <section class="card">
           <h2 class="text-xl font-semibold text-humanity-text mb-4">Related Events</h2>
           <ul class="space-y-2">
-            ${event.related_events.map(id => `<li><a href="/event/${id}" class="link text-sm">${id}</a></li>`).join('')}
+            ${event.related_events.map(id => {
+              const relatedEvent = allEvents.find(item => item.id === id);
+              const href = eventPath(relatedEvent?.slug);
+              return relatedEvent && href
+                ? `<li><a href="${href}" class="link text-sm">${escapeHtml(relatedEvent.title)}</a></li>`
+                : '';
+            }).join('')}
           </ul>
         </section>
       `);
     }
+
     if (event.conflict_id) {
       parts.push(`
         <section class="card">
           <h2 class="text-xl font-semibold text-humanity-text mb-4">Related Conflict</h2>
-          <p class="text-humanity-textMuted">This event is part of the <a href="/conflict/${event.conflict_id}" class="link">${event.conflict_id}</a> conflict.</p>
+          <p class="text-humanity-textMuted">This event is part of the <a href="/conflicts" class="link">${escapeHtml(event.conflict_id)}</a> conflict.</p>
         </section>
       `);
     }
     return parts.join('');
   }
   
-  function formatDate(dateStr) {
+  function formatDate(dateStr: string | undefined) {
     if (!dateStr) return 'Unknown';
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   }
   
-  function formatDateTime(dateStr) {
+  function formatDateTime(dateStr: string | undefined) {
     if (!dateStr) return 'Unknown';
     const date = new Date(dateStr);
     return date.toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
   
-  function formatRange(min, max, unit = '') {
+  function formatRange(min: number | undefined, max: number | undefined, unit = '') {
     if (min !== undefined && max !== undefined) {
       if (min === max) return `${min.toLocaleString()} ${unit}`.trim();
       return `${min.toLocaleString()}–${max.toLocaleString()} ${unit}`.trim();
@@ -309,9 +356,9 @@ const slugStr = Array.isArray(slug) ? slug.join('/') : slug;
     return '—';
   }
   
-  async function initEventMap(event) {
+  async function initEventMap(event: PublishedEvent) {
     const maplibregl = await import('maplibre-gl');
-    const { default: maplibreCss } = await import('maplibre-gl/dist/maplibre-gl.css');
+    await import('maplibre-gl/dist/maplibre-gl.css');
     
     const map = new maplibregl.Map({
       container: 'event-map',
@@ -330,30 +377,17 @@ const slugStr = Array.isArray(slug) ? slug.join('/') : slug;
           { id: 'osm', type: 'raster', source: 'osm' }
         ]
       },
-      center: [event.longitude, event.latitude],
+      center: [event.longitude!, event.latitude!],
       zoom: 10,
       interactive: false
     });
     
     map.on('load', () => {
       new maplibregl.Marker({ color: '#ef4444' })
-        .setLngLat([event.longitude, event.latitude])
+        .setLngLat([event.longitude!, event.latitude!])
         .addTo(map);
     });
   }
   
-  function getEventTypeLabel(type) {
-    const labels = {
-      PROTEST: 'Protest',
-      CONFLICT: 'Conflict',
-      ATTACK: 'Attack',
-      CASUALTY: 'Casualty',
-      DISPLACEMENT: 'Displacement',
-      DISASTER: 'Disaster',
-      REPRESSION: 'Repression',
-      HUMANITARIAN: 'Humanitarian'
-    };
-    return labels[type] || type;
-  }
 </script>
 </BaseLayout>

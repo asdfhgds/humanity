@@ -1,0 +1,58 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { imageAttributions } from '../data/image-attributions';
+import { editorialImages } from '../data/editorial-images';
+
+const imageEntries = Object.entries(editorialImages);
+const imageBasePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<BaseLayout title="Image Credits | HUMANITY" description="Photographic attribution, creator credits, original source pages and reuse licenses for HUMANITY images.">
+  <main class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+    <p class="eyebrow">Transparency and reuse</p>
+    <h1 class="editorial-title mt-3 text-4xl font-semibold sm:text-5xl">Image credits</h1>
+    <p class="mt-4 max-w-3xl leading-relaxed text-humanity-textMuted">Photographs are archival context, not visual evidence for current reports unless a caption explicitly says otherwise. Each image links to its original Wikimedia Commons file page and license. Please follow the linked license terms when reusing an image.</p>
+
+    <section class="mt-9 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3" aria-label="Licensed editorial photographs">
+      {imageEntries.map(([topic, image]) => (
+        <article class="credit-entry border-t border-humanity-border py-5">
+          <figure>
+            <img
+              src={`${imageBasePath}/images/editorial/${image.file}`}
+              alt={image.alt}
+              loading="lazy"
+              width="1200"
+              height="800"
+            />
+            <figcaption class="mt-2 text-xs leading-relaxed text-humanity-textMuted">{image.caption}</figcaption>
+          </figure>
+          <h2 class="mt-3 font-semibold capitalize text-humanity-text">{topic}</h2>
+          <dl class="mt-3 space-y-2 text-xs leading-relaxed">
+            <div><dt class="credit-label">Creator</dt><dd class="text-humanity-textMuted">{'creatorUrl' in image ? <a class="link" href={image.creatorUrl} target="_blank" rel="noopener noreferrer">{image.creator}</a> : image.creator}</dd></div>
+            <div><dt class="credit-label">Original file</dt><dd><a class="link" href={image.commonsUrl} target="_blank" rel="noopener noreferrer">Wikimedia Commons</a></dd></div>
+            <div><dt class="credit-label">License</dt><dd><a class="link" href={image.licenseUrl} target="_blank" rel="noopener noreferrer">{image.license}</a></dd></div>
+          </dl>
+        </article>
+      ))}
+    </section>
+
+    <section class="mt-12 border-t border-humanity-border pt-6" aria-labelledby="original-artwork-heading">
+      <h2 id="original-artwork-heading" class="editorial-title text-2xl font-semibold">Original illustrations</h2>
+      {imageAttributions.map((image) => (
+        <article class="mt-4 border-y border-humanity-border py-5">
+          <h3 class="font-semibold text-humanity-text">{image.title}</h3>
+          <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+            <div><dt class="credit-label">Creator</dt><dd class="text-humanity-textMuted">{image.creator}</dd></div>
+            <div><dt class="credit-label">License / use</dt><dd class="text-humanity-textMuted">{image.license}</dd></div>
+            <div class="sm:col-span-2"><dt class="credit-label">Source and context</dt><dd class="text-humanity-textMuted">{image.source} · {image.usage}</dd></div>
+          </dl>
+        </article>
+      ))}
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  .credit-entry img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; background: #e9e4dc; }
+  .credit-label { margin-bottom: .15rem; color: #66635d; font-size: .65rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+</style>

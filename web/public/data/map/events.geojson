@@ -1,1 +1,1 @@
-{"type": "FeatureCollection", "features": [{"type": "Feature", "id": "8444c74e-0d1d-4e79-88a8-c30a28db2f7b", "geometry": {"type": "Point", "coordinates": [-74.0, 40.0]}, "properties": {"id": "8444c74e-0d1d-4e79-88a8-c30a28db2f7b", "slug": "2026/10/08/test-conflict", "title": "Test Conflict", "event_type": "CONFLICT", "country_code": "US", "country_name": "United States", "city": "Test City", "date": "2026-10-08", "severity": 8, "confidence": "HIGH", "deaths": 100, "injuries": null}}]}
+{"type": "FeatureCollection", "features": []}

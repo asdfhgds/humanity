@@ -25,6 +25,7 @@ class FetchResult:
     success: bool
     content: Optional[str] = None
     title: Optional[str] = None
+    image_url: Optional[str] = None
     published_at: Optional[datetime] = None
     author: Optional[str] = None
     error: Optional[str] = None
@@ -385,6 +386,19 @@ class SourceFetcher:
                     title = elem.get_text().strip()
                 if title:
                     break
+
+        image_url = None
+        for selector in [
+            'meta[property="og:image"]',
+            'meta[property="og:image:url"]',
+            'meta[name="twitter:image"]',
+        ]:
+            elem = soup.select_one(selector)
+            if elem and elem.get('content'):
+                candidate = urljoin(final_url, elem['content'].strip())
+                if urlparse(candidate).scheme in ('http', 'https'):
+                    image_url = candidate
+                    break
         
         # Author extraction
         author = None
@@ -450,6 +464,7 @@ class SourceFetcher:
             success=bool(content and len(content) > 100),
             content=content,
             title=title,
+            image_url=image_url,
             published_at=published_at,
             author=author,
             final_url=final_url,
