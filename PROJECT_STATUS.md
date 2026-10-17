@@ -7,9 +7,11 @@ Editorial redesign release verification — static site release gates complete.
 ## Status
 
 NOT READY TO DEPLOY — the merged deployment and ingestion workflows failed.
-Local corrective changes now pass the site check, build, and Python tests, but
-they have not been pushed or merged. Live ingestion has not yet been rerun
-after the corrections, and the public event feed remains empty.
+Corrective changes pass the site check, build, and Python tests, and are
+committed and pushed as `8918e9c` on `asdfhgds-fix-internal-links`. A follow-up
+PR could not be opened because the project's GitHub account is no longer
+linked. The fixes are not merged, live ingestion has not been rerun, and the
+public event feed remains empty.
 
 ## Completed
 
@@ -158,4 +160,4 @@ Phase 3, Milestone 3.1 — Live Source Verification.
 - Autonomous pipeline run [39029658531](https://github.com/asdfhgds/humanity/actions/runs/39029658531) successfully fetched content from 197 RSS articles and created 197 source records; GDELT returned zero articles. Gemini was configured in the workflow. Extraction began on the first of 50 sources and returned a result, but the CLI crashed with `NameError: validate_extraction_result is not defined` before validation, event creation, claim creation, or publication. No event was published or held, and the remaining extraction, state-persistence, and site-build steps were skipped. Tavily was disabled and had no key; this was not the cause of the run failure.
 - Corrective local changes: scope the Python `lib/` ignore pattern to `/lib/` so the frontend helper is included; restore event parsing, path, escaping and element helpers; import the already-existing extraction validator into the CLI; and include each event's publication status in the public index. The latter is required by Astro's static event-route filter and prevents published event links from resolving to absent pages. A regression assertion verifies the indexed status is a published status.
 - Validation after these changes: `npm run check` passed with 0 errors, warnings, or hints; `GITHUB_ACTIONS=true npm run build` passed and generated 13 pages with the current empty feed; `python -m pytest tests -q` passed (66 tests, 493 existing deprecation warnings); `python -m app.cli --help` passed. The known MapLibre chunk-size warning remains. The production run's mock-free live extraction has not been rerun.
-- These fixes are only in the local worktree; they have not been committed, pushed, or merged. No workflow was triggered and no deployment occurred. The deployment gate remains closed until the fixes reach `master`, the workflows are rerun successfully, and live publication is verified without bypassing evidence requirements.
+- The fixes were committed as `8918e9c` and pushed to `asdfhgds-fix-internal-links`. Follow-up PR creation was blocked because the project's GitHub account is no longer linked. No workflow was triggered and no deployment occurred. The deployment gate remains closed until the fixes reach `master`, the workflows are rerun successfully, and live publication is verified without bypassing evidence requirements.
