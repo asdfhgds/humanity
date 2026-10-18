@@ -1,10 +1,12 @@
+from datetime import datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
 
 import app.datastore
 from app.cli import main as cli_main
-from app.extraction.gemini import ExtractionResult
+from app.datastore import SourceStore, JSONDataStore
+from app.extraction.gemini import ExtractionOutcome, ExtractionResult
 from app.models.schemas import Source
 
 
@@ -45,6 +47,11 @@ def test_run_validates_extraction_and_preserves_discovery_result(
 
         def get_by_event(self, event_id):
             return [source]
+
+        def update(self, source_id, updates):
+            for key, value in updates.items():
+                setattr(source, key, value)
+            return source
 
     class EventStore:
         def __init__(self):
@@ -237,3 +244,64 @@ def test_extraction_identity_attaches_reports_and_preserves_claim_sources():
         claim.event_id in {event.id for event in event_store.events}
         for claim in claim_store.claims
     )
+
+
+def test_source_extraction_progress_prevents_repeated_api_spend(tmp_path):
+    source_store = SourceStore(JSONDataStore(tmp_path))
+    source = Source(
+        id="retry-source",
+        publisher="Example News",
+        title="A reported event",
+        url="https://example.test/retry",
+        content="Article text",
+    )
+    attached_source = Source(
+        id="attached-source",
+        publisher="Example News",
+        title="Already processed event",
+        url="https://example.test/attached",
+        content="Article text",
+    )
+    source_store.create(source)
+    source_store.create(attached_source)
+    now = datetime.utcnow()
+    events = [SimpleNamespace(source_ids=["attached-source"])]
+
+    ready = cli_main._sources_ready_for_extraction(
+        source_store.get_all(), events, 10, now=now
+    )
+    assert [item.id for item in ready] == ["retry-source"]
+
+    cli_main._record_extraction_outcome(
+        source,
+        ExtractionOutcome(error_category="quota_exhausted", attempts=1),
+        source_store,
+    )
+    retry_source = source_store.get(source.id)
+    assert retry_source.extraction_status == "retryable_failure"
+    assert cli_main._sources_ready_for_extraction(
+        source_store.get_all(), events, 10, now=now
+    ) == []
+
+    ready_after_quota_window = cli_main._sources_ready_for_extraction(
+        source_store.get_all(), events, 10, now=now + timedelta(hours=25)
+    )
+    assert [item.id for item in ready_after_quota_window] == ["retry-source"]
+
+    valid_result = ExtractionResult(
+        is_event=True,
+        event_type="CONFLICT",
+        title="A verified event title",
+        country="US",
+        confidence_score=80,
+    )
+    cli_main._record_extraction_outcome(
+        retry_source,
+        ExtractionOutcome(result=valid_result, attempts=1),
+        source_store,
+    )
+    completed_source = source_store.get(source.id)
+    assert completed_source.extraction_status == "completed"
+    assert cli_main._sources_ready_for_extraction(
+        source_store.get_all(), events, 10, now=now + timedelta(days=2)
+    ) == []

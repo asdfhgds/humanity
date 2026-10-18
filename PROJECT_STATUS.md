@@ -340,6 +340,13 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   Claims are retained only when their quoted evidence appears in that source's
   article text. The heuristic post-hoc cluster command no longer deletes events
   or strands claims; uncertain or distinct incidents remain separate.
+- Review identified that the gated five-minute production schedule could
+  repeatedly spend extraction calls on old sources. The production pipeline
+  now excludes sources already attached to events, persists extraction
+  completion/failure state, and defers retryable failures according to bounded
+  category-specific cooldowns. Existing records remain readable through
+  additive defaults; quota exhaustion defers the rest of that batch for 24
+  hours, while call-budget-skipped items remain eligible for the next run.
 - Smoke output now reports invalid/non-event results, insufficient independent
   sources, suspected syndication, evidence-assessment failures and
   contradictions, publication-score/confidence holds, and eligible candidates
@@ -354,7 +361,7 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   how many sources were attached to each event. A later smoke must preserve
   and report the per-event aggregate reasons to confirm this against real
   extraction results.
-- Verification on the focused local branch: `pytest -q` passed (93 tests),
+- Verification on the focused local branch: `pytest -q` passed (94 tests),
   `npm run check` passed (30 Astro files, zero diagnostics), `npm run build`
   passed (13 static pages), all four GitHub Actions YAML files parsed, and
   `python scripts/audit_static_site.py web/dist` passed with no missing local
@@ -362,6 +369,8 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   advisory. CI and code review have not yet run on this branch.
 - Production publishing, scheduled runs, and deployment remain disabled. No
   smoke workflow was dispatched and no live source/API quota was spent. This
-  local work is not yet pushed or submitted as a PR; do not treat it as
-  release-ready until remote CI/review pass and a later isolated smoke verifies
-  real independent evidence.
+  branch is submitted as [PR #5](https://github.com/asdfhgds/humanity/pull/5).
+  Initial PR checks passed on commit `0670377`; the follow-up source-progress
+  fix now passes all 94 Python tests locally and needs fresh remote checks.
+  Do not treat the PR as release-ready until those checks pass and a later
+  isolated smoke verifies real independent evidence.

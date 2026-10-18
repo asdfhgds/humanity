@@ -4,7 +4,7 @@ import asyncio
 import io
 import tempfile
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timedelta
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from typing import Optional
@@ -32,6 +32,88 @@ from app.utils import parse_date_flexible
 
 app = typer.Typer(help="HUMANITY - Autonomous Global Human Events Intelligence Platform")
 console = Console()
+
+_EXTRACTION_RETRY_DELAYS = {
+    "quota_exhausted": timedelta(hours=24),
+    "billing_or_quota_exhausted": timedelta(hours=24),
+    "authentication_failure": timedelta(hours=24),
+    "permission_failure": timedelta(hours=24),
+    "transient_rate_limit": timedelta(minutes=15),
+    "network_failure": timedelta(minutes=30),
+    "provider_server_error": timedelta(minutes=30),
+    "invalid_model_output": timedelta(hours=6),
+    "provider_error": timedelta(hours=6),
+}
+
+
+def _source_needs_extraction(source, *, now=None) -> bool:
+    if not source.content or getattr(source, "extraction_status", None) == "completed":
+        return False
+    retry_after = getattr(source, "extraction_retry_after", None)
+    current_time = now or datetime.utcnow()
+    return retry_after is None or retry_after <= current_time
+
+
+def _sources_ready_for_extraction(sources, events, limit, *, now=None):
+    processed_source_ids = {
+        source_id
+        for event in events
+        for source_id in event.source_ids
+    }
+    return [
+        source
+        for source in sources
+        if source.id not in processed_source_ids and _source_needs_extraction(source, now=now)
+    ][:limit]
+
+
+def _record_extraction_outcome(source, outcome: ExtractionOutcome, source_store) -> None:
+    result = outcome.result
+    category = outcome.error_category
+    if result is not None and category == "non_event":
+        updates = {
+            "extraction_status": "completed",
+            "extraction_error_category": None,
+            "extraction_last_attempt_at": datetime.utcnow(),
+            "extraction_retry_after": None,
+        }
+    elif result is not None and validate_extraction_result(result):
+        updates = {
+            "extraction_status": "completed",
+            "extraction_error_category": None,
+            "extraction_last_attempt_at": datetime.utcnow(),
+            "extraction_retry_after": None,
+        }
+    else:
+        if outcome.attempts == 0 and category in (
+            None,
+            "call_budget_exhausted",
+            "not_attempted_call_budget_exhausted",
+            "provider_disabled",
+        ):
+            return
+        deferred_category = category.removeprefix("not_attempted_") if category else ""
+        retry_category = deferred_category or category or "provider_error"
+        retry_category = {
+            "after_rate_limit": "transient_rate_limit",
+            "after_network_error": "network_failure",
+            "after_provider_error": "provider_error",
+            "after_authentication_failure": "authentication_failure",
+            "after_permission_failure": "permission_failure",
+        }.get(retry_category, retry_category)
+        retry_delay = _EXTRACTION_RETRY_DELAYS.get(
+            retry_category, timedelta(hours=6)
+        )
+        updates = {
+            "extraction_status": "deferred" if outcome.attempts == 0 else "retryable_failure",
+            "extraction_error_category": category,
+            "extraction_retry_after": datetime.utcnow() + retry_delay,
+        }
+        if outcome.attempts:
+            updates["extraction_last_attempt_at"] = datetime.utcnow()
+
+    if source_store.update(source.id, updates) is None:
+        raise RuntimeError("Could not persist extraction progress for a source")
 
 
 def _persist_extracted_event(source, result: ExtractionResult, event_store, claim_store):
@@ -216,11 +298,13 @@ def extract(
             _, is_new, _ = _persist_extracted_event(source, result, event_store, claim_store)
             created += int(is_new)
             attached += int(not is_new)
+            _record_extraction_outcome(source, outcome, source_store)
         else:
             console.print(
                 f"    [yellow]Extraction not persisted: "
                 f"{outcome.error_category or 'invalid_model_output'}[/yellow]"
             )
+            _record_extraction_outcome(source, outcome, source_store)
 
     console.print(f"[green]Created {created} events; attached {attached} additional reports[/green]")
     console.print(f"  Gemini API attempts: {calls}")
@@ -312,14 +396,14 @@ def run(
     
     source_store = get_source_store()
     event_store = get_event_store()
-    # Get sources with content
-    sources = [s for s in source_store.get_all() if s.content][:extract_limit]
-    
+    sources = _sources_ready_for_extraction(
+        source_store.get_all(), event_store.get_all(), extract_limit
+    )
+
     if not sources:
-        console.print("  [yellow]No sources with content found[/yellow]")
-        return
-    
-    console.print(f"  Extracting from {len(sources)} sources with content...")
+        console.print("  [yellow]No unprocessed sources with content found[/yellow]")
+    else:
+        console.print(f"  Extracting from {len(sources)} sources with content...")
 
     extraction_pairs = asyncio.run(_extract_sources(sources, extractor))
     claim_store = get_claim_store()
@@ -338,11 +422,13 @@ def run(
             )
             created += int(is_new)
             attached += int(not is_new)
+            _record_extraction_outcome(source, outcome, source_store)
         else:
             console.print(
                 f"    [yellow]Extraction not persisted: "
                 f"{outcome.error_category or 'invalid_model_output'}[/yellow]"
             )
+            _record_extraction_outcome(source, outcome, source_store)
     
     console.print(f"  [green]Created {created} events; attached {attached} additional reports[/green]")
     console.print(f"  Gemini API attempts: {api_attempts}")
