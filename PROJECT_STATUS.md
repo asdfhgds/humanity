@@ -376,6 +376,11 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   checks both passed in
   [run 39163379387](https://github.com/asdfhgds/humanity/actions/runs/39163379387).
   The PR is open and targets `master`.
+- At the final diff review, PR #5 head `1c7259ed18849c8dc4f2f03eb9741508cbf846b6`
+  also passed both required checks in
+  [run 39163652391](https://github.com/asdfhgds/humanity/actions/runs/39163652391).
+  This status-only amendment follows that tested head; the current PR check
+  result remains available on PR #5.
 - The latest real-source/Gemini smoke remains
   [run 39141724221](https://github.com/asdfhgds/humanity/actions/runs/39141724221),
   created 2026-10-18 15:42:53 UTC and completed at 15:49:32 UTC. Its sanitized
