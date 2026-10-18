@@ -368,6 +368,20 @@ def run(
     console.print(f"  Run ID: {discovery_result['run_id']}")
 
 
+async def _extract_smoke_sources(sources, extractor):
+    results = []
+    for source in sources:
+        try:
+            result = await extractor.extract(
+                source.title or "", source.content or "", str(source.url)
+            )
+        except Exception as error:
+            results.append((source, None, f"unexpected_{type(error).__name__}"))
+        else:
+            results.append((source, result, None))
+    return results
+
+
 @app.command("smoke-test")
 def smoke_test(
     hours: int = typer.Option(6, min=1, max=72, help="Hours back for source discovery"),
@@ -449,15 +463,14 @@ def smoke_test(
 
                     claim_store = get_claim_store()
                     scorer = EventScorer(event_store=event_store, source_store=source_store)
-                    for source in sources:
+                    extraction_results = asyncio.run(
+                        _extract_smoke_sources(sources, extractor)
+                    )
+                    for source, extraction_result, extraction_error in extraction_results:
                         counts["extraction_attempts"] += 1
-                        try:
-                            extraction_result = asyncio.run(
-                                extractor.extract(source.title or "", source.content or "", str(source.url))
-                            )
-                        except Exception:
+                        if extraction_error:
                             counts["failed_extractions"] += 1
-                            category = "unexpected_extractor_exception"
+                            category = extraction_error
                             categories = counts["extraction_error_categories"]
                             categories[category] = categories.get(category, 0) + 1
                             continue

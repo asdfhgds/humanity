@@ -264,6 +264,29 @@ def test_smoke_test_isolated_and_never_calls_publisher(
         ) = original_values
 
 
+def test_smoke_extraction_batch_uses_one_async_event_loop():
+    sources = [
+        SimpleNamespace(title=f"Story {index}", content="content", url=f"https://example.test/{index}")
+        for index in range(2)
+    ]
+
+    class LoopBoundExtractor:
+        loop = None
+
+        async def extract(self, title, content, url):
+            current_loop = asyncio.get_running_loop()
+            if self.loop is None:
+                self.loop = current_loop
+            assert current_loop is self.loop
+            return title
+
+    extractor = LoopBoundExtractor()
+    results = asyncio.run(cli_main._extract_smoke_sources(sources, extractor))
+
+    assert [result for _, result, error in results] == ["Story 0", "Story 1"]
+    assert all(error is None for _, _, error in results)
+
+
 def test_discovery_returns_separate_rss_and_gdelt_diagnostics(monkeypatch):
     class RunStore:
         def create(self, run):

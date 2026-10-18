@@ -286,16 +286,22 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   GDELT events completed with no errors. RSS completed 12/12 feeds with 6
   feed errors. This confirms external source and Gemini calls were attempted
   but does not validate broad successful live extraction.
-- PR #3 remains open for the diagnostic follow-up. A further local refinement
-  maps only allow-listed failure indicators to safe Gemini categories and
-  reports GDELT HTTP status codes without request text; it has regression
-  coverage and has not yet been pushed or exercised against live services.
-  The full Python suite passes (84 tests, 513 existing deprecation warnings),
-  `npm run check` reports zero diagnostics, the build generated 13 pages, and
-  the static audit found no missing links, fragments, or assets. The prior PR
-  head passed both checks in
-  [run 39138288742](https://github.com/asdfhgds/humanity/actions/runs/39138288742);
-  CI must rerun for the new refinement before it can be merged.
+- PR #3 remains open for the diagnostic follow-up. Review of the repeated
+  `RuntimeError` failures identified that the smoke test reused one Gemini
+  async client while calling `asyncio.run()` separately for each article,
+  binding that client to successive event loops. Extraction now runs as one
+  async batch on a single event loop, with regression coverage for loop
+  affinity. The third live smoke used the version before this fix and still
+  reported 24 `RuntimeError` failures; it does not validate the fix. The
+  updated branch still needs CI and a new isolated live smoke before
+  production readiness can be reassessed.
+- Local checks for the loop fix pass: full Python suite **85 passed** (513
+  existing deprecation warnings), `npm run check` reports zero diagnostics,
+  the build generated 13 pages, the static audit found no missing links,
+  fragments, or assets, and `git diff --check` passed. The prior PR head
+  passed both checks in
+  [run 39138898635](https://github.com/asdfhgds/humanity/actions/runs/39138898635);
+  CI must rerun for this fix before merge.
 - Production release variable remains unset/disabled, auto-publication remains
   disabled, and the 5-minute and daily production schedules must not be
   activated while extraction failures remain unexplained and no candidate
