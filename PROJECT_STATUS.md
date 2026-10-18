@@ -398,3 +398,33 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   public publication until a later isolated real-data smoke supplies
   event-level sanitized hold diagnostics and demonstrates genuinely
   independent source evidence that meets the existing policy.
+
+### Post-merge verification and smoke cooldown (2026-10-18)
+
+- PR #5 merged into `master` at merge commit
+  `9cd3cdcbc7432f1a1715664d6df5d210e1b2958d`. Its latest required PR checks
+  passed in [run 39163787192](https://github.com/asdfhgds/humanity/actions/runs/39163787192).
+- After the merge, rechecked live smoke
+  [run 39141724221](https://github.com/asdfhgds/humanity/actions/runs/39141724221):
+  extraction started at 15:43:08 UTC and completed at 15:49:29 UTC; 10
+  extraction attempts produced 7 failures reported as
+  `quota_or_rate_limit`. This older aggregate category does not distinguish
+  exhausted quota from transient rate limiting.
+- The merged extraction code defers quota failures for 24 hours, transient
+  rate limits for 15 minutes, and uses bounded retry/backoff within the request
+  budget. Because the last run's category is ambiguous and less than five
+  hours had elapsed at the post-merge check, the conservative 24-hour quota
+  cooldown was not satisfied. No new smoke was dispatched and no new
+  extraction, publication-eligibility, or event-level results are claimed.
+- The isolated smoke command now also emits sanitized per-event diagnostics:
+  an abbreviated opaque event ID, source-independence counts, contradiction
+  count, publication gate, and reason codes only. It does not print article
+  text, URLs, titles, or claim quotes. A deterministic regression test asserts
+  that one-source events show the insufficient-independent-source hold and
+  that the event title is absent from output. This post-merge diagnostic
+  follow-up is being submitted separately; it has not yet been merged.
+- Production publishing, the recurring pipeline, and deployment remain
+  disabled. A new real-data smoke must wait until the conservative cooldown is
+  clear and must retain both aggregate hold totals and these per-event
+  diagnostics; an eligible candidate still requires genuine independent
+  coverage under the unchanged policy.
