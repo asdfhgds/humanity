@@ -2,19 +2,19 @@
 
 ## Current Status
 
-Release verification — PR #2 merged; production publishing and deployment remain gated.
+Release verification — code deployed; live extraction is rate-limited; publishing remains gated.
 
 ## Status
 
-NOT READY FOR PRODUCTION PUBLISHING. PR [#2](https://github.com/asdfhgds/humanity/pull/2)
-was merged to `master` at `f623a3f2c36c87975a3113038e0ae64c51d08ff2`. The
-isolated live-source smoke test ran successfully as a workflow, but only 1 of
-25 Gemini extraction attempts succeeded and it produced 0 publication-eligible
-candidates. No production ingestion or deployment has run after the merge.
-The currently deployed Pages site is stale and several current data endpoints
-return 404; a code-only deployment remains a separate, explicit action.
-Follow-up diagnostic instrumentation is being validated locally and is not
-yet merged. The public event feed in the repository is empty.
+NOT READY FOR PRODUCTION PUBLISHING. PR #2 was merged at
+`f623a3f2c36c87975a3113038e0ae64c51d08ff2`; smoke diagnostics and a single-loop
+Gemini client fix were merged in PR [#3](https://github.com/asdfhgds/humanity/pull/3)
+at `98652d744a1168b5991410cdf5f6d0709b960de6`. A follow-up isolated live run
+on `master` successfully extracted 3 of 10 articles and validated 2 events,
+but quota/rate limiting stopped the other 7 and no candidate met publication
+policy. The code-only Pages deployment now serves the current site; public
+feeds and statistics report zero published events. Production ingestion,
+auto-publication, and recurring schedules remain disabled.
 
 ## Completed
 
@@ -285,25 +285,39 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   intentionally unlogged. GDELT GKG's single error was `HTTPStatusError`;
   GDELT events completed with no errors. RSS completed 12/12 feeds with 6
   feed errors. This confirms external source and Gemini calls were attempted
-  but does not validate broad successful live extraction.
-- PR #3 remains open for the diagnostic follow-up. Review of the repeated
-  `RuntimeError` failures identified that the smoke test reused one Gemini
-  async client while calling `asyncio.run()` separately for each article,
-  binding that client to successive event loops. Extraction now runs as one
-  async batch on a single event loop, with regression coverage for loop
-  affinity. The third live smoke used the version before this fix and still
-  reported 24 `RuntimeError` failures; it does not validate the fix. The
-  updated branch still needs CI and a new isolated live smoke before
-  production readiness can be reassessed.
-- Local checks for the loop fix pass: full Python suite **85 passed** (513
-  existing deprecation warnings), `npm run check` reports zero diagnostics,
-  the build generated 13 pages, the static audit found no missing links,
-  fragments, or assets, and `git diff --check` passed. The prior PR head
-  passed both checks in
-  [run 39138898635](https://github.com/asdfhgds/humanity/actions/runs/39138898635);
-  CI must rerun for this fix before merge.
-- Production release variable remains unset/disabled, auto-publication remains
-  disabled, and the 5-minute and daily production schedules must not be
-  activated while extraction failures remain unexplained and no candidate
-  passes the existing evidence policy. No production ingestion or deployment
-  is authorized by these smoke results alone.
+  but exposed a client lifecycle bug: reusing one Gemini async client across
+  repeated `asyncio.run()` calls bound the client to different loops.
+- PR #3 fixed that smoke-only lifecycle bug, added safe categorized diagnostics
+  and regression coverage, and was merged at
+  `98652d744a1168b5991410cdf5f6d0709b960de6`. PR checks passed in
+  [run 39140149393](https://github.com/asdfhgds/humanity/actions/runs/39140149393).
+  The next isolated run,
+  [39140309227](https://github.com/asdfhgds/humanity/actions/runs/39140309227),
+  confirmed 12 successful extractions, 13 quota/rate-limited failures, 9
+  validated events, and 0 publication-eligible candidates from 203 articles.
+- A final default-branch smoke,
+  [run 39141724221](https://github.com/asdfhgds/humanity/actions/runs/39141724221),
+  used a 10-call cap because the 25-call run hit rate limiting. It discovered
+  203 articles, completed 10 Gemini attempts (3 successes, 7 quota/rate-limit
+  failures), validated 2 events, and found 0 publication-eligible candidates.
+  All 12 claims had source attribution. Both GDELT stages succeeded with no
+  errors; RSS completed 12/12 feeds with 6 reporting errors. It was an
+  isolated smoke only: no event publication, production data write, commit,
+  push, or deploy occurred in the run.
+- A code-only Pages deployment was then explicitly confirmed and completed
+  successfully from `master` at `98652d744a1168b5991410cdf5f6d0709b960de6`:
+  [run 39142351256](https://github.com/asdfhgds/humanity/actions/runs/39142351256).
+  The live site at https://asdfhgds.github.io/humanity/ and checked
+  `/data/events/all.json`, `/data/events/recent.json`, `/data/stats/global.json`,
+  `/data/countries/all.json`, `/data/map/events.geojson`, `/image-credits/`,
+  and `/events/` routes all returned HTTP 200 after deployment. The public
+  event index is `[]`, global event and casualty counts remain zero, and the
+  map is empty; there are no fabricated stories. The latest static build
+  contains 13 pages and passed the local link/asset audit.
+- The `GEMINI_API_KEY` secret exists by name; its value was never accessed.
+  No repository variables are configured, so `PRODUCTION_RELEASE_ENABLED`
+  remains false. Auto-publication is still false. No production ingestion or
+  recurring production job ran after the PR merges, and no publication
+  threshold was changed. Production publishing remains blocked by quota/rate
+  limiting and the absence of eligible candidates; do not activate the
+  scheduled pipeline.
