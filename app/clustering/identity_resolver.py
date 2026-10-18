@@ -59,6 +59,7 @@ class EventIdentityResolver:
         """Return SAME_EVENT only when the evidence is strong enough to merge."""
         candidates = list(events) if events is not None else self.event_store.get_all()
         best: Optional[tuple[Event, float, tuple[str, ...]]] = None
+        best_distinct: Optional[tuple[float, tuple[str, ...]]] = None
         ambiguous = False
 
         for existing in candidates:
@@ -69,6 +70,10 @@ class EventIdentityResolver:
                 best = (existing, score, reasons)
             elif decision == "UNCERTAIN":
                 ambiguous = True
+            elif decision == "DISTINCT_EVENT" and (
+                best_distinct is None or score > best_distinct[0]
+            ):
+                best_distinct = (score, reasons)
 
         if best:
             event, score, reasons = best
@@ -77,6 +82,14 @@ class EventIdentityResolver:
             return IdentityResolution(
                 "UNCERTAIN", candidate.canonical_id or self.new_canonical_id(), 0.0, None,
                 ("candidate passed a coarse prefilter but did not meet merge threshold",),
+            )
+        if best_distinct:
+            return IdentityResolution(
+                "DISTINCT_EVENT",
+                candidate.canonical_id or self.new_canonical_id(),
+                best_distinct[0],
+                None,
+                best_distinct[1],
             )
         return IdentityResolution(
             "DISTINCT_EVENT", candidate.canonical_id or self.new_canonical_id(), 0.0, None,
@@ -87,6 +100,16 @@ class EventIdentityResolver:
         """Compare two events without mutating either one."""
         if candidate.event_type != existing.event_type:
             return "DISTINCT_EVENT", 0.0, ("event types differ",)
+        if (
+            candidate.country_code != "XX"
+            and existing.country_code != "XX"
+            and candidate.country_code != existing.country_code
+        ):
+            return "DISTINCT_EVENT", 0.0, ("countries differ",)
+        candidate_city = self._normalize_location(candidate.city)
+        existing_city = self._normalize_location(existing.city)
+        if candidate_city and existing_city and candidate_city != existing_city:
+            return "DISTINCT_EVENT", 0.0, ("named cities differ",)
         time_hours = self._time_distance_hours(candidate.start_time, existing.start_time)
         if time_hours > self.time_window_hours:
             return "DISTINCT_EVENT", 0.0, (f"events are {time_hours:.1f} hours apart",)
@@ -130,10 +153,16 @@ class EventIdentityResolver:
         )
 
     @staticmethod
-    def _same_named_location(a: Event, b: Event) -> bool:
-        def normal(value: Optional[str]) -> str:
-            return re.sub(r"\W+", " ", value or "").strip().casefold()
-        return bool(normal(a.city) and normal(a.city) == normal(b.city) and a.country_code == b.country_code)
+    def _normalize_location(value: Optional[str]) -> str:
+        return re.sub(r"\W+", " ", value or "").strip().casefold()
+
+    @classmethod
+    def _same_named_location(cls, a: Event, b: Event) -> bool:
+        return bool(
+            cls._normalize_location(a.city)
+            and cls._normalize_location(a.city) == cls._normalize_location(b.city)
+            and a.country_code == b.country_code
+        )
 
     @staticmethod
     def _time_distance_hours(a: datetime, b: datetime) -> float:

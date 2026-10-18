@@ -129,6 +129,10 @@ class Source(BaseModel):
     original_report_id: Optional[str] = None
     independence_classification: SourceIndependence = SourceIndependence.UNKNOWN
     source_relationships: List[SourceRelationship] = Field(default_factory=list)
+    extraction_status: Optional[str] = None
+    extraction_error_category: Optional[str] = None
+    extraction_last_attempt_at: Optional[datetime] = None
+    extraction_retry_after: Optional[datetime] = None
 
 
 class Claim(BaseModel):

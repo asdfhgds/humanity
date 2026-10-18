@@ -321,3 +321,80 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   threshold was changed. Production publishing remains blocked by quota/rate
   limiting and the absence of eligible candidates; do not activate the
   scheduled pipeline.
+
+### Phase 3 extraction reliability and evidence diagnostics (2026-10-18)
+
+- Replaced the deprecated `google-generativeai` dependency with Google's
+  supported `google-genai` SDK and its async `client.aio.models.generate_content`
+  interface. Structured JSON and the existing Pydantic validation remain in
+  place.
+- Gemini extraction now records sanitized categories on each attempt, stops
+  the batch on quota exhaustion, retries transient rate limits and provider
+  server errors at most twice per article, honors provider retry delays up to
+  60 seconds, and charges every retry against the configured API-call budget.
+  It never retries authentication, permission, quota, or unclassified provider
+  failures. No live Gemini calls were made for this work.
+- Both production CLI extraction and isolated smoke now use one async batch,
+  persist matching reports through conservative event identity resolution,
+  and attach claims to the canonical event while retaining each source ID.
+  Claims are retained only when their quoted evidence appears in that source's
+  article text. The heuristic post-hoc cluster command no longer deletes events
+  or strands claims; uncertain or distinct incidents remain separate.
+- Review identified that the gated five-minute production schedule could
+  repeatedly spend extraction calls on old sources. The production pipeline
+  now excludes sources already attached to events, persists extraction
+  completion/failure state, and defers retryable failures according to bounded
+  category-specific cooldowns. Existing records remain readable through
+  additive defaults; quota exhaustion defers the rest of that batch for 24
+  hours, while call-budget-skipped items remain eligible for the next run.
+- Smoke output now reports invalid/non-event results, insufficient independent
+  sources, suspected syndication, evidence-assessment failures and
+  contradictions, publication-score/confidence holds, and eligible candidates
+  intentionally retained as unpublished. Existing policy thresholds are
+  unchanged.
+- Fixed AP wire-service matching to use a raw word-boundary regex. Syndication
+  regression tests cover AP attribution, false-positive strings containing
+  `ap` (including “map”, “happy”, and “capital”), copied/near-identical content,
+  shared origin URLs, and independently reported articles.
+- Historical smoke evidence remains aggregate-only: the isolated store was
+  deleted and the recorded run retained no per-event source assessments.
+  Therefore the exact reason for each of the two previously validated events
+  cannot be verified from that run. Under the unchanged assessor, a one-source
+  event with an unknown source classification is held for
+  `insufficient_independent_sources`; the prior aggregate report did not prove
+  how many sources were attached to each event. A later smoke must preserve
+  and report the per-event aggregate reasons to confirm this against real
+  extraction results.
+- Verification on the focused local branch: `pytest -q` passed (99 tests),
+  `npm run check` passed (30 Astro files, zero diagnostics), `npm run build`
+  passed (13 static pages), all four GitHub Actions YAML files parsed, and
+  `python scripts/audit_static_site.py web/dist` passed with no missing local
+  links, fragments, or assets. The build emitted only its existing large-chunk
+  advisory.
+- The AP attribution correction is on PR #5's code-bearing commit
+  `b887ffc09bc5e87175c40b1bba7a8934da3769f9`; its fresh Python and frontend
+  checks both passed in
+  [run 39163379387](https://github.com/asdfhgds/humanity/actions/runs/39163379387).
+  The PR is open and targets `master`.
+- At the final diff review, PR #5 head `1c7259ed18849c8dc4f2f03eb9741508cbf846b6`
+  also passed both required checks in
+  [run 39163652391](https://github.com/asdfhgds/humanity/actions/runs/39163652391).
+  This status-only amendment follows that tested head; the current PR check
+  result remains available on PR #5.
+- The latest real-source/Gemini smoke remains
+  [run 39141724221](https://github.com/asdfhgds/humanity/actions/runs/39141724221),
+  created 2026-10-18 15:42:53 UTC and completed at 15:49:32 UTC. Its sanitized
+  logs report 10 extraction attempts and 7 `quota_or_rate_limit` failures.
+  At the current review time, fewer than five hours had elapsed since those
+  failures. The implemented cooldown is 24 hours for quota exhaustion and 15
+  minutes for transient rate limiting; because the recorded category combines
+  quota/rate limiting and includes quota failures, another live Gemini smoke
+  is not appropriate yet. No smoke was dispatched and no additional Gemini
+  quota was spent during this follow-up.
+- Production publishing, scheduled runs, and deployment remain disabled. No
+  production ingestion, publication, or deployment occurred, and no thresholds
+  changed. The focused branch is submitted as
+  [PR #5](https://github.com/asdfhgds/humanity/pull/5). It remains gated from
+  public publication until a later isolated real-data smoke supplies
+  event-level sanitized hold diagnostics and demonstrates genuinely
+  independent source evidence that meets the existing policy.

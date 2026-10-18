@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import io
-import sys
 import tempfile
-from datetime import datetime
+from collections import Counter
+from datetime import datetime, timedelta
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from typing import Optional
@@ -14,17 +14,230 @@ from rich.table import Table
 
 from app.discovery.manager import run_discovery
 from app.discovery.gdelt import run_gdelt_discovery
-from app.extraction.gemini import GeminiExtractor, validate_extraction_result
+from app.extraction.gemini import (
+    ExtractionOutcome,
+    ExtractionResult,
+    GeminiExtractor,
+    claims_to_model_claims,
+    validate_extraction_result,
+)
 from app.clustering.cluster import EventClusterer
+from app.clustering.identity_resolver import EventIdentityResolver
 from app.scoring.score import EventScorer, decide_publish
 from app.publishing.publisher import EventPublisher
-from app.datastore import get_event_store, get_source_store, get_ingestion_run_store
+from app.datastore import get_claim_store, get_event_store, get_source_store, get_ingestion_run_store
 from app.config import get_settings
-from app.models.schemas import Claim, Event, EventType, ConfidenceLevel, EventStatus
-from app.utils import canonicalize_url, compute_article_hash
+from app.models.schemas import Claim, Event, EventIdentity, EventType, ConfidenceLevel, EventStatus
+from app.utils import parse_date_flexible
 
 app = typer.Typer(help="HUMANITY - Autonomous Global Human Events Intelligence Platform")
 console = Console()
+
+_EXTRACTION_RETRY_DELAYS = {
+    "quota_exhausted": timedelta(hours=24),
+    "billing_or_quota_exhausted": timedelta(hours=24),
+    "authentication_failure": timedelta(hours=24),
+    "permission_failure": timedelta(hours=24),
+    "transient_rate_limit": timedelta(minutes=15),
+    "network_failure": timedelta(minutes=30),
+    "provider_server_error": timedelta(minutes=30),
+    "invalid_model_output": timedelta(hours=6),
+    "provider_error": timedelta(hours=6),
+}
+
+
+def _source_needs_extraction(source, *, now=None) -> bool:
+    if not source.content or getattr(source, "extraction_status", None) == "completed":
+        return False
+    retry_after = getattr(source, "extraction_retry_after", None)
+    current_time = now or datetime.utcnow()
+    return retry_after is None or retry_after <= current_time
+
+
+def _sources_ready_for_extraction(sources, events, limit, *, now=None):
+    processed_source_ids = {
+        source_id
+        for event in events
+        for source_id in event.source_ids
+    }
+    return [
+        source
+        for source in sources
+        if source.id not in processed_source_ids and _source_needs_extraction(source, now=now)
+    ][:limit]
+
+
+def _record_extraction_outcome(source, outcome: ExtractionOutcome, source_store) -> None:
+    result = outcome.result
+    category = outcome.error_category
+    if result is not None and category == "non_event":
+        updates = {
+            "extraction_status": "completed",
+            "extraction_error_category": None,
+            "extraction_last_attempt_at": datetime.utcnow(),
+            "extraction_retry_after": None,
+        }
+    elif result is not None and validate_extraction_result(result):
+        updates = {
+            "extraction_status": "completed",
+            "extraction_error_category": None,
+            "extraction_last_attempt_at": datetime.utcnow(),
+            "extraction_retry_after": None,
+        }
+    else:
+        if outcome.attempts == 0 and category in (
+            None,
+            "call_budget_exhausted",
+            "not_attempted_call_budget_exhausted",
+            "provider_disabled",
+        ):
+            return
+        deferred_category = category.removeprefix("not_attempted_") if category else ""
+        retry_category = deferred_category or category or "provider_error"
+        retry_category = {
+            "after_rate_limit": "transient_rate_limit",
+            "after_network_error": "network_failure",
+            "after_provider_error": "provider_error",
+            "after_authentication_failure": "authentication_failure",
+            "after_permission_failure": "permission_failure",
+        }.get(retry_category, retry_category)
+        retry_delay = _EXTRACTION_RETRY_DELAYS.get(
+            retry_category, timedelta(hours=6)
+        )
+        updates = {
+            "extraction_status": "deferred" if outcome.attempts == 0 else "retryable_failure",
+            "extraction_error_category": category,
+            "extraction_retry_after": datetime.utcnow() + retry_delay,
+        }
+        if outcome.attempts:
+            updates["extraction_last_attempt_at"] = datetime.utcnow()
+
+    if source_store.update(source.id, updates) is None:
+        raise RuntimeError("Could not persist extraction progress for a source")
+
+
+def _persist_extracted_event(source, result: ExtractionResult, event_store, claim_store):
+    event_type = EventType(result.event_type)
+    source_text = source.content or source.title or ""
+    event = Event(
+        event_type=event_type,
+        title=(result.title or source.title or "Untitled event")[:200],
+        slug="",
+        description=source_text[:500],
+        summary=(result.summary or source_text or source.title or "")[:500],
+        country_code=source.country or "XX",
+        country_name=source.country or result.country or "Unknown",
+        city=result.city,
+        latitude=result.latitude,
+        longitude=result.longitude,
+        start_time=(
+            parse_date_flexible(result.date)
+            if result.date
+            else source.published_at or datetime.utcnow()
+        ),
+        severity=5,
+        status=EventStatus.DEVELOPING,
+        confidence=ConfidenceLevel.MEDIUM,
+        source_ids=[source.id],
+    )
+    resolver = EventIdentityResolver(event_store=event_store)
+    identity = resolver.resolve(event)
+    existing = (
+        event_store.get(identity.matched_event_id)
+        if identity.decision == "SAME_EVENT" and identity.matched_event_id
+        else None
+    )
+    is_new = existing is None
+    if existing:
+        source_was_already_attached = source.id in existing.source_ids
+        if not source_was_already_attached:
+            existing.source_ids.append(source.id)
+        existing.canonical_id = identity.canonical_id
+        source_ids = list(dict.fromkeys(existing.source_ids))
+        existing.event_identity = EventIdentity(
+            canonical_id=identity.canonical_id,
+            candidate_ids=source_ids,
+            match_confidence=identity.confidence,
+            matched_with=[existing.id],
+            decision="SAME_EVENT",
+            decision_reasons=list(identity.reasons),
+        )
+        event_store.update(
+            existing.id,
+            {
+                "source_ids": source_ids,
+                "canonical_id": existing.canonical_id,
+                "event_identity": existing.event_identity.model_dump(mode="json"),
+            },
+        )
+        target = event_store.get(existing.id) or existing
+    else:
+        event.canonical_id = identity.canonical_id
+        event.event_identity = EventIdentity(
+            canonical_id=identity.canonical_id,
+            candidate_ids=[source.id],
+            match_confidence=identity.confidence,
+            matched_with=[],
+            decision=identity.decision,
+            decision_reasons=list(identity.reasons),
+        )
+        target = event_store.create(event) or event
+        source_was_already_attached = False
+
+    claims = []
+    if not source_was_already_attached:
+        claims = [
+            Claim(**claim_data)
+            for claim_data in claims_to_model_claims(
+                result.claims,
+                target.id,
+                source.id,
+                source_text=source.content or "",
+            )
+        ]
+        if claims:
+            claim_store.bulk_create(claims)
+    return target, is_new, claims
+
+
+async def _extract_sources(sources, extractor):
+    if hasattr(extractor, "extract_many"):
+        articles = [
+            {"title": source.title or "", "content": source.content or "", "url": str(source.url)}
+            for source in sources
+        ]
+        outcomes = await extractor.extract_many(articles)
+        return list(zip(sources, outcomes))
+
+    results = []
+    stopped = False
+    for source in sources:
+        if stopped:
+            results.append(
+                (source, ExtractionOutcome(error_category="not_attempted_after_extraction_failure"))
+            )
+            continue
+        try:
+            if hasattr(extractor, "extract_with_diagnostics"):
+                outcome = await extractor.extract_with_diagnostics(
+                    source.title or "", source.content or "", str(source.url)
+                )
+            else:
+                result = await extractor.extract(
+                    source.title or "", source.content or "", str(source.url)
+                )
+                outcome = ExtractionOutcome(
+                    result=result,
+                    error_category="no_result" if result is None else None,
+                    attempts=1,
+                )
+        except Exception as error:
+            outcome = ExtractionOutcome(
+                error_category=f"unexpected_{type(error).__name__}", attempts=1, stop_batch=True
+            )
+        results.append((source, outcome))
+        stopped = outcome.stop_batch
+    return results
 
 
 @app.command()
@@ -70,108 +283,44 @@ def extract(
     
     console.print(f"Processing {len(sources)} sources with content...")
     
+    outcomes = asyncio.run(_extract_sources(sources, extractor))
+    claim_store = get_claim_store()
     created = 0
-    for i, source in enumerate(sources):
+    attached = 0
+    calls = 0
+    attempt_errors = Counter()
+    for i, (source, outcome) in enumerate(outcomes):
         console.print(f"  [{i+1}/{len(sources)}] Extracting from {source.publisher}...")
-        
-        # Extract using Gemini with article content
-        result = asyncio.run(extractor.extract(source.title or "", source.content or "", str(source.url)))
-        
+        calls += outcome.attempts
+        attempt_errors.update(outcome.attempt_errors)
+        result = outcome.result
         if result and validate_extraction_result(result):
-            # Create event from extraction result
-            from app.models.schemas import Event, EventType, EventStatus, ConfidenceLevel
-            import uuid
-            
-            # Map event type string to enum
-            try:
-                event_type = EventType(result.event_type)
-            except ValueError:
-                event_type = EventType.PROTEST
-            
-            # Parse date
-            from app.utils import parse_date_flexible
-            start_time = parse_date_flexible(result.date) if result.date else source.published_at or datetime.utcnow()
-            
-            # Determine country
-            country_code = source.country or "XX"
-            country_name = source.country or "Unknown"
-            
-            event = Event(
-                id=str(uuid.uuid4()),
-                canonical_id=compute_article_hash(source.title or "", str(source.url)),
-                event_type=event_type,
-                title=result.title[:200] if result.title else source.title[:200],
-                slug="",
-                description=source.content[:500] if source.content else source.title,
-                summary=result.summary[:500] if result.summary else (source.content[:500] if source.content else source.title[:300]),
-                country_code=country_code,
-                country_name=country_name,
-                city=result.city,
-                start_time=start_time,
-                severity=5,
-                status=EventStatus.DEVELOPING,
-                confidence=ConfidenceLevel.MEDIUM,
-                source_ids=[source.id],
-            )
-            
-            event_store.create(event)
-            
-            # Create claims from extraction
-            from app.extraction.gemini import claims_to_model_claims
-            from app.datastore import get_claim_store
-            claim_store = get_claim_store()
-            model_claims = claims_to_model_claims(result.claims, event.id, source.id)
-            claim_store.bulk_create([type('obj', (object,), c) for c in model_claims])
-            
-            created += 1
+            _, is_new, _ = _persist_extracted_event(source, result, event_store, claim_store)
+            created += int(is_new)
+            attached += int(not is_new)
+            _record_extraction_outcome(source, outcome, source_store)
         else:
-            console.print(f"    [yellow]Extraction failed or validation failed[/yellow]")
-    
-    console.print(f"[green]Created {created} events from {len(sources)} sources[/green]")
+            console.print(
+                f"    [yellow]Extraction not persisted: "
+                f"{outcome.error_category or 'invalid_model_output'}[/yellow]"
+            )
+            _record_extraction_outcome(source, outcome, source_store)
+
+    console.print(f"[green]Created {created} events; attached {attached} additional reports[/green]")
+    console.print(f"  Gemini API attempts: {calls}")
+    if attempt_errors:
+        console.print(f"  Attempt errors: {dict(sorted(attempt_errors.items()))}")
 
 
 @app.command()
 def cluster():
-    """Cluster events to remove duplicates."""
-    console.print("[bold blue]Running event clustering...[/bold blue]")
-    
+    """Report event count; identity is resolved conservatively during extraction."""
     event_store = get_event_store()
-    source_store = get_source_store()
-    clusterer = EventClusterer()
-    
     events = event_store.get_all()
-    console.print(f"Clustering {len(events)} events...")
-    
-    # For each event, find similar
-    merged = 0
-    for event in events:
-        sources = source_store.get_by_event(event.id)
-        if not sources:
-            continue
-        
-        # Use first source as candidate
-        source = sources[0]
-        candidate = {
-            "source_url": str(source.url),
-            "title": source.title,
-            "latitude": event.latitude,
-            "longitude": event.longitude,
-            "date": event.start_time,
-        }
-        
-        similar = clusterer.find_similar_events(candidate)
-        for similar_event, score in similar:
-            if similar_event.id != event.id and score > 0.8:
-                # Merge: add source to existing event
-                if source.id not in similar_event.source_ids:
-                    similar_event.source_ids.append(source.id)
-                    event_store.update(similar_event.id, {"source_ids": similar_event.source_ids})
-                    # Delete duplicate
-                    event_store.delete(event.id)
-                    merged += 1
-                break
-    
-    console.print(f"[green]Merged {merged} duplicate events[/green]")
+    console.print(
+        f"[green]No destructive post-hoc merges performed; "
+        f"{len(events)} events retain their source and claim provenance.[/green]"
+    )
 
 
 @app.command()
@@ -247,103 +396,48 @@ def run(
     
     source_store = get_source_store()
     event_store = get_event_store()
-    # Get sources with content
-    sources = [s for s in source_store.get_all() if s.content][:extract_limit]
-    
+    sources = _sources_ready_for_extraction(
+        source_store.get_all(), event_store.get_all(), extract_limit
+    )
+
     if not sources:
-        console.print("  [yellow]No sources with content found[/yellow]")
-        return
-    
-    console.print(f"  Extracting from {len(sources)} sources with content...")
-    
+        console.print("  [yellow]No unprocessed sources with content found[/yellow]")
+    else:
+        console.print(f"  Extracting from {len(sources)} sources with content...")
+
+    extraction_pairs = asyncio.run(_extract_sources(sources, extractor))
+    claim_store = get_claim_store()
     created = 0
-    for i, source in enumerate(sources):
+    attached = 0
+    api_attempts = 0
+    attempt_errors = Counter()
+    for i, (source, outcome) in enumerate(extraction_pairs):
         console.print(f"  [{i+1}/{len(sources)}] {source.publisher}...")
-        
-        extraction_result = asyncio.run(extractor.extract(source.title or "", source.content or "", str(source.url)))
-        
+        api_attempts += outcome.attempts
+        attempt_errors.update(outcome.attempt_errors)
+        extraction_result = outcome.result
         if extraction_result and validate_extraction_result(extraction_result):
-            from app.models.schemas import Event, EventType, EventStatus, ConfidenceLevel
-            import uuid
-            
-            try:
-                event_type = EventType(extraction_result.event_type)
-            except ValueError:
-                event_type = EventType.PROTEST
-            
-            from app.utils import parse_date_flexible
-            start_time = parse_date_flexible(extraction_result.date) if extraction_result.date else source.published_at or datetime.utcnow()
-            
-            country_code = source.country or "XX"
-            country_name = source.country or "Unknown"
-            
-            event = Event(
-                id=str(uuid.uuid4()),
-                canonical_id=compute_article_hash(source.title or "", str(source.url)),
-                event_type=event_type,
-                title=extraction_result.title[:200] if extraction_result.title else source.title[:200],
-                slug="",
-                description=source.content[:500] if source.content else source.title,
-                summary=extraction_result.summary[:500] if extraction_result.summary else (source.content[:500] if source.content else source.title[:300]),
-                country_code=country_code,
-                country_name=country_name,
-                city=extraction_result.city,
-                start_time=start_time,
-                severity=5,
-                status=EventStatus.DEVELOPING,
-                confidence=ConfidenceLevel.MEDIUM,
-                source_ids=[source.id],
+            _, is_new, _ = _persist_extracted_event(
+                source, extraction_result, event_store, claim_store
             )
-            
-            event_store.create(event)
-            
-            # Create claims
-            from app.extraction.gemini import claims_to_model_claims
-            from app.datastore import get_claim_store
-            claim_store = get_claim_store()
-            model_claims = claims_to_model_claims(extraction_result.claims, event.id, source.id)
-            claim_store.bulk_create([type('obj', (object,), c) for c in model_claims])
-            
-            created += 1
+            created += int(is_new)
+            attached += int(not is_new)
+            _record_extraction_outcome(source, outcome, source_store)
         else:
-            console.print(f"    [yellow]Extraction validation failed[/yellow]")
+            console.print(
+                f"    [yellow]Extraction not persisted: "
+                f"{outcome.error_category or 'invalid_model_output'}[/yellow]"
+            )
+            _record_extraction_outcome(source, outcome, source_store)
     
-    console.print(f"  [green]Created {created} events from extraction[/green]")
+    console.print(f"  [green]Created {created} events; attached {attached} additional reports[/green]")
+    console.print(f"  Gemini API attempts: {api_attempts}")
+    if attempt_errors:
+        console.print(f"  Attempt errors: {dict(sorted(attempt_errors.items()))}")
     
     # 3. Clustering
     console.print("\n[bold]3. CLUSTERING[/bold]")
-    clusterer = EventClusterer()
-    
-    events = event_store.get_all()
-    unpublished = [e for e in events if not e.published_at]
-    console.print(f"  Checking {len(unpublished)} unpublished events for duplicates...")
-    
-    merged = 0
-    for event in unpublished:
-        sources_list = source_store.get_by_event(event.id)
-        if not sources_list:
-            continue
-        
-        source = sources_list[0]
-        candidate = {
-            "source_url": str(source.url),
-            "title": source.title,
-            "latitude": event.latitude,
-            "longitude": event.longitude,
-            "date": event.start_time,
-        }
-        
-        similar = clusterer.find_similar_events(candidate)
-        for similar_event, score in similar:
-            if similar_event.id != event.id and score > 0.8:
-                if source.id not in similar_event.source_ids:
-                    similar_event.source_ids.append(source.id)
-                    event_store.update(similar_event.id, {"source_ids": similar_event.source_ids})
-                    event_store.delete(event.id)
-                    merged += 1
-                break
-    
-    console.print(f"  [green]Merged {merged} duplicate events[/green]")
+    console.print("  Extraction-time identity resolution attached matching reports without heuristic post-merge.")
     
     # 4. Scoring & Publishing
     console.print("\n[bold]4. SCORING & PUBLISHING[/bold]")
@@ -366,20 +460,6 @@ def run(
     console.print(f"\n[bold green]Pipeline complete![/bold green]")
     console.print(f"  Events published: {published}")
     console.print(f"  Run ID: {discovery_result['run_id']}")
-
-
-async def _extract_smoke_sources(sources, extractor):
-    results = []
-    for source in sources:
-        try:
-            result = await extractor.extract(
-                source.title or "", source.content or "", str(source.url)
-            )
-        except Exception as error:
-            results.append((source, None, f"unexpected_{type(error).__name__}"))
-        else:
-            results.append((source, result, None))
-    return results
 
 
 @app.command("smoke-test")
@@ -407,9 +487,18 @@ def smoke_test(
         "invalid_extractions": 0,
         "validated_events": 0,
         "publication_eligible_candidates": 0,
+        "invalid_or_non_event_results": 0,
+        "insufficient_independent_sources": 0,
+        "suspected_syndication": 0,
+        "evidence_assessment_failures": 0,
+        "evidence_contradictions": 0,
+        "publication_score_holds": 0,
+        "confidence_holds": 0,
+        "eligible_unpublished_candidates": 0,
         "claims_created": 0,
         "claims_with_source_attribution": 0,
         "extraction_error_categories": {},
+        "publication_reason_counts": {},
     }
     discovery_counts = {
         "gdelt_events": 0,
@@ -453,71 +542,55 @@ def smoke_test(
                     if not extractor.enabled:
                         raise RuntimeError("Gemini extraction provider is not enabled")
 
-                    from app.extraction.gemini import claims_to_model_claims
                     from app.scoring.score import EventScorer, decide_publish
                     from app.verification.evidence import EvidenceAssessor
                     from app.verification.syndication import SyndicationDetector
-                    from app.utils import parse_date_flexible
-                    from app.datastore import get_claim_store
                     from app.models.schemas import SourceIndependence
+                    from app.config import load_scoring
 
                     claim_store = get_claim_store()
                     scorer = EventScorer(event_store=event_store, source_store=source_store)
-                    extraction_results = asyncio.run(
-                        _extract_smoke_sources(sources, extractor)
-                    )
-                    for source, extraction_result, extraction_error in extraction_results:
-                        counts["extraction_attempts"] += 1
-                        if extraction_error:
+                    extraction_results = asyncio.run(_extract_sources(sources, extractor))
+                    for source, outcome in extraction_results:
+                        counts["extraction_attempts"] += outcome.attempts
+                        extraction_result = outcome.result
+                        if outcome.error_category and not extraction_result:
                             counts["failed_extractions"] += 1
-                            category = extraction_error
                             categories = counts["extraction_error_categories"]
-                            categories[category] = categories.get(category, 0) + 1
+                            categories[outcome.error_category] = (
+                                categories.get(outcome.error_category, 0) + 1
+                            )
+                            if outcome.error_category == "invalid_model_output":
+                                counts["invalid_extractions"] += 1
+                                counts["invalid_or_non_event_results"] += 1
                             continue
                         if extraction_result is None:
                             counts["failed_extractions"] += 1
-                            category = getattr(extractor, "last_error_category", None) or "no_result"
+                            category = outcome.error_category or "no_result"
                             categories = counts["extraction_error_categories"]
                             categories[category] = categories.get(category, 0) + 1
                             continue
                         counts["successful_extractions"] += 1
-                        if extraction_result.is_mock or not validate_extraction_result(extraction_result):
+                        if (
+                            outcome.error_category == "non_event"
+                            or extraction_result.is_mock
+                            or not validate_extraction_result(extraction_result)
+                        ):
                             counts["invalid_extractions"] += 1
+                            counts["invalid_or_non_event_results"] += 1
+                            category = (
+                                "non_event"
+                                if outcome.error_category == "non_event"
+                                else "invalid_model_output"
+                            )
+                            categories = counts["extraction_error_categories"]
+                            categories[category] = categories.get(category, 0) + 1
                             continue
 
                         counts["validated_events"] += 1
-                        event_type = EventType(extraction_result.event_type)
-                        event = Event(
-                            event_type=event_type,
-                            title=extraction_result.title[:200],
-                            slug="",
-                            description=(source.content or source.title or "")[:500],
-                            summary=(
-                                extraction_result.summary[:500]
-                                if extraction_result.summary
-                                else (source.content[:500] if source.content else source.title[:300])
-                            ),
-                            canonical_id=compute_article_hash(source.title or "", str(source.url)),
-                            country_code=source.country or "XX",
-                            country_name=source.country or "Unknown",
-                            city=extraction_result.city,
-                            start_time=(
-                                parse_date_flexible(extraction_result.date)
-                                if extraction_result.date
-                                else source.published_at or datetime.utcnow()
-                            ),
-                            severity=5,
-                            status=EventStatus.DEVELOPING,
-                            confidence=ConfidenceLevel.MEDIUM,
-                            source_ids=[source.id],
+                        event, _, claims = _persist_extracted_event(
+                            source, extraction_result, event_store, claim_store
                         )
-                        event_store.create(event)
-                        claims = [
-                            Claim(**claim)
-                            for claim in claims_to_model_claims(
-                                extraction_result.claims, event.id, source.id
-                            )
-                        ]
                         counts["claims_created"] += len(claims)
                         counts["claims_with_source_attribution"] += sum(
                             claim.source_id == source.id
@@ -525,33 +598,6 @@ def smoke_test(
                             and claim.source_quote.strip() in (source.content or "")
                             for claim in claims
                         )
-                        claim_store.bulk_create(claims)
-
-                    clusterer = EventClusterer()
-                    events = event_store.get_all()
-                    unpublished = [event for event in events if not event.published_at]
-                    for event in unpublished:
-                        event_sources = source_store.get_by_event(event.id)
-                        if not event_sources:
-                            continue
-                        source = event_sources[0]
-                        candidate = {
-                            "source_url": str(source.url),
-                            "title": source.title,
-                            "latitude": event.latitude,
-                            "longitude": event.longitude,
-                            "date": event.start_time,
-                        }
-                        for similar_event, similarity in clusterer.find_similar_events(candidate):
-                            if similar_event.id != event.id and similarity > 0.8:
-                                if source.id not in similar_event.source_ids:
-                                    similar_event.source_ids.append(source.id)
-                                    event_store.update(
-                                        similar_event.id,
-                                        {"source_ids": similar_event.source_ids},
-                                    )
-                                    event_store.delete(event.id)
-                                break
 
                     detector = SyndicationDetector()
                     for event in event_store.get_all():
@@ -591,10 +637,31 @@ def smoke_test(
 
                         claims = claim_store.get_by_event(event.id)
                         evidence = EvidenceAssessor().assess(event, event_sources, claims)
+                        reasons = counts["publication_reason_counts"]
+                        if not evidence.publication_ready:
+                            counts["evidence_assessment_failures"] += 1
+                        if "insufficient_independent_sources" in evidence.reasons:
+                            counts["insufficient_independent_sources"] += 1
+                        if evidence.syndicated_source_count:
+                            counts["suspected_syndication"] += 1
+                        if evidence.contradiction_count:
+                            counts["evidence_contradictions"] += 1
+                        for reason in evidence.reasons:
+                            reasons[reason] = reasons.get(reason, 0) + 1
                         if evidence.publication_ready:
                             scores = scorer.score_event(event, event_sources)
-                            if decide_publish(event, scores, source_store) != "HOLD":
+                            decision = decide_publish(event, scores, source_store)
+                            if decision != "HOLD":
                                 counts["publication_eligible_candidates"] += 1
+                                counts["eligible_unpublished_candidates"] += 1
+                            else:
+                                counts["publication_score_holds"] += int(
+                                    scores.get("final", 0)
+                                    < load_scoring().thresholds["auto_publish_warning"]
+                                )
+                                counts["confidence_holds"] += int(
+                                    event.confidence.value not in {"HIGH", "VERIFIED", "MEDIUM"}
+                                )
             except Exception as error:
                 error_type = type(error).__name__
     finally:
@@ -637,6 +704,14 @@ def smoke_test(
         ("Invalid extraction results", "invalid_extractions"),
         ("Validated events", "validated_events"),
         ("Publication-eligible candidates", "publication_eligible_candidates"),
+        ("Invalid or non-event results", "invalid_or_non_event_results"),
+        ("Insufficient independent sources", "insufficient_independent_sources"),
+        ("Events with suspected syndication", "suspected_syndication"),
+        ("Evidence-assessment failures", "evidence_assessment_failures"),
+        ("Evidence contradictions", "evidence_contradictions"),
+        ("Publication-score holds", "publication_score_holds"),
+        ("Confidence holds", "confidence_holds"),
+        ("Eligible candidates retained as unpublished", "eligible_unpublished_candidates"),
         ("Claims created", "claims_created"),
         ("Claims with source attribution", "claims_with_source_attribution"),
     ):
@@ -646,6 +721,11 @@ def smoke_test(
         for category, count in sorted(counts["extraction_error_categories"].items())
     ) or "none"
     console.print(f"  Extraction error categories: {extraction_errors}")
+    publication_reasons = ",".join(
+        f"{reason}:{count}"
+        for reason, count in sorted(counts["publication_reason_counts"].items())
+    ) or "none"
+    console.print(f"  Evidence assessment reasons: {publication_reasons}")
     if error_type:
         console.print(f"[red]Smoke test stopped safely ({error_type}); no publication was attempted.[/red]")
         raise typer.Exit(code=1)

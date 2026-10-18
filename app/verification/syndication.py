@@ -10,7 +10,7 @@ from rapidfuzz import fuzz
 from app.models.schemas import Source, SourceIndependence, SourceRelationship
 
 
-_WIRE_SERVICES = ("reuters", "associated press", "\bap\b", "afp", "agence france-presse")
+_WIRE_SERVICES = ("reuters", "associated press", r"\bap\b", "afp", "agence france-presse")
 
 
 @dataclass(frozen=True)

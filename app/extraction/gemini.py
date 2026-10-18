@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import json
-import os
+import asyncio
+import re
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional
+import httpx
 from pydantic import BaseModel, Field, ValidationError
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from app.config import get_settings
 from app.utils import clean_text, truncate
 from app.models.schemas import EventType, ClaimType, VerificationStatus
@@ -117,36 +121,134 @@ REQUIRED JSON SCHEMA (must match exactly):
 Return ONLY valid JSON matching the schema above. Do not include any other text."""
 
 
-def _safe_api_error_category(error: Exception) -> str:
-    message = str(error).lower()
-    if any(term in message for term in ("quota", "rate limit", "resource_exhausted", "too many requests", "429")):
-        return "quota_or_rate_limit"
-    if any(term in message for term in ("unauthorized", "permission denied", "invalid api key", "401", "403")):
-        return "authentication_or_permission"
-    if any(term in message for term in ("timeout", "timed out", "deadline")):
-        return "timeout"
-    if any(term in message for term in ("connection", "dns", "transport", "network", "unreachable")):
-        return "network"
-    if any(term in message for term in ("500", "502", "503", "504", "internal server", "service unavailable")):
-        return "provider_server_error"
-    if any(term in message for term in ("safety", "blocked", "finish_reason")):
-        return "response_blocked"
-    return type(error).__name__
+@dataclass(frozen=True)
+class ExtractionOutcome:
+    result: Optional[ExtractionResult] = None
+    error_category: Optional[str] = None
+    attempt_errors: tuple[str, ...] = ()
+    attempts: int = 0
+    stop_batch: bool = False
+
+
+@dataclass(frozen=True)
+class _ErrorPolicy:
+    category: str
+    retryable: bool = False
+    stop_batch: bool = False
+    retry_after_seconds: Optional[float] = None
+
+
+def _provider_status(error: Exception) -> tuple[Optional[int], str]:
+    code = getattr(error, "code", None)
+    status = getattr(error, "status", None)
+    if not isinstance(code, int):
+        code = getattr(getattr(error, "response", None), "status_code", None)
+    return code if isinstance(code, int) else None, str(status or "").upper()
+
+
+def _provider_message(error: Exception) -> str:
+    message = getattr(error, "message", None)
+    details = getattr(error, "details", None)
+    values = [str(message or ""), str(details or "")]
+    if not message and not details:
+        values.append(str(error))
+    return " ".join(values).lower()
+
+
+def _retry_after_seconds(error: Exception) -> Optional[float]:
+    direct = getattr(error, "retry_after", None)
+    if isinstance(direct, (int, float)):
+        return max(0.0, float(direct))
+    response = getattr(error, "response", None)
+    headers = getattr(response, "headers", None)
+    if headers:
+        value = headers.get("retry-after")
+        if value:
+            try:
+                return max(0.0, float(value))
+            except (TypeError, ValueError):
+                pass
+    details = getattr(error, "details", None)
+    if isinstance(details, list):
+        for detail in details:
+            if not isinstance(detail, dict):
+                continue
+            retry_delay = detail.get("retryDelay") or detail.get("retry_delay")
+            if isinstance(retry_delay, str):
+                match = re.fullmatch(r"\s*(\d+(?:\.\d+)?)s\s*", retry_delay)
+                if match:
+                    return max(0.0, float(match.group(1)))
+    return None
+
+
+def _classify_api_error(error: Exception) -> _ErrorPolicy:
+    code, status = _provider_status(error)
+    message = _provider_message(error)
+    name = type(error).__name__.lower()
+    retry_after = _retry_after_seconds(error)
+
+    if code == 401 or status in {"UNAUTHENTICATED", "AUTHENTICATION"}:
+        return _ErrorPolicy("authentication_failure", stop_batch=True)
+    if code == 403 or status in {"PERMISSION_DENIED", "PERMISSION"}:
+        return _ErrorPolicy("permission_failure", stop_batch=True)
+    if code == 402 or any(term in message for term in ("payment required", "billing disabled", "credits depleted")):
+        return _ErrorPolicy("billing_or_quota_exhausted", stop_batch=True)
+
+    rate_limited = any(
+        term in message
+        for term in (
+            "rate_limit_exceeded",
+            "too_many_requests",
+            "requests per minute",
+            "tokens per minute",
+            "per-second limit",
+            "per-minute limit",
+            "retry after",
+        )
+    )
+    daily_quota = any(
+        term in message
+        for term in ("daily quota", "quota exceeded", "quota_exceeded", "per day", "requests per day")
+    )
+    if status == "RESOURCE_EXHAUSTED" and not rate_limited:
+        daily_quota = True
+    if code == 429:
+        if daily_quota or not rate_limited:
+            return _ErrorPolicy("quota_exhausted", stop_batch=True)
+        return _ErrorPolicy(
+            "transient_rate_limit",
+            retryable=True,
+            retry_after_seconds=retry_after,
+        )
+
+    if code is not None and code >= 500:
+        return _ErrorPolicy(
+            "provider_server_error",
+            retryable=True,
+            retry_after_seconds=retry_after,
+        )
+    if isinstance(error, (TimeoutError, ConnectionError, OSError, httpx.TransportError)) or any(
+        term in name for term in ("timeout", "connecterror", "networkerror", "transporterror")
+    ):
+        return _ErrorPolicy("network_failure", retryable=True)
+    return _ErrorPolicy("provider_error", stop_batch=True)
 
 
 class GeminiExtractor:
-    def __init__(self):
+    MAX_RETRIES_PER_ARTICLE = 2
+    MAX_PROVIDER_RETRY_WAIT_SECONDS = 60
+    RETRY_BASE_SECONDS = 1
+
+    def __init__(self, client: Optional[Any] = None, sleep=asyncio.sleep):
         settings = get_settings()
         self.api_key = settings.gemini_api_key
         self.model_name = settings.gemini_model
         self.enabled = bool(self.api_key)
-        self.last_error_category: Optional[str] = None
-        
-        if self.enabled:
-            genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel(self.model_name)
-        else:
-            self.model = None
+        self.max_calls = max(0, settings.max_llm_calls_per_run)
+        self.api_calls = 0
+        self.quota_exhausted = False
+        self.client = client or (genai.Client(api_key=self.api_key) if self.enabled else None)
+        self._sleep = sleep
 
     def _build_prompt(self, title: str, content: str, url: str) -> str:
         content_clean = clean_text(truncate(content, 8000))
@@ -159,55 +261,135 @@ Content: {content_clean}
 
 Respond with valid JSON only."""
 
-    async def extract(self, title: str, content: str, url: str) -> Optional[ExtractionResult]:
-        if not self.enabled or not self.model:
-            self.last_error_category = "provider_disabled"
-            return None
+    async def extract_with_diagnostics(
+        self, title: str, content: str, url: str
+    ) -> ExtractionOutcome:
+        if not self.enabled or self.client is None:
+            return ExtractionOutcome(error_category="provider_disabled", stop_batch=True)
+        if self.quota_exhausted:
+            return ExtractionOutcome(error_category="not_attempted_quota_exhausted", stop_batch=True)
 
-        self.last_error_category = None
         prompt = self._build_prompt(title, content, url)
-        
-        try:
-            response = await self.model.generate_content_async(
-                prompt,
-                generation_config=genai.GenerationConfig(
-                    temperature=0.1,
-                    response_mime_type="application/json",
-                ),
-            )
-            
-            if not response.text:
-                self.last_error_category = "empty_response"
-                return None
-            
-            data = json.loads(response.text)
-            return ExtractionResult(**data)
-            
-        except json.JSONDecodeError as e:
-            self.last_error_category = "invalid_json"
-            print(f"Gemini extraction failed: {e}")
-            return None
-        except ValidationError as e:
-            self.last_error_category = "invalid_schema"
-            print(f"Gemini extraction failed: {e}")
-            return None
-        except Exception as e:
-            self.last_error_category = _safe_api_error_category(e)
-            print(f"Gemini API error: {e}")
-            return None
+        attempt_errors: list[str] = []
+        for attempt_index in range(self.MAX_RETRIES_PER_ARTICLE + 1):
+            if self.api_calls >= self.max_calls:
+                return ExtractionOutcome(
+                    error_category="call_budget_exhausted",
+                    attempt_errors=tuple(attempt_errors),
+                    attempts=len(attempt_errors),
+                    stop_batch=True,
+                )
+            self.api_calls += 1
+            try:
+                response = await self.client.aio.models.generate_content(
+                    model=self.model_name,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        temperature=0.1,
+                        response_mime_type="application/json",
+                    ),
+                )
+                try:
+                    response_text = response.text
+                except (ValueError, AttributeError):
+                    return ExtractionOutcome(
+                        error_category="invalid_model_output",
+                        attempt_errors=tuple([*attempt_errors, "invalid_model_output"]),
+                        attempts=len(attempt_errors) + 1,
+                    )
+                if not response_text:
+                    return ExtractionOutcome(
+                        error_category="invalid_model_output",
+                        attempt_errors=tuple([*attempt_errors, "invalid_model_output"]),
+                        attempts=len(attempt_errors) + 1,
+                    )
+                try:
+                    result = ExtractionResult.model_validate_json(response_text)
+                except (ValidationError, ValueError, json.JSONDecodeError):
+                    return ExtractionOutcome(
+                        error_category="invalid_model_output",
+                        attempt_errors=tuple([*attempt_errors, "invalid_model_output"]),
+                        attempts=len(attempt_errors) + 1,
+                    )
+                if not result.is_event:
+                    return ExtractionOutcome(
+                        result=result,
+                        error_category="non_event",
+                        attempt_errors=tuple(attempt_errors),
+                        attempts=len(attempt_errors) + 1,
+                    )
+                return ExtractionOutcome(
+                    result=result,
+                    attempt_errors=tuple(attempt_errors),
+                    attempts=len(attempt_errors) + 1,
+                )
+            except Exception as error:
+                policy = _classify_api_error(error)
+                attempt_errors.append(policy.category)
+                if policy.category == "quota_exhausted" or policy.category == "billing_or_quota_exhausted":
+                    self.quota_exhausted = True
+                    return ExtractionOutcome(
+                        error_category=policy.category,
+                        attempt_errors=tuple(attempt_errors),
+                        attempts=len(attempt_errors),
+                        stop_batch=True,
+                    )
+                if not policy.retryable or attempt_index >= self.MAX_RETRIES_PER_ARTICLE:
+                    return ExtractionOutcome(
+                        error_category=policy.category,
+                        attempt_errors=tuple(attempt_errors),
+                        attempts=len(attempt_errors),
+                        stop_batch=policy.stop_batch or policy.retryable,
+                    )
+                delay = policy.retry_after_seconds
+                if delay is None:
+                    delay = self.RETRY_BASE_SECONDS * (2**attempt_index)
+                if delay > self.MAX_PROVIDER_RETRY_WAIT_SECONDS:
+                    return ExtractionOutcome(
+                        error_category=policy.category,
+                        attempt_errors=tuple(attempt_errors),
+                        attempts=len(attempt_errors),
+                        stop_batch=True,
+                    )
+                await self._sleep(delay)
 
-    async def extract_batch(self, articles: List[Dict[str, Any]]) -> List[Optional[ExtractionResult]]:
-        # Hard budget: callers cannot silently exceed the configured quota.
-        articles = articles[:get_settings().max_llm_calls_per_run]
-        results = []
-        for article in articles:
-            result = await self.extract(
+        raise AssertionError("bounded extraction retry loop exited unexpectedly")
+
+    async def extract(self, title: str, content: str, url: str) -> Optional[ExtractionResult]:
+        """Compatibility wrapper; callers needing diagnostics should use detailed outcomes."""
+        return (await self.extract_with_diagnostics(title, content, url)).result
+
+    async def extract_many(self, articles: List[Dict[str, Any]]) -> List[ExtractionOutcome]:
+        results: list[ExtractionOutcome] = []
+        for index, article in enumerate(articles):
+            outcome = await self.extract_with_diagnostics(
                 article.get("title", ""),
                 article.get("content", ""),
-                article.get("url", "")
+                article.get("url", ""),
             )
-            results.append(result)
+            results.append(outcome)
+            if outcome.stop_batch:
+                skipped_category = {
+                    "quota_exhausted": "not_attempted_quota_exhausted",
+                    "billing_or_quota_exhausted": "not_attempted_quota_exhausted",
+                    "call_budget_exhausted": "not_attempted_call_budget_exhausted",
+                    "transient_rate_limit": "not_attempted_after_rate_limit",
+                    "provider_server_error": "not_attempted_after_provider_error",
+                    "network_failure": "not_attempted_after_network_error",
+                    "authentication_failure": "not_attempted_after_authentication_failure",
+                    "permission_failure": "not_attempted_after_permission_failure",
+                    "provider_error": "not_attempted_after_provider_error",
+                    "provider_disabled": "not_attempted_provider_disabled",
+                }.get(outcome.error_category, "not_attempted_after_extraction_failure")
+                results.extend(
+                    ExtractionOutcome(error_category=skipped_category, stop_batch=True)
+                    for _ in articles[index + 1 :]
+                )
+                break
         return results
+
+    async def extract_batch(self, articles: List[Dict[str, Any]]) -> List[Optional[ExtractionResult]]:
+        return [outcome.result for outcome in await self.extract_many(articles)]
 
 
 def validate_extraction_result(result: ExtractionResult) -> bool:
@@ -225,10 +407,22 @@ def validate_extraction_result(result: ExtractionResult) -> bool:
     return True
 
 
-def claims_to_model_claims(claims: List[ExtractedClaim], event_id: str, source_id: str) -> List[Dict[str, Any]]:
+def claims_to_model_claims(
+    claims: List[ExtractedClaim],
+    event_id: str,
+    source_id: str,
+    source_text: Optional[str] = None,
+) -> List[Dict[str, Any]]:
     """Convert extracted claims to model format."""
     model_claims = []
+    normalized_source = " ".join((source_text or "").split()).casefold()
     for claim in claims:
+        normalized_quote = " ".join(claim.source_quote.split()).casefold()
+        if source_text is not None and (
+            not normalized_quote or normalized_quote not in normalized_source
+        ):
+            continue
+
         try:
             claim_type = ClaimType(claim.type.lower())
         except ValueError:
