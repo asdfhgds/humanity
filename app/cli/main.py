@@ -228,10 +228,10 @@ def run(
     
     # 1. Discovery (GDELT + RSS + article fetching)
     console.print("\n[bold]1. DISCOVERY[/bold]")
-    result = asyncio.run(run_discovery(hours))
-    console.print(f"  GDELT events: {result['gdelt_events']}")
-    console.print(f"  RSS articles with content: {result['rss_articles_fetched']}")
-    console.print(f"  Sources created: {result['sources_created']}")
+    discovery_result = asyncio.run(run_discovery(hours))
+    console.print(f"  GDELT events: {discovery_result['gdelt_events']}")
+    console.print(f"  RSS articles with content: {discovery_result['rss_articles_fetched']}")
+    console.print(f"  Sources created: {discovery_result['sources_created']}")
     
     # 2. Extraction (Gemini structured extraction from article content)
     console.print("\n[bold]2. EXTRACTION[/bold]")
@@ -255,19 +255,19 @@ def run(
     for i, source in enumerate(sources):
         console.print(f"  [{i+1}/{len(sources)}] {source.publisher}...")
         
-        result = asyncio.run(extractor.extract(source.title or "", source.content or "", str(source.url)))
+        extraction_result = asyncio.run(extractor.extract(source.title or "", source.content or "", str(source.url)))
         
-        if result and validate_extraction_result(result):
+        if extraction_result and validate_extraction_result(extraction_result):
             from app.models.schemas import Event, EventType, EventStatus, ConfidenceLevel
             import uuid
             
             try:
-                event_type = EventType(result.event_type)
+                event_type = EventType(extraction_result.event_type)
             except ValueError:
                 event_type = EventType.PROTEST
             
             from app.utils import parse_date_flexible
-            start_time = parse_date_flexible(result.date) if result.date else source.published_at or datetime.utcnow()
+            start_time = parse_date_flexible(extraction_result.date) if extraction_result.date else source.published_at or datetime.utcnow()
             
             country_code = source.country or "XX"
             country_name = source.country or "Unknown"
@@ -276,13 +276,13 @@ def run(
                 id=str(uuid.uuid4()),
                 canonical_id=compute_article_hash(source.title or "", str(source.url)),
                 event_type=event_type,
-                title=result.title[:200] if result.title else source.title[:200],
+                title=extraction_result.title[:200] if extraction_result.title else source.title[:200],
                 slug="",
                 description=source.content[:500] if source.content else source.title,
-                summary=result.summary[:500] if result.summary else (source.content[:500] if source.content else source.title[:300]),
+                summary=extraction_result.summary[:500] if extraction_result.summary else (source.content[:500] if source.content else source.title[:300]),
                 country_code=country_code,
                 country_name=country_name,
-                city=result.city,
+                city=extraction_result.city,
                 start_time=start_time,
                 severity=5,
                 status=EventStatus.DEVELOPING,
@@ -296,7 +296,7 @@ def run(
             from app.extraction.gemini import claims_to_model_claims
             from app.datastore import get_claim_store
             claim_store = get_claim_store()
-            model_claims = claims_to_model_claims(result.claims, event.id, source.id)
+            model_claims = claims_to_model_claims(extraction_result.claims, event.id, source.id)
             claim_store.bulk_create([type('obj', (object,), c) for c in model_claims])
             
             created += 1
@@ -358,7 +358,7 @@ def run(
     
     console.print(f"\n[bold green]Pipeline complete![/bold green]")
     console.print(f"  Events published: {published}")
-    console.print(f"  Run ID: {result['run_id']}")
+    console.print(f"  Run ID: {discovery_result['run_id']}")
 
 
 @app.command()
