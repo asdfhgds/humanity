@@ -224,8 +224,8 @@ class DiscoveryManager:
         rss_fetch_failures = 0
         rss_discovery_errors = 0
         gdelt_diagnostics = {
-            "events": {"status": "not_run", "errors": 0},
-            "gkg": {"status": "not_run", "errors": 0},
+            "events": {"status": "not_run", "errors": 0, "error_categories": {}},
+            "gkg": {"status": "not_run", "errors": 0, "error_categories": {}},
         }
         
         try:

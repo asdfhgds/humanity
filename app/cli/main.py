@@ -368,6 +368,20 @@ def run(
     console.print(f"  Run ID: {discovery_result['run_id']}")
 
 
+async def _extract_smoke_sources(sources, extractor):
+    results = []
+    for source in sources:
+        try:
+            result = await extractor.extract(
+                source.title or "", source.content or "", str(source.url)
+            )
+        except Exception as error:
+            results.append((source, None, f"unexpected_{type(error).__name__}"))
+        else:
+            results.append((source, result, None))
+    return results
+
+
 @app.command("smoke-test")
 def smoke_test(
     hours: int = typer.Option(6, min=1, max=72, help="Hours back for source discovery"),
@@ -395,6 +409,7 @@ def smoke_test(
         "publication_eligible_candidates": 0,
         "claims_created": 0,
         "claims_with_source_attribution": 0,
+        "extraction_error_categories": {},
     }
     discovery_counts = {
         "gdelt_events": 0,
@@ -448,17 +463,22 @@ def smoke_test(
 
                     claim_store = get_claim_store()
                     scorer = EventScorer(event_store=event_store, source_store=source_store)
-                    for source in sources:
+                    extraction_results = asyncio.run(
+                        _extract_smoke_sources(sources, extractor)
+                    )
+                    for source, extraction_result, extraction_error in extraction_results:
                         counts["extraction_attempts"] += 1
-                        try:
-                            extraction_result = asyncio.run(
-                                extractor.extract(source.title or "", source.content or "", str(source.url))
-                            )
-                        except Exception:
+                        if extraction_error:
                             counts["failed_extractions"] += 1
+                            category = extraction_error
+                            categories = counts["extraction_error_categories"]
+                            categories[category] = categories.get(category, 0) + 1
                             continue
                         if extraction_result is None:
                             counts["failed_extractions"] += 1
+                            category = getattr(extractor, "last_error_category", None) or "no_result"
+                            categories = counts["extraction_error_categories"]
+                            categories[category] = categories.get(category, 0) + 1
                             continue
                         counts["successful_extractions"] += 1
                         if extraction_result.is_mock or not validate_extraction_result(extraction_result):
@@ -588,10 +608,15 @@ def smoke_test(
         ("GDELT GKG", "gkg", "gdelt_articles"),
     ):
         stage_diagnostics = gdelt_diagnostics.get(stage.split()[-1].lower(), {})
+        error_categories = ",".join(
+            f"{category}:{count}"
+            for category, count in sorted(stage_diagnostics.get("error_categories", {}).items())
+        ) or "none"
         console.print(
             f"  {stage}: {discovery_counts[count_key]} found; "
             f"status={stage_diagnostics.get('status', 'not_reported')}; "
-            f"errors={stage_diagnostics.get('errors', 'not_reported')}"
+            f"errors={stage_diagnostics.get('errors', 'not_reported')}; "
+            f"error categories={error_categories}"
         )
     console.print(
         f"  RSS feeds: {discovery_counts['rss_feeds_completed']}/"
@@ -616,6 +641,11 @@ def smoke_test(
         ("Claims with source attribution", "claims_with_source_attribution"),
     ):
         console.print(f"  {label}: {counts[key]}")
+    extraction_errors = ",".join(
+        f"{category}:{count}"
+        for category, count in sorted(counts["extraction_error_categories"].items())
+    ) or "none"
+    console.print(f"  Extraction error categories: {extraction_errors}")
     if error_type:
         console.print(f"[red]Smoke test stopped safely ({error_type}); no publication was attempted.[/red]")
         raise typer.Exit(code=1)

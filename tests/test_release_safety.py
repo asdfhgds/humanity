@@ -10,7 +10,7 @@ import app.discovery.manager as discovery_manager
 import app.sources.fetcher as source_fetcher
 from app.cli import main as cli_main
 from app.models.schemas import IngestionRun, Source
-from app.extraction.gemini import ExtractionResult
+from app.extraction.gemini import ExtractionResult, GeminiExtractor
 from app.sources.fetcher import FetchResult
 
 
@@ -200,8 +200,16 @@ def test_smoke_test_isolated_and_never_calls_publisher(
             "gdelt_events": 2,
             "gdelt_articles": 5,
             "gdelt_diagnostics": {
-                "events": {"status": "succeeded", "errors": 0},
-                "gkg": {"status": "failed", "errors": 1},
+                "events": {
+                    "status": "succeeded",
+                    "errors": 0,
+                    "error_categories": {},
+                },
+                "gkg": {
+                    "status": "failed",
+                    "errors": 1,
+                    "error_categories": {"HTTPStatusError": 1},
+                },
             },
         }
 
@@ -229,13 +237,16 @@ def test_smoke_test_isolated_and_never_calls_publisher(
         assert f"Invalid extraction results: {invalid_count}" in output
         assert f"Validated events: {validated_count}" in output
         assert "GDELT events: 2 found; status=succeeded; errors=0" in output
-        assert "GDELT GKG: 5 found; status=failed; errors=1" in output
+        assert "GDELT GKG: 5 found; status=failed; errors=1;" in output
+        assert "categories=HTTPStatusError:1" in output
         assert "RSS feeds: 3/3 completed; 1 with errors; discovery errors=0" in output
         assert "RSS fetch results: 3 succeeded, 1 failed of 4 attempts" in output
         if successful_count and validated_count:
             assert "Claims created: 1" in output
             assert "Claims with source attribution: 1" in output
         assert "Publication-eligible candidates: 0" in output
+        if failed_count:
+            assert "Extraction error categories: no_result:1" in output
         assert "Article text that must not be printed" not in output
         assert "Auto-publication: disabled" in output
         assert list(tmp_path.iterdir()) == []
@@ -251,6 +262,29 @@ def test_smoke_test_isolated_and_never_calls_publisher(
             settings.gemini_api_key,
             settings.max_llm_calls_per_run,
         ) = original_values
+
+
+def test_smoke_extraction_batch_uses_one_async_event_loop():
+    sources = [
+        SimpleNamespace(title=f"Story {index}", content="content", url=f"https://example.test/{index}")
+        for index in range(2)
+    ]
+
+    class LoopBoundExtractor:
+        loop = None
+
+        async def extract(self, title, content, url):
+            current_loop = asyncio.get_running_loop()
+            if self.loop is None:
+                self.loop = current_loop
+            assert current_loop is self.loop
+            return title
+
+    extractor = LoopBoundExtractor()
+    results = asyncio.run(cli_main._extract_smoke_sources(sources, extractor))
+
+    assert [result for _, result, error in results] == ["Story 0", "Story 1"]
+    assert all(error is None for _, _, error in results)
 
 
 def test_discovery_returns_separate_rss_and_gdelt_diagnostics(monkeypatch):
@@ -345,6 +379,54 @@ def test_multi_source_fetch_respects_global_article_budget(monkeypatch):
     assert set(results) == {source.name for source in sources}
     assert sorted(requested_limits) == [1, 2, 2]
     assert sum(requested_limits) == 5
+
+
+@pytest.mark.parametrize(
+    ("response_text", "error", "expected_category"),
+    [
+        ("", None, "empty_response"),
+        ("not-json", None, "invalid_json"),
+        ("{}", None, "invalid_schema"),
+        (None, RuntimeError("sensitive provider message"), "RuntimeError"),
+        (None, RuntimeError("quota exceeded: private detail"), "quota_or_rate_limit"),
+        (None, RuntimeError("503 service unavailable: private detail"), "provider_server_error"),
+    ],
+)
+def test_gemini_failure_categories_exclude_provider_messages(
+    capsys, response_text, error, expected_category
+):
+    class Model:
+        async def generate_content_async(self, prompt, generation_config):
+            if error:
+                raise error
+            return SimpleNamespace(text=response_text)
+
+    extractor = GeminiExtractor.__new__(GeminiExtractor)
+    extractor.enabled = True
+    extractor.model = Model()
+
+    result = asyncio.run(extractor.extract("title", "content", "https://example.test"))
+    capsys.readouterr()
+
+    assert result is None
+    assert extractor.last_error_category == expected_category
+    assert "private detail" not in capsys.readouterr().out
+
+
+def test_gdelt_http_error_category_includes_only_status_code():
+    from app.discovery.gdelt import GDELTDiscovery
+
+    discovery = GDELTDiscovery.__new__(GDELTDiscovery)
+    discovery.diagnostics = {
+        "gkg": {"status": "not_run", "errors": 0, "error_categories": {}}
+    }
+    http_error = type("HTTPStatusError", (Exception,), {})
+    error = http_error()
+    error.response = SimpleNamespace(status_code=403)
+
+    discovery._record_error("gkg", error)
+
+    assert discovery.diagnostics["gkg"]["error_categories"] == {"HTTPStatusError_403": 1}
 
 
 def test_publisher_refuses_to_publish_when_auto_publication_is_disabled(
