@@ -1102,7 +1102,7 @@ class TestIdempotencyAndRevisions:
 
     @pytest.mark.parametrize("publication_status", ["held", "rejected"])
     def test_publication_status_change_updates_all_artifacts(
-        self, event_store, source_store, claim_store, isolated_publication_paths, publication_status
+        self, event_store, source_store, claim_store, isolated_publication_paths, publication_status, monkeypatch
     ):
         """When publication status changes, all public artifacts update consistently."""
         import os, shutil, json
@@ -1180,6 +1180,7 @@ class TestIdempotencyAndRevisions:
 
         # Now simulate status change to HELD (e.g., new evidence contradicts)
         event_store.update(event.id, {"publication_status": publication_status, "visibility": False})
+        monkeypatch.setattr(publisher.settings, "enable_autopublish", False)
 
         # Re-publish should not create new artifacts for HELD event
         updated_event = event_store.get(event.id)

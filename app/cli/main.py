@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import io
 import sys
+import tempfile
 from datetime import datetime
+from contextlib import redirect_stderr, redirect_stdout
+from pathlib import Path
 from typing import Optional
 import typer
 from rich.console import Console
@@ -15,7 +19,8 @@ from app.clustering.cluster import EventClusterer
 from app.scoring.score import EventScorer, decide_publish
 from app.publishing.publisher import EventPublisher
 from app.datastore import get_event_store, get_source_store, get_ingestion_run_store
-from app.models.schemas import Event, EventType, ConfidenceLevel, EventStatus
+from app.config import get_settings
+from app.models.schemas import Claim, Event, EventType, ConfidenceLevel, EventStatus
 from app.utils import canonicalize_url, compute_article_hash
 
 app = typer.Typer(help="HUMANITY - Autonomous Global Human Events Intelligence Platform")
@@ -343,14 +348,16 @@ def run(
     # 4. Scoring & Publishing
     console.print("\n[bold]4. SCORING & PUBLISHING[/bold]")
     publisher = EventPublisher()
-    events = event_store.get_all()
-    unpublished = [e for e in events if not e.published_at]
-    
     published = 0
-    for event in unpublished:
-        result = publisher.publish_event(event)
-        if result.get("published"):
-            published += 1
+    if get_settings().enable_autopublish:
+        events = event_store.get_all()
+        unpublished = [e for e in events if not e.published_at]
+        for event in unpublished:
+            result = publisher.publish_event(event)
+            if result.get("published"):
+                published += 1
+    else:
+        console.print("  [yellow]Auto-publication disabled; eligible events remain unpublished[/yellow]")
     
     # 5. Daily Brief
     console.print("\n[bold]5. DAILY BRIEF[/bold]")
@@ -359,6 +366,139 @@ def run(
     console.print(f"\n[bold green]Pipeline complete![/bold green]")
     console.print(f"  Events published: {published}")
     console.print(f"  Run ID: {discovery_result['run_id']}")
+
+
+@app.command("smoke-test")
+def smoke_test(
+    hours: int = typer.Option(6, min=1, max=72, help="Hours back for source discovery"),
+    extract_limit: int = typer.Option(25, min=1, max=50, help="Maximum articles to send to Gemini"),
+):
+    """Verify live source discovery and Gemini extraction without publishing."""
+    settings = get_settings()
+    if not settings.gemini_api_key:
+        console.print("[red]Smoke test requires GEMINI_API_KEY; no source requests were made.[/red]")
+        raise typer.Exit(code=1)
+
+    original_settings = {
+        "data_dir": settings.data_dir,
+        "web_dir": settings.web_dir,
+        "enable_autopublish": settings.enable_autopublish,
+        "production_mode": settings.production_mode,
+    }
+    counts = {
+        "discovered_articles": 0,
+        "extraction_attempts": 0,
+        "successful_extractions": 0,
+        "failed_extractions": 0,
+        "validated_events": 0,
+        "publication_eligible_candidates": 0,
+    }
+    error_type: Optional[str] = None
+
+    try:
+        with tempfile.TemporaryDirectory(prefix="humanity-smoke-") as temp_dir:
+            temp_root = Path(temp_dir)
+            settings.data_dir = temp_root / "data"
+            settings.web_dir = temp_root / "web"
+            settings.enable_autopublish = False
+            settings.production_mode = True
+
+            try:
+                # Source connectors and provider errors can contain URLs or
+                # response fragments; only aggregate counters leave this scope.
+                with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+                    asyncio.run(run_discovery(hours))
+                    source_store = get_source_store()
+                    event_store = get_event_store()
+                    discovered_sources = [
+                        source for source in source_store.get_all() if source.content
+                    ]
+                    counts["discovered_articles"] = len(discovered_sources)
+                    sources = discovered_sources[:min(extract_limit, settings.max_llm_calls_per_run)]
+                    extractor = GeminiExtractor()
+                    if not extractor.enabled:
+                        raise RuntimeError("Gemini extraction provider is not enabled")
+
+                    from app.extraction.gemini import claims_to_model_claims
+                    from app.scoring.score import EventScorer, decide_publish
+                    from app.verification.evidence import EvidenceAssessor
+                    from app.utils import parse_date_flexible
+
+                    scorer = EventScorer(event_store=event_store, source_store=source_store)
+                    for source in sources:
+                        counts["extraction_attempts"] += 1
+                        try:
+                            extraction_result = asyncio.run(
+                                extractor.extract(source.title or "", source.content or "", str(source.url))
+                            )
+                        except Exception:
+                            counts["failed_extractions"] += 1
+                            continue
+                        if extraction_result is None:
+                            counts["failed_extractions"] += 1
+                            continue
+                        counts["successful_extractions"] += 1
+                        if extraction_result.is_mock or not validate_extraction_result(extraction_result):
+                            continue
+
+                        counts["validated_events"] += 1
+                        event_type = EventType(extraction_result.event_type)
+                        event = Event(
+                            event_type=event_type,
+                            title=extraction_result.title,
+                            slug="",
+                            description=(source.content or source.title or "")[:500],
+                            summary=extraction_result.summary or (source.title or "Summary unavailable")[:500],
+                            country_code=source.country or extraction_result.country or "XX",
+                            country_name=extraction_result.country or source.country or "Unknown",
+                            city=extraction_result.city,
+                            latitude=extraction_result.latitude,
+                            longitude=extraction_result.longitude,
+                            start_time=(
+                                parse_date_flexible(extraction_result.date)
+                                if extraction_result.date
+                                else source.published_at or datetime.utcnow()
+                            ),
+                            confidence=(
+                                ConfidenceLevel.HIGH if extraction_result.confidence_score >= 80
+                                else ConfidenceLevel.MEDIUM if extraction_result.confidence_score >= 60
+                                else ConfidenceLevel.LOW
+                            ),
+                            source_ids=[source.id],
+                        )
+                        event_store.create(event)
+                        claims = [
+                            Claim(**claim)
+                            for claim in claims_to_model_claims(
+                                extraction_result.claims, event.id, source.id
+                            )
+                        ]
+                        evidence = EvidenceAssessor().assess(event, [source], claims)
+                        if evidence.publication_ready:
+                            scores = scorer.score_event(event, [source])
+                            if decide_publish(event, scores, source_store) != "HOLD":
+                                counts["publication_eligible_candidates"] += 1
+            except Exception as error:
+                error_type = type(error).__name__
+    finally:
+        for name, value in original_settings.items():
+            setattr(settings, name, value)
+
+    console.print("[bold]HUMANITY live-source smoke test (isolated; publishing disabled)[/bold]")
+    for label, key in (
+        ("Discovered articles", "discovered_articles"),
+        ("Extraction attempts", "extraction_attempts"),
+        ("Successful extractions", "successful_extractions"),
+        ("Failed extractions", "failed_extractions"),
+        ("Validated events", "validated_events"),
+        ("Publication-eligible candidates", "publication_eligible_candidates"),
+    ):
+        console.print(f"  {label}: {counts[key]}")
+    if error_type:
+        console.print(f"[red]Smoke test stopped safely ({error_type}); no publication was attempted.[/red]")
+        raise typer.Exit(code=1)
+    console.print("  Auto-publication: disabled")
+    console.print("  Storage: temporary directory (removed at completion)")
 
 
 @app.command()
@@ -488,14 +628,16 @@ def legacy_run(
     # 4. Scoring & Publishing
     console.print("\n[bold]4. SCORING & PUBLISHING[/bold]")
     publisher = EventPublisher()
-    events = event_store.get_all()
-    unpublished = [e for e in events if not e.published_at]
-    
     published = 0
-    for event in unpublished:
-        result = publisher.publish_event(event)
-        if result.get("published"):
-            published += 1
+    if get_settings().enable_autopublish:
+        events = event_store.get_all()
+        unpublished = [e for e in events if not e.published_at]
+        for event in unpublished:
+            result = publisher.publish_event(event)
+            if result.get("published"):
+                published += 1
+    else:
+        console.print("  [yellow]Auto-publication disabled; eligible events remain unpublished[/yellow]")
     
     # 5. Daily Brief
     console.print("\n[bold]5. DAILY BRIEF[/bold]")

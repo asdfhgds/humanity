@@ -162,6 +162,13 @@ class EventPublisher:
             self._update_global_stats()
             self._update_public_indexes()
             return {"published": False, "decision": event.publication_status.value.upper(), "scores": {}, "publication_status": event.publication_status.value}
+        if not self.settings.enable_autopublish:
+            return {
+                "published": False,
+                "decision": "AUTOPUBLISH_DISABLED",
+                "scores": {},
+                "publication_status": event.publication_status.value,
+            }
         
         # Score the event
         sources = self.source_store.get_by_event(event.id)
