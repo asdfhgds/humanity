@@ -395,6 +395,7 @@ def smoke_test(
         "publication_eligible_candidates": 0,
         "claims_created": 0,
         "claims_with_source_attribution": 0,
+        "extraction_error_categories": {},
     }
     discovery_counts = {
         "gdelt_events": 0,
@@ -456,9 +457,15 @@ def smoke_test(
                             )
                         except Exception:
                             counts["failed_extractions"] += 1
+                            category = "unexpected_extractor_exception"
+                            categories = counts["extraction_error_categories"]
+                            categories[category] = categories.get(category, 0) + 1
                             continue
                         if extraction_result is None:
                             counts["failed_extractions"] += 1
+                            category = getattr(extractor, "last_error_category", None) or "no_result"
+                            categories = counts["extraction_error_categories"]
+                            categories[category] = categories.get(category, 0) + 1
                             continue
                         counts["successful_extractions"] += 1
                         if extraction_result.is_mock or not validate_extraction_result(extraction_result):
@@ -588,10 +595,15 @@ def smoke_test(
         ("GDELT GKG", "gkg", "gdelt_articles"),
     ):
         stage_diagnostics = gdelt_diagnostics.get(stage.split()[-1].lower(), {})
+        error_categories = ",".join(
+            f"{category}:{count}"
+            for category, count in sorted(stage_diagnostics.get("error_categories", {}).items())
+        ) or "none"
         console.print(
             f"  {stage}: {discovery_counts[count_key]} found; "
             f"status={stage_diagnostics.get('status', 'not_reported')}; "
-            f"errors={stage_diagnostics.get('errors', 'not_reported')}"
+            f"errors={stage_diagnostics.get('errors', 'not_reported')}; "
+            f"error categories={error_categories}"
         )
     console.print(
         f"  RSS feeds: {discovery_counts['rss_feeds_completed']}/"
@@ -616,6 +628,11 @@ def smoke_test(
         ("Claims with source attribution", "claims_with_source_attribution"),
     ):
         console.print(f"  {label}: {counts[key]}")
+    extraction_errors = ",".join(
+        f"{category}:{count}"
+        for category, count in sorted(counts["extraction_error_categories"].items())
+    ) or "none"
+    console.print(f"  Extraction error categories: {extraction_errors}")
     if error_type:
         console.print(f"[red]Smoke test stopped safely ({error_type}); no publication was attempted.[/red]")
         raise typer.Exit(code=1)

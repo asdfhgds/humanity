@@ -67,13 +67,17 @@ class GDELTDiscovery:
         self.source_store = get_source_store()
         self.run_store = get_ingestion_run_store()
         self.diagnostics = {
-            "events": {"status": "not_run", "errors": 0},
-            "gkg": {"status": "not_run", "errors": 0},
+            "events": {"status": "not_run", "errors": 0, "error_categories": {}},
+            "gkg": {"status": "not_run", "errors": 0, "error_categories": {}},
         }
 
-    def _record_error(self, stage: str) -> None:
-        self.diagnostics[stage]["errors"] += 1
+    def _record_error(self, stage: str, error: Exception) -> None:
+        stage_diagnostics = self.diagnostics[stage]
+        stage_diagnostics["errors"] += 1
         self.diagnostics[stage]["status"] = "failed"
+        category = type(error).__name__
+        categories = stage_diagnostics["error_categories"]
+        categories[category] = categories.get(category, 0) + 1
 
     async def close(self):
         await self.client.aclose()
@@ -105,7 +109,7 @@ class GDELTDiscovery:
                         continue
             self.diagnostics[stage]["status"] = "no_recent_data"
         except Exception as e:
-            self._record_error(stage)
+            self._record_error(stage, e)
             print(f"Error fetching GDELT master file: {e}")
         return None
 
@@ -157,7 +161,7 @@ class GDELTDiscovery:
                     continue
                     
         except Exception as e:
-            self._record_error("events")
+            self._record_error("events", e)
             print(f"Error parsing GDELT events: {e}")
         return events
 
@@ -320,14 +324,14 @@ class GDELTDiscovery:
                         if article:
                             articles.append(article)
                 except Exception as e:
-                    self._record_error("gkg")
+                    self._record_error("gkg", e)
                     print(f"Error parsing GKG file {file_url}: {e}")
             if self.diagnostics["gkg"]["errors"] and articles:
                 self.diagnostics["gkg"]["status"] = "partial_failure"
             elif self.diagnostics["gkg"]["status"] != "failed" and gkg_files:
                 self.diagnostics["gkg"]["status"] = "succeeded"
         except Exception as e:
-            self._record_error("gkg")
+            self._record_error("gkg", e)
             print(f"Error in GKG discovery: {e}")
         return articles
 

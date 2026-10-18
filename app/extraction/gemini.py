@@ -123,6 +123,7 @@ class GeminiExtractor:
         self.api_key = settings.gemini_api_key
         self.model_name = settings.gemini_model
         self.enabled = bool(self.api_key)
+        self.last_error_category: Optional[str] = None
         
         if self.enabled:
             genai.configure(api_key=self.api_key)
@@ -143,8 +144,10 @@ Respond with valid JSON only."""
 
     async def extract(self, title: str, content: str, url: str) -> Optional[ExtractionResult]:
         if not self.enabled or not self.model:
+            self.last_error_category = "provider_disabled"
             return None
 
+        self.last_error_category = None
         prompt = self._build_prompt(title, content, url)
         
         try:
@@ -157,15 +160,22 @@ Respond with valid JSON only."""
             )
             
             if not response.text:
+                self.last_error_category = "empty_response"
                 return None
             
             data = json.loads(response.text)
             return ExtractionResult(**data)
             
-        except (json.JSONDecodeError, ValidationError) as e:
+        except json.JSONDecodeError as e:
+            self.last_error_category = "invalid_json"
+            print(f"Gemini extraction failed: {e}")
+            return None
+        except ValidationError as e:
+            self.last_error_category = "invalid_schema"
             print(f"Gemini extraction failed: {e}")
             return None
         except Exception as e:
+            self.last_error_category = type(e).__name__
             print(f"Gemini API error: {e}")
             return None
 

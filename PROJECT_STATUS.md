@@ -2,15 +2,19 @@
 
 ## Current Status
 
-Editorial redesign release verification — production safety changes prepared for review.
+Release verification — PR #2 merged; production publishing and deployment remain gated.
 
 ## Status
 
-NOT READY TO DEPLOY — follow-up PR [#2](https://github.com/asdfhgds/humanity/pull/2)
-is open against `master`. Production-release safety changes are pushed at
-`bf70f4b` and both PR validation jobs passed. The isolated live-source smoke
-test has not been dispatched. No production pipeline, merge, or deployment
-has been run. The public event feed remains empty.
+NOT READY FOR PRODUCTION PUBLISHING. PR [#2](https://github.com/asdfhgds/humanity/pull/2)
+was merged to `master` at `f623a3f2c36c87975a3113038e0ae64c51d08ff2`. The
+isolated live-source smoke test ran successfully as a workflow, but only 1 of
+25 Gemini extraction attempts succeeded and it produced 0 publication-eligible
+candidates. No production ingestion or deployment has run after the merge.
+The currently deployed Pages site is stale and several current data endpoints
+return 404; a code-only deployment remains a separate, explicit action.
+Follow-up diagnostic instrumentation is being validated locally and is not
+yet merged. The public event feed in the repository is empty.
 
 ## Completed
 
@@ -245,3 +249,45 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   and PR #2 is mergeable. No live source/Gemini smoke, production pipeline,
   merge, or deployment has occurred yet. The recurring pipeline must remain
   disabled even if the smoke succeeds.
+
+### Post-merge live verification and current blockers (2026-10-18)
+
+- PR #2 is merged. The resulting `master` merge commit is
+  `f623a3f2c36c87975a3113038e0ae64c51d08ff2`. The latest pre-merge Python and
+  frontend/link-audit checks passed in
+  [run 39134116676](https://github.com/asdfhgds/humanity/actions/runs/39134116676).
+- The isolated live-source smoke workflow completed successfully in
+  [run 39134727684](https://github.com/asdfhgds/humanity/actions/runs/39134727684)
+  using its 6-hour discovery window and 25-extraction-call cap. It discovered
+  203 articles, attempted 25 Gemini extractions, had 1 successful extraction
+  and 24 failures, validated 1 event, created 6 source-backed claims, and
+  found 0 publication-eligible candidates. The source attribution check found
+  provenance for all 6 claims. RSS completed 12/12 feeds, with 6 feeds
+  reporting errors (203 successful and 6 failed fetch results); GDELT events
+  returned 0 records without errors, and GDELT GKG reported 1 error and
+  returned 0 articles. These counts are discovery/extraction diagnostics,
+  not published stories. The smoke used temporary storage, disabled
+  auto-publication, and did not alter production data, commit, push, or deploy.
+- As of the live check, the public homepage returned HTTP 200 but was built
+  from an older deployment (SHA `13eb00081d61d3f6d62f20cfe4ec78bb0c45de8d`,
+  predating the merge). The map endpoint returned an empty FeatureCollection;
+  current-code event, recent-event, global-statistics, and country data
+  endpoints returned HTTP 404. The repository's tracked public event feeds
+  and map are empty, so a code-only build should report an empty feed rather
+  than inventing events. No Pages deployment has been run.
+- The 24 Gemini failures and GDELT GKG error could not be diagnosed from the
+  first smoke run because only aggregate failure counts were emitted. A local,
+  unmerged follow-up adds sanitized error categories (exception class or
+  response-validation category only) and regression tests; it does not log
+  provider messages in the smoke summary. The targeted release-safety tests
+  pass (13 tests), and the full Python suite passes (81 tests, 513 existing
+  deprecation warnings). Workflow YAML parsing passes. Frontend validation
+  passed (`npm run check`: zero diagnostics; build: 13 pages; static audit:
+  zero missing links, fragments, or assets). The first audit invocation used
+  the wrong working directory and was rerun from the repository root
+  successfully.
+- Production release variable remains unset/disabled, auto-publication remains
+  disabled, and the 5-minute and daily production schedules must not be
+  activated while extraction failures remain unexplained and no candidate
+  passes the existing evidence policy. No production ingestion or deployment
+  is authorized by these smoke results alone.
