@@ -240,7 +240,8 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   and asset audit passed; all four workflow files parsed; Python compilation
   and `git diff --check` passed. The existing MapLibre bundle-size advisory
   and legacy datetime deprecation warnings remain.
-- These final review fixes are local and not yet on the PR at this point.
-  No live source/Gemini smoke, production pipeline, merge, or deployment has
-  occurred. The smoke workflow can be dispatched once its code is merged;
-  the recurring pipeline must remain disabled even if the smoke succeeds.
+- These final review fixes are pushed at `962b45f`. Both PR checks passed on
+  that exact head in [run 39133892704](https://github.com/asdfhgds/humanity/actions/runs/39133892704),
+  and PR #2 is mergeable. No live source/Gemini smoke, production pipeline,
+  merge, or deployment has occurred yet. The recurring pipeline must remain
+  disabled even if the smoke succeeds.
