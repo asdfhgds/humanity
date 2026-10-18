@@ -287,9 +287,10 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   feed errors. This confirms external source and Gemini calls were attempted
   but does not validate broad successful live extraction.
 - The diagnostic follow-up is pushed at `0add447c92b772216206070bc7030da49b414f2b`
-  and is open as [PR #3](https://github.com/asdfhgds/humanity/pull/3). Both
-  PR-triggered checks passed in
-  [run 39137553579](https://github.com/asdfhgds/humanity/actions/runs/39137553579).
+  with its smoke results documented in commit `dcf0b232476bfffb22e01e0533f328cdfde6762e`;
+  it is open as [PR #3](https://github.com/asdfhgds/humanity/pull/3). Both
+  PR-triggered checks passed on the latest head in
+  [run 39138288742](https://github.com/asdfhgds/humanity/actions/runs/39138288742).
   The targeted release-safety tests pass (13 tests), and the full Python
   suite passes (81 tests, 513 existing deprecation warnings). Frontend
   validation passed (`npm run check`: zero diagnostics; build: 13 pages;
