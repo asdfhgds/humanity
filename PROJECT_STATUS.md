@@ -371,6 +371,11 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   `python scripts/audit_static_site.py web/dist` passed with no missing local
   links, fragments, or assets. The build emitted only its existing large-chunk
   advisory.
+- The AP attribution correction is on PR #5's code-bearing commit
+  `b887ffc09bc5e87175c40b1bba7a8934da3769f9`; its fresh Python and frontend
+  checks both passed in
+  [run 39163379387](https://github.com/asdfhgds/humanity/actions/runs/39163379387).
+  The PR is open and targets `master`.
 - The latest real-source/Gemini smoke remains
   [run 39141724221](https://github.com/asdfhgds/humanity/actions/runs/39141724221),
   created 2026-10-18 15:42:53 UTC and completed at 15:49:32 UTC. Its sanitized
