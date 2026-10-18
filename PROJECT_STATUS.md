@@ -422,7 +422,9 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   text, URLs, titles, or claim quotes. A deterministic regression test asserts
   that one-source events show the insufficient-independent-source hold and
   that the event title is absent from output. This post-merge diagnostic
-  follow-up is being submitted separately; it has not yet been merged.
+  follow-up was delivered in PR #6, merged at commit
+  `a2c98666a07f51feadda4f5382dfd8a21802279c`; its required checks passed in
+  [run 39165310270](https://github.com/asdfhgds/humanity/actions/runs/39165310270).
 - Production publishing, the recurring pipeline, and deployment remain
   disabled. A new real-data smoke must wait until the conservative cooldown is
   clear and must retain both aggregate hold totals and these per-event
