@@ -275,17 +275,27 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   endpoints returned HTTP 404. The repository's tracked public event feeds
   and map are empty, so a code-only build should report an empty feed rather
   than inventing events. No Pages deployment has been run.
-- The 24 Gemini failures and GDELT GKG error could not be diagnosed from the
-  first smoke run because only aggregate failure counts were emitted. A local,
-  unmerged follow-up adds sanitized error categories (exception class or
-  response-validation category only) and regression tests; it does not log
-  provider messages in the smoke summary. The targeted release-safety tests
-  pass (13 tests), and the full Python suite passes (81 tests, 513 existing
-  deprecation warnings). Workflow YAML parsing passes. Frontend validation
-  passed (`npm run check`: zero diagnostics; build: 13 pages; static audit:
-  zero missing links, fragments, or assets). The first audit invocation used
-  the wrong working directory and was rerun from the repository root
-  successfully.
+- The follow-up diagnostic build completed a second isolated live smoke in
+  [run 39137753803](https://github.com/asdfhgds/humanity/actions/runs/39137753803).
+  It discovered 202 articles, attempted 25 Gemini extractions, and again
+  produced 1 successful extraction, 24 failures, 1 validated event, and 0
+  publication-eligible candidates. All 24 Gemini failures were categorized
+  as `RuntimeError`; this safe category does not identify whether the cause is
+  quota, transport, or provider behavior, and the provider message remains
+  intentionally unlogged. GDELT GKG's single error was `HTTPStatusError`;
+  GDELT events completed with no errors. RSS completed 12/12 feeds with 6
+  feed errors. This confirms external source and Gemini calls were attempted
+  but does not validate broad successful live extraction.
+- The diagnostic follow-up is pushed at `0add447c92b772216206070bc7030da49b414f2b`
+  and is open as [PR #3](https://github.com/asdfhgds/humanity/pull/3). Both
+  PR-triggered checks passed in
+  [run 39137553579](https://github.com/asdfhgds/humanity/actions/runs/39137553579).
+  The targeted release-safety tests pass (13 tests), and the full Python
+  suite passes (81 tests, 513 existing deprecation warnings). Frontend
+  validation passed (`npm run check`: zero diagnostics; build: 13 pages;
+  static audit: zero missing links, fragments, or assets). The first audit
+  invocation used the wrong working directory and was rerun from the
+  repository root successfully.
 - Production release variable remains unset/disabled, auto-publication remains
   disabled, and the 5-minute and daily production schedules must not be
   activated while extraction failures remain unexplained and no candidate
