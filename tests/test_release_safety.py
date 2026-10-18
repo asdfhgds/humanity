@@ -248,6 +248,15 @@ def test_smoke_test_isolated_and_never_calls_publisher(
         assert "Eligible candidates retained as unpublished: 0" in output
         if validated_count:
             assert "Insufficient independent sources: 1" in output
+            assert "Sanitized per-event diagnostics:" in output
+            assert " ".join((
+                "sources=1 (independent=0, syndicated=0, unknown=1); "
+                "contradictions=0; gate=evidence_hold; "
+                "reasons=insufficient_independent_sources"
+            ).split()) in " ".join(output.split()), output
+            assert "Reported event" not in output
+        else:
+            assert "Sanitized per-event diagnostics:\n    none" in output
         if failed_count:
             assert "Extraction error categories: no_result:1" in output
         assert "Article text that must not be printed" not in output

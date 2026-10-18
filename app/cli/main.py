@@ -513,6 +513,9 @@ def smoke_test(
         "rss_discovery_errors": 0,
     }
     error_type: Optional[str] = None
+    event_diagnostics: list[
+        tuple[str, int, int, int, int, int, str, list[str]]
+    ] = []
 
     try:
         with tempfile.TemporaryDirectory(prefix="humanity-smoke-") as temp_dir:
@@ -648,6 +651,8 @@ def smoke_test(
                             counts["evidence_contradictions"] += 1
                         for reason in evidence.reasons:
                             reasons[reason] = reasons.get(reason, 0) + 1
+                        gate_reasons = list(evidence.reasons)
+                        gate = "evidence_hold" if not evidence.publication_ready else "eligible_unpublished"
                         if evidence.publication_ready:
                             scores = scorer.score_event(event, event_sources)
                             decision = decide_publish(event, scores, source_store)
@@ -655,13 +660,41 @@ def smoke_test(
                                 counts["publication_eligible_candidates"] += 1
                                 counts["eligible_unpublished_candidates"] += 1
                             else:
-                                counts["publication_score_holds"] += int(
+                                score_hold = (
                                     scores.get("final", 0)
                                     < load_scoring().thresholds["auto_publish_warning"]
                                 )
-                                counts["confidence_holds"] += int(
-                                    event.confidence.value not in {"HIGH", "VERIFIED", "MEDIUM"}
+                                confidence_hold = (
+                                    event.confidence.value
+                                    not in {"HIGH", "VERIFIED", "MEDIUM"}
                                 )
+                                counts["publication_score_holds"] += int(score_hold)
+                                counts["confidence_holds"] += int(confidence_hold)
+                                gate = "publication_policy_hold"
+                                if score_hold:
+                                    gate_reasons.append("below_publication_score_threshold")
+                                if confidence_hold:
+                                    gate_reasons.append("below_publication_confidence_threshold")
+
+                        independence_counts = Counter(
+                            source.independence_classification.value
+                            for source in event_sources
+                        )
+                        event_diagnostics.append(
+                            (
+                                event.id[:8],
+                                len(event_sources),
+                                independence_counts["independent"],
+                                (
+                                    independence_counts["likely_copied"]
+                                    + independence_counts["likely_syndicated"]
+                                ),
+                                independence_counts["unknown"],
+                                evidence.contradiction_count,
+                                gate,
+                                gate_reasons,
+                            )
+                        )
             except Exception as error:
                 error_type = type(error).__name__
     finally:
@@ -726,6 +759,28 @@ def smoke_test(
         for reason, count in sorted(counts["publication_reason_counts"].items())
     ) or "none"
     console.print(f"  Evidence assessment reasons: {publication_reasons}")
+    console.print("  Sanitized per-event diagnostics:")
+    if event_diagnostics:
+        for (
+            event_id,
+            source_count,
+            independent_count,
+            syndicated_count,
+            unknown_count,
+            contradiction_count,
+            gate,
+            diagnostic_reasons,
+        ) in event_diagnostics:
+            reasons = ",".join(diagnostic_reasons) or "none"
+            console.print(
+                f"    Event {event_id}: sources={source_count} "
+                f"(independent={independent_count}, "
+                f"syndicated={syndicated_count}, unknown={unknown_count}); "
+                f"contradictions={contradiction_count}; "
+                f"gate={gate}; reasons={reasons}"
+            )
+    else:
+        console.print("    none")
     if error_type:
         console.print(f"[red]Smoke test stopped safely ({error_type}); no publication was attempted.[/red]")
         raise typer.Exit(code=1)
