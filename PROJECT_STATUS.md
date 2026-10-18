@@ -7,10 +7,10 @@ Editorial redesign release verification — production safety changes prepared f
 ## Status
 
 NOT READY TO DEPLOY — follow-up PR [#2](https://github.com/asdfhgds/humanity/pull/2)
-is open against `master`. Production-release safety changes and an isolated
-live-source smoke test are implemented locally on its branch but have not yet
-been pushed or checked by PR CI. No production smoke, pipeline, merge, or
-deployment has been run. The public event feed remains empty.
+is open against `master`. Production-release safety changes are pushed at
+`bf70f4b` and both PR validation jobs passed. The isolated live-source smoke
+test has not been dispatched. No production pipeline, merge, or deployment
+has been run. The public event feed remains empty.
 
 ## Completed
 
@@ -198,13 +198,14 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   four workflow YAML files parsed; and `git diff --check` passed. The known
   MapLibre bundle-size warning remains. These checks do not establish live
   ingestion behavior.
-- PR #2 remains open against `master`. Its currently reported checks pass at
-  the previously pushed commit `fd6b24a`; they do not include this local
-  safety update. No production workflow was dispatched, no production data
-  was changed, no secrets or thresholds were modified, and the public feed
-  remains empty.
-- Remaining release actions: push this update and pass PR CI; manually
-  dispatch the isolated smoke workflow with configured credentials and
-  inspect its aggregate counts; obtain human review before deliberate
-  production enablement or deployment. Do not run production ingestion or
-  deploy until the smoke results and release are approved.
+- PR #2 remains open against `master`. Commit `bf70f4b` is pushed, and both
+  PR checks passed in [run 39111389670](https://github.com/asdfhgds/humanity/actions/runs/39111389670):
+  Python tests and frontend check/build/link audit. GitHub reported only
+  non-blocking Node.js runtime and `ubuntu-latest` migration warnings. No
+  production workflow was dispatched, no production data was changed, no
+  secrets or thresholds were modified, and the public feed remains empty.
+- Remaining release actions: dispatch the isolated smoke workflow with
+  configured credentials and inspect its aggregate counts; obtain human
+  review before deliberate production enablement or deployment. Do not run
+  production ingestion or deploy until smoke results and the release are
+  approved.
