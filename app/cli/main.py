@@ -390,8 +390,23 @@ def smoke_test(
         "extraction_attempts": 0,
         "successful_extractions": 0,
         "failed_extractions": 0,
+        "invalid_extractions": 0,
         "validated_events": 0,
         "publication_eligible_candidates": 0,
+        "claims_created": 0,
+        "claims_with_source_attribution": 0,
+    }
+    discovery_counts = {
+        "gdelt_events": 0,
+        "gdelt_articles": 0,
+        "gdelt_diagnostics": {},
+        "rss_feeds_attempted": 0,
+        "rss_feeds_completed": 0,
+        "rss_feeds_with_errors": 0,
+        "rss_fetch_attempts": 0,
+        "rss_fetch_successes": 0,
+        "rss_fetch_failures": 0,
+        "rss_discovery_errors": 0,
     }
     error_type: Optional[str] = None
 
@@ -407,7 +422,11 @@ def smoke_test(
                 # Source connectors and provider errors can contain URLs or
                 # response fragments; only aggregate counters leave this scope.
                 with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
-                    asyncio.run(run_discovery(hours))
+                    discovery_result = asyncio.run(run_discovery(hours))
+                    for key in discovery_counts:
+                        discovery_counts[key] = discovery_result.get(
+                            key, discovery_counts[key]
+                        )
                     source_store = get_source_store()
                     event_store = get_event_store()
                     discovered_sources = [
@@ -422,8 +441,12 @@ def smoke_test(
                     from app.extraction.gemini import claims_to_model_claims
                     from app.scoring.score import EventScorer, decide_publish
                     from app.verification.evidence import EvidenceAssessor
+                    from app.verification.syndication import SyndicationDetector
                     from app.utils import parse_date_flexible
+                    from app.datastore import get_claim_store
+                    from app.models.schemas import SourceIndependence
 
+                    claim_store = get_claim_store()
                     scorer = EventScorer(event_store=event_store, source_store=source_store)
                     for source in sources:
                         counts["extraction_attempts"] += 1
@@ -439,31 +462,33 @@ def smoke_test(
                             continue
                         counts["successful_extractions"] += 1
                         if extraction_result.is_mock or not validate_extraction_result(extraction_result):
+                            counts["invalid_extractions"] += 1
                             continue
 
                         counts["validated_events"] += 1
                         event_type = EventType(extraction_result.event_type)
                         event = Event(
                             event_type=event_type,
-                            title=extraction_result.title,
+                            title=extraction_result.title[:200],
                             slug="",
                             description=(source.content or source.title or "")[:500],
-                            summary=extraction_result.summary or (source.title or "Summary unavailable")[:500],
-                            country_code=source.country or extraction_result.country or "XX",
-                            country_name=extraction_result.country or source.country or "Unknown",
+                            summary=(
+                                extraction_result.summary[:500]
+                                if extraction_result.summary
+                                else (source.content[:500] if source.content else source.title[:300])
+                            ),
+                            canonical_id=compute_article_hash(source.title or "", str(source.url)),
+                            country_code=source.country or "XX",
+                            country_name=source.country or "Unknown",
                             city=extraction_result.city,
-                            latitude=extraction_result.latitude,
-                            longitude=extraction_result.longitude,
                             start_time=(
                                 parse_date_flexible(extraction_result.date)
                                 if extraction_result.date
                                 else source.published_at or datetime.utcnow()
                             ),
-                            confidence=(
-                                ConfidenceLevel.HIGH if extraction_result.confidence_score >= 80
-                                else ConfidenceLevel.MEDIUM if extraction_result.confidence_score >= 60
-                                else ConfidenceLevel.LOW
-                            ),
+                            severity=5,
+                            status=EventStatus.DEVELOPING,
+                            confidence=ConfidenceLevel.MEDIUM,
                             source_ids=[source.id],
                         )
                         event_store.create(event)
@@ -473,9 +498,81 @@ def smoke_test(
                                 extraction_result.claims, event.id, source.id
                             )
                         ]
-                        evidence = EvidenceAssessor().assess(event, [source], claims)
+                        counts["claims_created"] += len(claims)
+                        counts["claims_with_source_attribution"] += sum(
+                            claim.source_id == source.id
+                            and bool(claim.source_quote.strip())
+                            and claim.source_quote.strip() in (source.content or "")
+                            for claim in claims
+                        )
+                        claim_store.bulk_create(claims)
+
+                    clusterer = EventClusterer()
+                    events = event_store.get_all()
+                    unpublished = [event for event in events if not event.published_at]
+                    for event in unpublished:
+                        event_sources = source_store.get_by_event(event.id)
+                        if not event_sources:
+                            continue
+                        source = event_sources[0]
+                        candidate = {
+                            "source_url": str(source.url),
+                            "title": source.title,
+                            "latitude": event.latitude,
+                            "longitude": event.longitude,
+                            "date": event.start_time,
+                        }
+                        for similar_event, similarity in clusterer.find_similar_events(candidate):
+                            if similar_event.id != event.id and similarity > 0.8:
+                                if source.id not in similar_event.source_ids:
+                                    similar_event.source_ids.append(source.id)
+                                    event_store.update(
+                                        similar_event.id,
+                                        {"source_ids": similar_event.source_ids},
+                                    )
+                                    event_store.delete(event.id)
+                                break
+
+                    detector = SyndicationDetector()
+                    for event in event_store.get_all():
+                        event_sources = source_store.get_by_event(event.id)
+                        relationships = detector.relationships(event_sources)
+                        for source in event_sources:
+                            related = [
+                                relationship
+                                for relationship in relationships
+                                if source.id in (
+                                    relationship.source_id_a,
+                                    relationship.source_id_b,
+                                )
+                            ]
+                            classifications = [relationship.relationship for relationship in related]
+                            if any(
+                                classification in (
+                                    SourceIndependence.LIKELY_COPIED,
+                                    SourceIndependence.LIKELY_SYNDICATED,
+                                )
+                                for classification in classifications
+                            ):
+                                classification = SourceIndependence.LIKELY_SYNDICATED
+                            elif related and all(
+                                classification == SourceIndependence.INDEPENDENT
+                                for classification in classifications
+                            ):
+                                classification = SourceIndependence.INDEPENDENT
+                            else:
+                                classification = source.independence_classification
+                            if classification != source.independence_classification:
+                                source_store.update(
+                                    source.id,
+                                    {"independence_classification": classification.value},
+                                )
+                                source.independence_classification = classification
+
+                        claims = claim_store.get_by_event(event.id)
+                        evidence = EvidenceAssessor().assess(event, event_sources, claims)
                         if evidence.publication_ready:
-                            scores = scorer.score_event(event, [source])
+                            scores = scorer.score_event(event, event_sources)
                             if decide_publish(event, scores, source_store) != "HOLD":
                                 counts["publication_eligible_candidates"] += 1
             except Exception as error:
@@ -485,13 +582,38 @@ def smoke_test(
             setattr(settings, name, value)
 
     console.print("[bold]HUMANITY live-source smoke test (isolated; publishing disabled)[/bold]")
+    gdelt_diagnostics = discovery_counts["gdelt_diagnostics"]
+    for stage, result_key, count_key in (
+        ("GDELT events", "events", "gdelt_events"),
+        ("GDELT GKG", "gkg", "gdelt_articles"),
+    ):
+        stage_diagnostics = gdelt_diagnostics.get(stage.split()[-1].lower(), {})
+        console.print(
+            f"  {stage}: {discovery_counts[count_key]} found; "
+            f"status={stage_diagnostics.get('status', 'not_reported')}; "
+            f"errors={stage_diagnostics.get('errors', 'not_reported')}"
+        )
+    console.print(
+        f"  RSS feeds: {discovery_counts['rss_feeds_completed']}/"
+        f"{discovery_counts['rss_feeds_attempted']} completed; "
+        f"{discovery_counts['rss_feeds_with_errors']} with errors; "
+        f"discovery errors={discovery_counts['rss_discovery_errors']}"
+    )
+    console.print(
+        f"  RSS fetch results: {discovery_counts['rss_fetch_successes']} succeeded, "
+        f"{discovery_counts['rss_fetch_failures']} failed "
+        f"of {discovery_counts['rss_fetch_attempts']} attempts"
+    )
     for label, key in (
         ("Discovered articles", "discovered_articles"),
         ("Extraction attempts", "extraction_attempts"),
         ("Successful extractions", "successful_extractions"),
         ("Failed extractions", "failed_extractions"),
+        ("Invalid extraction results", "invalid_extractions"),
         ("Validated events", "validated_events"),
         ("Publication-eligible candidates", "publication_eligible_candidates"),
+        ("Claims created", "claims_created"),
+        ("Claims with source attribution", "claims_with_source_attribution"),
     ):
         console.print(f"  {label}: {counts[key]}")
     if error_type:

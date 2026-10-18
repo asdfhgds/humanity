@@ -209,3 +209,38 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   review before deliberate production enablement or deployment. Do not run
   production ingestion or deploy until smoke results and the release are
   approved.
+
+### Release mandate review (2026-10-18)
+
+- Fresh GitHub inspection found PR #2 open against `master` at `cf66a4d`,
+  with both Python and frontend/link-audit checks green. The review confirmed
+  the narrow `/lib/` ignore rule, restored frontend utility, extraction
+  validator, published-only index generation, HELD/REJECTED filtering, and
+  the release-safety regression coverage.
+- Repository secret listing confirms a `GEMINI_API_KEY` secret exists;
+  GitHub does not expose its value, and it was not read or logged. No
+  repository variables are configured, so
+  `PRODUCTION_RELEASE_ENABLED == 'true'` evaluates false and production
+  pipeline jobs remain skipped. The existing schedules are every five
+  minutes and daily at 02:00 UTC; workflow defaults are 1,000 articles,
+  100 LLM calls, 50 search calls, score 70, confidence 0.6, and
+  auto-publication disabled. Pages deploy is manual-only with explicit
+  confirmation.
+- Final local review found that smoke output did not distinguish feed
+  failures, and RSS page fetches could exceed the configured article budget.
+  The isolated path now reports RSS and GDELT event/GKG results and failures
+  separately, applies the global `MAX_ARTICLES_PER_RUN` limit across RSS
+  feeds, counts invalid extraction responses, checks source-quote provenance,
+  and evaluates eligibility using the same event construction, clustering,
+  syndication, evidence, and score policy as production. It still uses only
+  temporary storage and never calls the publisher. Regression tests cover
+  these safeguards.
+- Local validation after these changes: **77 Python tests passed**; Astro
+  check passed with zero diagnostics; static build produced 13 pages; link
+  and asset audit passed; all four workflow files parsed; Python compilation
+  and `git diff --check` passed. The existing MapLibre bundle-size advisory
+  and legacy datetime deprecation warnings remain.
+- These final review fixes are local and not yet on the PR at this point.
+  No live source/Gemini smoke, production pipeline, merge, or deployment has
+  occurred. The smoke workflow can be dispatched once its code is merged;
+  the recurring pipeline must remain disabled even if the smoke succeeds.

@@ -215,6 +215,18 @@ class DiscoveryManager:
         all_sources_created = 0
         all_articles = []
         all_gdelt_events = []
+        total_rss_articles = 0
+        rss_feeds_attempted = 0
+        rss_feeds_completed = 0
+        rss_feeds_with_errors = 0
+        rss_fetch_attempts = 0
+        rss_fetch_successes = 0
+        rss_fetch_failures = 0
+        rss_discovery_errors = 0
+        gdelt_diagnostics = {
+            "events": {"status": "not_run", "errors": 0},
+            "gkg": {"status": "not_run", "errors": 0},
+        }
         
         try:
             # 1. GDELT Discovery
@@ -222,20 +234,37 @@ class DiscoveryManager:
             gdelt_result = await run_gdelt_discovery(hours_back, self.max_articles_per_run, self.max_articles_per_run // 2)
             all_gdelt_events = gdelt_result.get("events_found", 0)
             all_sources_created += gdelt_result.get("sources_created", 0)
+            gdelt_diagnostics = gdelt_result.get("diagnostics", gdelt_diagnostics)
             print(f"GDELT: {all_gdelt_events} events, {gdelt_result.get('articles_found', 0)} articles")
             
             # 2. RSS Feed Discovery + Article Fetching
             print("Running RSS feed discovery...")
             rss_sources = self._get_rss_sources()
+            rss_feeds_attempted = len(rss_sources)
             run.sources_attempted += len(rss_sources)
             
             if rss_sources:
                 fetcher = SourceFetcher()
                 try:
                     # Fetch from all RSS feeds
-                    rss_results = await fetch_from_multiple_sources(rss_sources, max_concurrent=3)
-                    
-                    total_rss_articles = 0
+                    rss_results = await fetch_from_multiple_sources(
+                        rss_sources,
+                        max_concurrent=3,
+                        max_articles_per_run=self.max_articles_per_run,
+                    )
+
+                    rss_feeds_completed = len(rss_results)
+                    rss_fetch_attempts = sum(len(articles) for articles in rss_results.values())
+                    rss_fetch_successes = sum(
+                        article.success
+                        for articles in rss_results.values()
+                        for article in articles
+                    )
+                    rss_fetch_failures = rss_fetch_attempts - rss_fetch_successes
+                    rss_feeds_with_errors = sum(
+                        any(not article.success for article in articles)
+                        for articles in rss_results.values()
+                    )
                     for source_name, articles in rss_results.items():
                         for article in articles:
                             if article.success and article.content:
@@ -269,10 +298,11 @@ class DiscoveryManager:
                     print(f"RSS: {total_rss_articles} articles with content fetched")
                     await fetcher.close()
                 except Exception as e:
+                    rss_discovery_errors += 1
                     print(f"RSS discovery error: {e}")
             
-            run.articles_seen = all_gdelt_events + total_rss_articles if 'total_rss_articles' in locals() else all_gdelt_events
-            run.candidates_created = all_gdelt_events + (total_rss_articles if 'total_rss_articles' in locals() else 0)
+            run.articles_seen = all_gdelt_events + total_rss_articles
+            run.candidates_created = all_gdelt_events + total_rss_articles
             run.sources_succeeded = all_sources_created
             
             run.finished_at = datetime.utcnow()
@@ -282,7 +312,16 @@ class DiscoveryManager:
             return {
                 "run_id": run.id,
                 "gdelt_events": all_gdelt_events,
-                "rss_articles_fetched": total_rss_articles if 'total_rss_articles' in locals() else 0,
+                "gdelt_articles": gdelt_result.get("articles_found", 0),
+                "gdelt_diagnostics": gdelt_diagnostics,
+                "rss_articles_fetched": total_rss_articles,
+                "rss_feeds_attempted": rss_feeds_attempted,
+                "rss_feeds_completed": rss_feeds_completed,
+                "rss_feeds_with_errors": rss_feeds_with_errors,
+                "rss_fetch_attempts": rss_fetch_attempts,
+                "rss_fetch_successes": rss_fetch_successes,
+                "rss_fetch_failures": rss_fetch_failures,
+                "rss_discovery_errors": rss_discovery_errors,
                 "sources_created": all_sources_created,
             }
             
