@@ -321,3 +321,47 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   threshold was changed. Production publishing remains blocked by quota/rate
   limiting and the absence of eligible candidates; do not activate the
   scheduled pipeline.
+
+### Phase 3 extraction reliability and evidence diagnostics (2026-10-18)
+
+- Replaced the deprecated `google-generativeai` dependency with Google's
+  supported `google-genai` SDK and its async `client.aio.models.generate_content`
+  interface. Structured JSON and the existing Pydantic validation remain in
+  place.
+- Gemini extraction now records sanitized categories on each attempt, stops
+  the batch on quota exhaustion, retries transient rate limits and provider
+  server errors at most twice per article, honors provider retry delays up to
+  60 seconds, and charges every retry against the configured API-call budget.
+  It never retries authentication, permission, quota, or unclassified provider
+  failures. No live Gemini calls were made for this work.
+- Both production CLI extraction and isolated smoke now use one async batch,
+  persist matching reports through conservative event identity resolution,
+  and attach claims to the canonical event while retaining each source ID.
+  Claims are retained only when their quoted evidence appears in that source's
+  article text. The heuristic post-hoc cluster command no longer deletes events
+  or strands claims; uncertain or distinct incidents remain separate.
+- Smoke output now reports invalid/non-event results, insufficient independent
+  sources, suspected syndication, evidence-assessment failures and
+  contradictions, publication-score/confidence holds, and eligible candidates
+  intentionally retained as unpublished. Existing policy thresholds are
+  unchanged.
+- Historical smoke evidence remains aggregate-only: the isolated store was
+  deleted and the recorded run retained no per-event source assessments.
+  Therefore the exact reason for each of the two previously validated events
+  cannot be verified from that run. Under the unchanged assessor, a one-source
+  event with an unknown source classification is held for
+  `insufficient_independent_sources`; the prior aggregate report did not prove
+  how many sources were attached to each event. A later smoke must preserve
+  and report the per-event aggregate reasons to confirm this against real
+  extraction results.
+- Verification on the focused local branch: `pytest -q` passed (93 tests),
+  `npm run check` passed (30 Astro files, zero diagnostics), `npm run build`
+  passed (13 static pages), all four GitHub Actions YAML files parsed, and
+  `python scripts/audit_static_site.py web/dist` passed with no missing local
+  links, fragments, or assets. The build emitted only its existing large-chunk
+  advisory. CI and code review have not yet run on this branch.
+- Production publishing, scheduled runs, and deployment remain disabled. No
+  smoke workflow was dispatched and no live source/API quota was spent. This
+  local work is not yet pushed or submitted as a PR; do not treat it as
+  release-ready until remote CI/review pass and a later isolated smoke verifies
+  real independent evidence.

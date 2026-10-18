@@ -63,6 +63,26 @@ def test_nearby_distinct_incidents_do_not_merge(tmp_path):
     assert resolution.canonical_id != "evt_original"
 
 
+def test_similar_reports_in_different_nearby_cities_do_not_merge(tmp_path):
+    store = store_for(tmp_path)
+    original = event(canonical_id="evt_original")
+    store.create(original)
+    nearby_city_report = event(
+        title=original.title,
+        summary=original.summary,
+        city="Khan Yunis",
+        latitude=31.35,
+        longitude=34.30,
+        start_time=original.start_time + timedelta(hours=1),
+    )
+
+    resolution = EventIdentityResolver(store).resolve(nearby_city_report)
+
+    assert resolution.decision == "DISTINCT_EVENT"
+    assert "named cities differ" in resolution.reasons
+    assert resolution.canonical_id != "evt_original"
+
+
 def test_repeated_ingestion_resolves_to_same_canonical_event(tmp_path):
     store = store_for(tmp_path)
     original = event(canonical_id="evt_stable")
