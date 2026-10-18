@@ -7,11 +7,9 @@ Editorial redesign release verification — static site release gates complete.
 ## Status
 
 NOT READY TO DEPLOY — follow-up PR [#2](https://github.com/asdfhgds/humanity/pull/2)
-is open against `master`. Its latest verified checks passed at commit `41eef7a`.
-Final review found and fixed an additional CLI extraction-result variable bug;
-the targeted and full Python suites pass locally, and CI for that latest fix
-is pending. Live ingestion has not been rerun, and the public event feed
-remains empty.
+is open against `master`. Its latest verified checks passed at commit
+`a83f492`. Live ingestion has not been rerun, and the public event feed remains
+empty.
 
 ## Completed
 
@@ -164,4 +162,5 @@ Phase 3, Milestone 3.1 — Live Source Verification.
 - Added `.github/workflows/pull-request-checks.yml` to run the Python tests and frontend check/build/link audit on PRs targeting `master`, plus `scripts/audit_static_site.py` to detect missing built local links, fragments, and assets. Local verification: 66 Python tests passed; Astro check passed with 0 diagnostics; the GitHub Pages build generated 13 pages with the known MapLibre chunk warning; the static audit found no missing references.
 - GitHub Actions run [39105995298](https://github.com/asdfhgds/humanity/actions/runs/39105995298) passed both Python tests and frontend check/build/link audit. Actions emitted non-blocking Node.js 20 runtime deprecation and `ubuntu-latest` migration warnings.
 - No workflow was manually triggered and no deployment occurred. The deployment gate remains closed until PR #2's checks pass, the fix is reviewed and merged, and live publication is verified without bypassing evidence requirements.
-- Final review found that the autonomous CLI reused the discovery result variable for each extraction response and also referenced the old variable for the extracted summary. This could crash after extraction even after the missing validator import was fixed. The CLI now keeps discovery and extraction results separate; a parameterized regression test verifies that invalid extraction creates and publishes no event, while a valid extraction uses its own summary and preserves the discovery run ID. The full Python suite passes locally (68 tests); GitHub validation for this follow-up is pending.
+- Final review found that the autonomous CLI reused the discovery result variable for each extraction response and also referenced the old variable for the extracted summary. This could crash after extraction even after the missing validator import was fixed. The CLI now keeps discovery and extraction results separate; a parameterized regression test verifies that invalid extraction creates and publishes no event, while a valid extraction uses its own summary and preserves the discovery run ID. The full Python suite passes locally (68 tests).
+- The follow-up is committed as `a83f492`. GitHub Actions run [39107304890](https://github.com/asdfhgds/humanity/actions/runs/39107304890) passed both PR checks: Python tests and frontend check/build/link audit. GitHub CI validates the build and regression behavior; it does not establish that external live ingestion succeeds. No merge, autonomous pipeline run, or deployment has occurred.
