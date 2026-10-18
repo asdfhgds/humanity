@@ -1,0 +1,48 @@
+name: Live source smoke test
+
+on:
+  workflow_dispatch:
+    inputs:
+      hours_back:
+        description: 'Hours back for real source discovery'
+        required: true
+        default: '6'
+        type: number
+      extract_limit:
+        description: 'Maximum real Gemini extraction calls'
+        required: true
+        default: '25'
+        type: number
+
+permissions:
+  contents: read
+
+concurrency:
+  group: humanity-live-source-smoke
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Isolated live source and extraction verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_MODEL: ${{ secrets.GEMINI_MODEL || 'gemini-flash-latest' }}
+      ENABLE_AUTOPUBLISH: 'false'
+      MAX_LLM_CALLS_PER_RUN: '25'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e .
+      - name: Run isolated real-source smoke test
+        run: >-
+          python -m app.cli smoke-test
+          --hours "${{ inputs.hours_back }}"
+          --extract-limit "${{ inputs.extract_limit }}"

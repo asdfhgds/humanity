@@ -207,16 +207,20 @@ class SourceFetcher:
     async def close(self):
         await self.client.aclose()
 
-    async def fetch(self, source_config: SourceConfig) -> List[FetchResult]:
+    async def fetch(
+        self, source_config: SourceConfig, max_records: Optional[int] = None
+    ) -> List[FetchResult]:
         """Fetch articles from a source based on its type."""
         if source_config.type == "rss" or source_config.url.endswith(('.xml', '.rss', '.atom')):
-            return await self._fetch_rss(source_config)
+            return await self._fetch_rss(source_config, max_records=max_records)
         elif source_config.type == "news":
             return await self._fetch_news_site(source_config)
         else:
             return await self._fetch_generic(source_config)
 
-    async def _fetch_rss(self, source_config: SourceConfig) -> List[FetchResult]:
+    async def _fetch_rss(
+        self, source_config: SourceConfig, max_records: Optional[int] = None
+    ) -> List[FetchResult]:
         """Fetch and parse RSS/Atom feed."""
         results = []
         
@@ -238,7 +242,8 @@ class SourceFetcher:
         
         feed = feedparser.parse(feed_data)
         
-        for entry in feed.entries[:50]:  # Limit per feed
+        entry_limit = 50 if max_records is None else min(50, max(0, max_records))
+        for entry in feed.entries[:entry_limit]:
             article_url = entry.get('link', '')
             if not article_url:
                 continue
@@ -482,17 +487,42 @@ async def fetch_from_source(source_config: SourceConfig) -> List[FetchResult]:
         await fetcher.close()
 
 
-async def fetch_from_multiple_sources(source_configs: List[SourceConfig], max_concurrent: int = 5) -> Dict[str, List[FetchResult]]:
+async def fetch_from_multiple_sources(
+    source_configs: List[SourceConfig],
+    max_concurrent: int = 5,
+    max_articles_per_run: Optional[int] = None,
+) -> Dict[str, List[FetchResult]]:
     """Fetch from multiple sources concurrently with limit."""
     semaphore = asyncio.Semaphore(max_concurrent)
+    per_source_limits: List[Optional[int]]
+    if max_articles_per_run is None:
+        per_source_limits = [None] * len(source_configs)
+    else:
+        base_limit, remainder = divmod(max(0, max_articles_per_run), len(source_configs) or 1)
+        per_source_limits = [
+            base_limit + (index < remainder)
+            for index in range(len(source_configs))
+        ]
     
-    async def fetch_one(config: SourceConfig):
+    async def fetch_one(config: SourceConfig, max_records: Optional[int]):
         async with semaphore:
             fetcher = SourceFetcher()
             try:
-                return config.name, await fetcher.fetch(config)
+                return config.name, await fetcher.fetch(config, max_records=max_records)
+            except Exception as error:
+                return config.name, [
+                    FetchResult(
+                        success=False,
+                        error=f"Source fetch failed ({type(error).__name__})",
+                    )
+                ]
             finally:
                 await fetcher.close()
     
-    results = await asyncio.gather(*[fetch_one(c) for c in source_configs])
+    results = await asyncio.gather(
+        *[
+            fetch_one(config, per_source_limits[index])
+            for index, config in enumerate(source_configs)
+        ]
+    )
     return dict(results)

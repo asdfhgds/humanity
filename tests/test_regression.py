@@ -1102,7 +1102,7 @@ class TestIdempotencyAndRevisions:
 
     @pytest.mark.parametrize("publication_status", ["held", "rejected"])
     def test_publication_status_change_updates_all_artifacts(
-        self, event_store, source_store, claim_store, isolated_publication_paths, publication_status
+        self, event_store, source_store, claim_store, isolated_publication_paths, publication_status, monkeypatch
     ):
         """When publication status changes, all public artifacts update consistently."""
         import os, shutil, json
@@ -1166,6 +1166,10 @@ class TestIdempotencyAndRevisions:
         with open(event_files[0], "r", encoding="utf-8") as f:
             event_data = json.load(f)
         assert event_data["publication_status"] in ["published", "published_with_warning"]
+        with open("web/public/data/events/all.json", "r", encoding="utf-8") as f:
+            indexed_events = json.load(f)
+        indexed_event = next(item for item in indexed_events if item["id"] == event.id)
+        assert indexed_event["publication_status"] == result["publication_status"]
 
         # Verify map GeoJSON has the event
         map_file = "web/public/data/map/events.geojson"
@@ -1176,6 +1180,7 @@ class TestIdempotencyAndRevisions:
 
         # Now simulate status change to HELD (e.g., new evidence contradicts)
         event_store.update(event.id, {"publication_status": publication_status, "visibility": False})
+        monkeypatch.setattr(publisher.settings, "enable_autopublish", False)
 
         # Re-publish should not create new artifacts for HELD event
         updated_event = event_store.get(event.id)

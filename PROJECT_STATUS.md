@@ -2,11 +2,15 @@
 
 ## Current Status
 
-Editorial redesign release verification — static site release gates complete.
+Editorial redesign release verification — production safety changes prepared for review.
 
 ## Status
 
-READY TO PUBLISH — live ingestion and deployment have not been verified.
+NOT READY TO DEPLOY — follow-up PR [#2](https://github.com/asdfhgds/humanity/pull/2)
+is open against `master`. Production-release safety changes are pushed at
+`bf70f4b` and both PR validation jobs passed. The isolated live-source smoke
+test has not been dispatched. No production pipeline, merge, or deployment
+has been run. The public event feed remains empty.
 
 ## Completed
 
@@ -148,3 +152,96 @@ Phase 3, Milestone 3.1 — Live Source Verification.
 - Re-audited final output: 13 pages, 314 local references, no missing local routes/assets/fragments, and no synthetic test story. The current published event feeds are empty and map GeoJSON is an empty FeatureCollection.
 - Local browser preview after framework migration: the homepage rendered with its licensed archival lead image and correct editorial background/type. Responsive checks at 375x812 and 1280x900 found no horizontal overflow. All expected routes and local assets returned HTTP 200, the map initialized on scroll and fetched OpenStreetMap tiles, and there were no HTTP error responses or JavaScript exceptions. Browser viewport changes cancelled two in-flight requests; no assets failed.
 - All requested local validation gates now pass. This supersedes the prior Astro-advisory blocker. The static site is ready to publish; deployment was not requested or attempted. Live ingestion still depends on configured external credentials and the scheduled workflow, and the published feed is currently empty.
+
+### Post-merge workflow failure investigation (2026-10-17)
+
+- Deployment run [39033430844](https://github.com/asdfhgds/humanity/actions/runs/39033430844) failed at `npm run build`: `daily-brief.astro` and other pages imported `web/src/lib/client-utils.ts`, but the generic `.gitignore` `lib/` rule had excluded that source file from the merged commit. The deploy job was skipped.
+- Autonomous pipeline run [39029658531](https://github.com/asdfhgds/humanity/actions/runs/39029658531) successfully fetched content from 197 RSS articles and created 197 source records; GDELT returned zero articles. Gemini was configured in the workflow. Extraction began on the first of 50 sources and returned a result, but the CLI crashed with `NameError: validate_extraction_result is not defined` before validation, event creation, claim creation, or publication. No event was published or held, and the remaining extraction, state-persistence, and site-build steps were skipped. Tavily was disabled and had no key; this was not the cause of the run failure.
+- Corrective local changes: scope the Python `lib/` ignore pattern to `/lib/` so the frontend helper is included; restore event parsing, path, escaping and element helpers; import the already-existing extraction validator into the CLI; and include each event's publication status in the public index. The latter is required by Astro's static event-route filter and prevents published event links from resolving to absent pages. A regression assertion verifies the indexed status is a published status.
+
+- Validation after these changes: `npm run check` passed with 0 errors, warnings, or hints; `GITHUB_ACTIONS=true npm run build` passed and generated 13 pages with the current empty feed; `python -m pytest tests -q` passed (66 tests, 493 existing deprecation warnings); `python -m app.cli --help` passed. The known MapLibre chunk-size warning remains. The production run's mock-free live extraction has not been rerun.
+- The fixes were committed as `8918e9c` and pushed to `asdfhgds-fix-internal-links`; commit `05b50e0` documents that the app-native PR operation was blocked by the project's GitHub account link. PR [#2](https://github.com/asdfhgds/humanity/pull/2) was subsequently opened using the authenticated GitHub CLI. It initially reported no checks because no workflow was configured for `pull_request`.
+- Added `.github/workflows/pull-request-checks.yml` to run the Python tests and frontend check/build/link audit on PRs targeting `master`, plus `scripts/audit_static_site.py` to detect missing built local links, fragments, and assets. Local verification: 66 Python tests passed; Astro check passed with 0 diagnostics; the GitHub Pages build generated 13 pages with the known MapLibre chunk warning; the static audit found no missing references.
+- GitHub Actions run [39105995298](https://github.com/asdfhgds/humanity/actions/runs/39105995298) passed both Python tests and frontend check/build/link audit. Actions emitted non-blocking Node.js 20 runtime deprecation and `ubuntu-latest` migration warnings.
+- No workflow was manually triggered and no deployment occurred. The deployment gate remains closed until PR #2's checks pass, the fix is reviewed and merged, and live publication is verified without bypassing evidence requirements.
+- Final review found that the autonomous CLI reused the discovery result variable for each extraction response and also referenced the old variable for the extracted summary. This could crash after extraction even after the missing validator import was fixed. The CLI now keeps discovery and extraction results separate; a parameterized regression test verifies that invalid extraction creates and publishes no event, while a valid extraction uses its own summary and preserves the discovery run ID. The full Python suite passes locally (68 tests).
+- The follow-up is committed as `a83f492`. GitHub Actions run [39107304890](https://github.com/asdfhgds/humanity/actions/runs/39107304890) passed both PR checks: Python tests and frontend check/build/link audit. GitHub CI validates the build and regression behavior; it does not establish that external live ingestion succeeds. No merge, autonomous pipeline run, or deployment has occurred.
+
+### Production release safety gate (2026-10-18)
+
+- `autonomous-pipeline.yml` now requires repository variable
+  `PRODUCTION_RELEASE_ENABLED` to equal `true` before the scheduled or
+  manually dispatched production job can run. The workflow token defaults
+  to read-only; only the gated production/deploy jobs receive write
+  permissions. The `force_publish` input was removed. `ENABLE_AUTOPUBLISH`
+  defaults to `false`, and both the main CLI pipeline and `EventPublisher`
+  refuse new publication unless the existing setting is explicitly true.
+- `deploy-pages.yml` no longer deploys on pushes to `master`. It requires a
+  manual dispatch with `confirm_deployment=yes` (default `no`). PR validation
+  remains separate, so merging alone does not deploy.
+- Added manual-only `live-source-smoke.yml` and
+  `python -m app.cli smoke-test`. They use configured real source connectors
+  and Gemini, cap extraction attempts, suppress provider/connector output,
+  use temporary data and web directories, and never call the publisher. The
+  workflow is read-only and has no commit, push, artifact upload, or deploy
+  step. The CLI reports aggregate discovery, extraction, validation, and
+  publication-eligibility counts. The smoke workflow has not been dispatched;
+  live source/Gemini behavior and credential availability remain unverified.
+- Added regression tests for workflow gates, no push-triggered deployment,
+  absence of force-publish, smoke isolation/output suppression, disabled
+  publication, and distinction between discovery and validated events.
+  Existing tests cover HELD/REJECTED removal from public artifacts.
+- Local checks after the latest code changes: `python -m pytest tests -q`
+  passed (**74 passed**, 508 existing deprecation warnings); `npm run check`
+  passed with zero diagnostics; the production build generated 13 pages; the
+  built-site audit found no missing local links, fragments, or assets; all
+  four workflow YAML files parsed; and `git diff --check` passed. The known
+  MapLibre bundle-size warning remains. These checks do not establish live
+  ingestion behavior.
+- PR #2 remains open against `master`. Commit `bf70f4b` is pushed, and both
+  PR checks passed in [run 39111389670](https://github.com/asdfhgds/humanity/actions/runs/39111389670):
+  Python tests and frontend check/build/link audit. GitHub reported only
+  non-blocking Node.js runtime and `ubuntu-latest` migration warnings. No
+  production workflow was dispatched, no production data was changed, no
+  secrets or thresholds were modified, and the public feed remains empty.
+- Remaining release actions: dispatch the isolated smoke workflow with
+  configured credentials and inspect its aggregate counts; obtain human
+  review before deliberate production enablement or deployment. Do not run
+  production ingestion or deploy until smoke results and the release are
+  approved.
+
+### Release mandate review (2026-10-18)
+
+- Fresh GitHub inspection found PR #2 open against `master` at `cf66a4d`,
+  with both Python and frontend/link-audit checks green. The review confirmed
+  the narrow `/lib/` ignore rule, restored frontend utility, extraction
+  validator, published-only index generation, HELD/REJECTED filtering, and
+  the release-safety regression coverage.
+- Repository secret listing confirms a `GEMINI_API_KEY` secret exists;
+  GitHub does not expose its value, and it was not read or logged. No
+  repository variables are configured, so
+  `PRODUCTION_RELEASE_ENABLED == 'true'` evaluates false and production
+  pipeline jobs remain skipped. The existing schedules are every five
+  minutes and daily at 02:00 UTC; workflow defaults are 1,000 articles,
+  100 LLM calls, 50 search calls, score 70, confidence 0.6, and
+  auto-publication disabled. Pages deploy is manual-only with explicit
+  confirmation.
+- Final local review found that smoke output did not distinguish feed
+  failures, and RSS page fetches could exceed the configured article budget.
+  The isolated path now reports RSS and GDELT event/GKG results and failures
+  separately, applies the global `MAX_ARTICLES_PER_RUN` limit across RSS
+  feeds, counts invalid extraction responses, checks source-quote provenance,
+  and evaluates eligibility using the same event construction, clustering,
+  syndication, evidence, and score policy as production. It still uses only
+  temporary storage and never calls the publisher. Regression tests cover
+  these safeguards.
+- Local validation after these changes: **77 Python tests passed**; Astro
+  check passed with zero diagnostics; static build produced 13 pages; link
+  and asset audit passed; all four workflow files parsed; Python compilation
+  and `git diff --check` passed. The existing MapLibre bundle-size advisory
+  and legacy datetime deprecation warnings remain.
+- These final review fixes are pushed at `962b45f`. Both PR checks passed on
+  that exact head in [run 39133892704](https://github.com/asdfhgds/humanity/actions/runs/39133892704),
+  and PR #2 is mergeable. No live source/Gemini smoke, production pipeline,
+  merge, or deployment has occurred yet. The recurring pipeline must remain
+  disabled even if the smoke succeeds.

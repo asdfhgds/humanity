@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import io
 import sys
+import tempfile
 from datetime import datetime
+from contextlib import redirect_stderr, redirect_stdout
+from pathlib import Path
 from typing import Optional
 import typer
 from rich.console import Console
@@ -10,12 +14,13 @@ from rich.table import Table
 
 from app.discovery.manager import run_discovery
 from app.discovery.gdelt import run_gdelt_discovery
-from app.extraction.gemini import GeminiExtractor
+from app.extraction.gemini import GeminiExtractor, validate_extraction_result
 from app.clustering.cluster import EventClusterer
 from app.scoring.score import EventScorer, decide_publish
 from app.publishing.publisher import EventPublisher
 from app.datastore import get_event_store, get_source_store, get_ingestion_run_store
-from app.models.schemas import Event, EventType, ConfidenceLevel, EventStatus
+from app.config import get_settings
+from app.models.schemas import Claim, Event, EventType, ConfidenceLevel, EventStatus
 from app.utils import canonicalize_url, compute_article_hash
 
 app = typer.Typer(help="HUMANITY - Autonomous Global Human Events Intelligence Platform")
@@ -228,10 +233,10 @@ def run(
     
     # 1. Discovery (GDELT + RSS + article fetching)
     console.print("\n[bold]1. DISCOVERY[/bold]")
-    result = asyncio.run(run_discovery(hours))
-    console.print(f"  GDELT events: {result['gdelt_events']}")
-    console.print(f"  RSS articles with content: {result['rss_articles_fetched']}")
-    console.print(f"  Sources created: {result['sources_created']}")
+    discovery_result = asyncio.run(run_discovery(hours))
+    console.print(f"  GDELT events: {discovery_result['gdelt_events']}")
+    console.print(f"  RSS articles with content: {discovery_result['rss_articles_fetched']}")
+    console.print(f"  Sources created: {discovery_result['sources_created']}")
     
     # 2. Extraction (Gemini structured extraction from article content)
     console.print("\n[bold]2. EXTRACTION[/bold]")
@@ -255,19 +260,19 @@ def run(
     for i, source in enumerate(sources):
         console.print(f"  [{i+1}/{len(sources)}] {source.publisher}...")
         
-        result = asyncio.run(extractor.extract(source.title or "", source.content or "", str(source.url)))
+        extraction_result = asyncio.run(extractor.extract(source.title or "", source.content or "", str(source.url)))
         
-        if result and validate_extraction_result(result):
+        if extraction_result and validate_extraction_result(extraction_result):
             from app.models.schemas import Event, EventType, EventStatus, ConfidenceLevel
             import uuid
             
             try:
-                event_type = EventType(result.event_type)
+                event_type = EventType(extraction_result.event_type)
             except ValueError:
                 event_type = EventType.PROTEST
             
             from app.utils import parse_date_flexible
-            start_time = parse_date_flexible(result.date) if result.date else source.published_at or datetime.utcnow()
+            start_time = parse_date_flexible(extraction_result.date) if extraction_result.date else source.published_at or datetime.utcnow()
             
             country_code = source.country or "XX"
             country_name = source.country or "Unknown"
@@ -276,13 +281,13 @@ def run(
                 id=str(uuid.uuid4()),
                 canonical_id=compute_article_hash(source.title or "", str(source.url)),
                 event_type=event_type,
-                title=result.title[:200] if result.title else source.title[:200],
+                title=extraction_result.title[:200] if extraction_result.title else source.title[:200],
                 slug="",
                 description=source.content[:500] if source.content else source.title,
-                summary=result.summary[:500] if result.summary else (source.content[:500] if source.content else source.title[:300]),
+                summary=extraction_result.summary[:500] if extraction_result.summary else (source.content[:500] if source.content else source.title[:300]),
                 country_code=country_code,
                 country_name=country_name,
-                city=result.city,
+                city=extraction_result.city,
                 start_time=start_time,
                 severity=5,
                 status=EventStatus.DEVELOPING,
@@ -296,7 +301,7 @@ def run(
             from app.extraction.gemini import claims_to_model_claims
             from app.datastore import get_claim_store
             claim_store = get_claim_store()
-            model_claims = claims_to_model_claims(result.claims, event.id, source.id)
+            model_claims = claims_to_model_claims(extraction_result.claims, event.id, source.id)
             claim_store.bulk_create([type('obj', (object,), c) for c in model_claims])
             
             created += 1
@@ -343,14 +348,16 @@ def run(
     # 4. Scoring & Publishing
     console.print("\n[bold]4. SCORING & PUBLISHING[/bold]")
     publisher = EventPublisher()
-    events = event_store.get_all()
-    unpublished = [e for e in events if not e.published_at]
-    
     published = 0
-    for event in unpublished:
-        result = publisher.publish_event(event)
-        if result.get("published"):
-            published += 1
+    if get_settings().enable_autopublish:
+        events = event_store.get_all()
+        unpublished = [e for e in events if not e.published_at]
+        for event in unpublished:
+            result = publisher.publish_event(event)
+            if result.get("published"):
+                published += 1
+    else:
+        console.print("  [yellow]Auto-publication disabled; eligible events remain unpublished[/yellow]")
     
     # 5. Daily Brief
     console.print("\n[bold]5. DAILY BRIEF[/bold]")
@@ -358,7 +365,262 @@ def run(
     
     console.print(f"\n[bold green]Pipeline complete![/bold green]")
     console.print(f"  Events published: {published}")
-    console.print(f"  Run ID: {result['run_id']}")
+    console.print(f"  Run ID: {discovery_result['run_id']}")
+
+
+@app.command("smoke-test")
+def smoke_test(
+    hours: int = typer.Option(6, min=1, max=72, help="Hours back for source discovery"),
+    extract_limit: int = typer.Option(25, min=1, max=50, help="Maximum articles to send to Gemini"),
+):
+    """Verify live source discovery and Gemini extraction without publishing."""
+    settings = get_settings()
+    if not settings.gemini_api_key:
+        console.print("[red]Smoke test requires GEMINI_API_KEY; no source requests were made.[/red]")
+        raise typer.Exit(code=1)
+
+    original_settings = {
+        "data_dir": settings.data_dir,
+        "web_dir": settings.web_dir,
+        "enable_autopublish": settings.enable_autopublish,
+        "production_mode": settings.production_mode,
+    }
+    counts = {
+        "discovered_articles": 0,
+        "extraction_attempts": 0,
+        "successful_extractions": 0,
+        "failed_extractions": 0,
+        "invalid_extractions": 0,
+        "validated_events": 0,
+        "publication_eligible_candidates": 0,
+        "claims_created": 0,
+        "claims_with_source_attribution": 0,
+    }
+    discovery_counts = {
+        "gdelt_events": 0,
+        "gdelt_articles": 0,
+        "gdelt_diagnostics": {},
+        "rss_feeds_attempted": 0,
+        "rss_feeds_completed": 0,
+        "rss_feeds_with_errors": 0,
+        "rss_fetch_attempts": 0,
+        "rss_fetch_successes": 0,
+        "rss_fetch_failures": 0,
+        "rss_discovery_errors": 0,
+    }
+    error_type: Optional[str] = None
+
+    try:
+        with tempfile.TemporaryDirectory(prefix="humanity-smoke-") as temp_dir:
+            temp_root = Path(temp_dir)
+            settings.data_dir = temp_root / "data"
+            settings.web_dir = temp_root / "web"
+            settings.enable_autopublish = False
+            settings.production_mode = True
+
+            try:
+                # Source connectors and provider errors can contain URLs or
+                # response fragments; only aggregate counters leave this scope.
+                with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+                    discovery_result = asyncio.run(run_discovery(hours))
+                    for key in discovery_counts:
+                        discovery_counts[key] = discovery_result.get(
+                            key, discovery_counts[key]
+                        )
+                    source_store = get_source_store()
+                    event_store = get_event_store()
+                    discovered_sources = [
+                        source for source in source_store.get_all() if source.content
+                    ]
+                    counts["discovered_articles"] = len(discovered_sources)
+                    sources = discovered_sources[:min(extract_limit, settings.max_llm_calls_per_run)]
+                    extractor = GeminiExtractor()
+                    if not extractor.enabled:
+                        raise RuntimeError("Gemini extraction provider is not enabled")
+
+                    from app.extraction.gemini import claims_to_model_claims
+                    from app.scoring.score import EventScorer, decide_publish
+                    from app.verification.evidence import EvidenceAssessor
+                    from app.verification.syndication import SyndicationDetector
+                    from app.utils import parse_date_flexible
+                    from app.datastore import get_claim_store
+                    from app.models.schemas import SourceIndependence
+
+                    claim_store = get_claim_store()
+                    scorer = EventScorer(event_store=event_store, source_store=source_store)
+                    for source in sources:
+                        counts["extraction_attempts"] += 1
+                        try:
+                            extraction_result = asyncio.run(
+                                extractor.extract(source.title or "", source.content or "", str(source.url))
+                            )
+                        except Exception:
+                            counts["failed_extractions"] += 1
+                            continue
+                        if extraction_result is None:
+                            counts["failed_extractions"] += 1
+                            continue
+                        counts["successful_extractions"] += 1
+                        if extraction_result.is_mock or not validate_extraction_result(extraction_result):
+                            counts["invalid_extractions"] += 1
+                            continue
+
+                        counts["validated_events"] += 1
+                        event_type = EventType(extraction_result.event_type)
+                        event = Event(
+                            event_type=event_type,
+                            title=extraction_result.title[:200],
+                            slug="",
+                            description=(source.content or source.title or "")[:500],
+                            summary=(
+                                extraction_result.summary[:500]
+                                if extraction_result.summary
+                                else (source.content[:500] if source.content else source.title[:300])
+                            ),
+                            canonical_id=compute_article_hash(source.title or "", str(source.url)),
+                            country_code=source.country or "XX",
+                            country_name=source.country or "Unknown",
+                            city=extraction_result.city,
+                            start_time=(
+                                parse_date_flexible(extraction_result.date)
+                                if extraction_result.date
+                                else source.published_at or datetime.utcnow()
+                            ),
+                            severity=5,
+                            status=EventStatus.DEVELOPING,
+                            confidence=ConfidenceLevel.MEDIUM,
+                            source_ids=[source.id],
+                        )
+                        event_store.create(event)
+                        claims = [
+                            Claim(**claim)
+                            for claim in claims_to_model_claims(
+                                extraction_result.claims, event.id, source.id
+                            )
+                        ]
+                        counts["claims_created"] += len(claims)
+                        counts["claims_with_source_attribution"] += sum(
+                            claim.source_id == source.id
+                            and bool(claim.source_quote.strip())
+                            and claim.source_quote.strip() in (source.content or "")
+                            for claim in claims
+                        )
+                        claim_store.bulk_create(claims)
+
+                    clusterer = EventClusterer()
+                    events = event_store.get_all()
+                    unpublished = [event for event in events if not event.published_at]
+                    for event in unpublished:
+                        event_sources = source_store.get_by_event(event.id)
+                        if not event_sources:
+                            continue
+                        source = event_sources[0]
+                        candidate = {
+                            "source_url": str(source.url),
+                            "title": source.title,
+                            "latitude": event.latitude,
+                            "longitude": event.longitude,
+                            "date": event.start_time,
+                        }
+                        for similar_event, similarity in clusterer.find_similar_events(candidate):
+                            if similar_event.id != event.id and similarity > 0.8:
+                                if source.id not in similar_event.source_ids:
+                                    similar_event.source_ids.append(source.id)
+                                    event_store.update(
+                                        similar_event.id,
+                                        {"source_ids": similar_event.source_ids},
+                                    )
+                                    event_store.delete(event.id)
+                                break
+
+                    detector = SyndicationDetector()
+                    for event in event_store.get_all():
+                        event_sources = source_store.get_by_event(event.id)
+                        relationships = detector.relationships(event_sources)
+                        for source in event_sources:
+                            related = [
+                                relationship
+                                for relationship in relationships
+                                if source.id in (
+                                    relationship.source_id_a,
+                                    relationship.source_id_b,
+                                )
+                            ]
+                            classifications = [relationship.relationship for relationship in related]
+                            if any(
+                                classification in (
+                                    SourceIndependence.LIKELY_COPIED,
+                                    SourceIndependence.LIKELY_SYNDICATED,
+                                )
+                                for classification in classifications
+                            ):
+                                classification = SourceIndependence.LIKELY_SYNDICATED
+                            elif related and all(
+                                classification == SourceIndependence.INDEPENDENT
+                                for classification in classifications
+                            ):
+                                classification = SourceIndependence.INDEPENDENT
+                            else:
+                                classification = source.independence_classification
+                            if classification != source.independence_classification:
+                                source_store.update(
+                                    source.id,
+                                    {"independence_classification": classification.value},
+                                )
+                                source.independence_classification = classification
+
+                        claims = claim_store.get_by_event(event.id)
+                        evidence = EvidenceAssessor().assess(event, event_sources, claims)
+                        if evidence.publication_ready:
+                            scores = scorer.score_event(event, event_sources)
+                            if decide_publish(event, scores, source_store) != "HOLD":
+                                counts["publication_eligible_candidates"] += 1
+            except Exception as error:
+                error_type = type(error).__name__
+    finally:
+        for name, value in original_settings.items():
+            setattr(settings, name, value)
+
+    console.print("[bold]HUMANITY live-source smoke test (isolated; publishing disabled)[/bold]")
+    gdelt_diagnostics = discovery_counts["gdelt_diagnostics"]
+    for stage, result_key, count_key in (
+        ("GDELT events", "events", "gdelt_events"),
+        ("GDELT GKG", "gkg", "gdelt_articles"),
+    ):
+        stage_diagnostics = gdelt_diagnostics.get(stage.split()[-1].lower(), {})
+        console.print(
+            f"  {stage}: {discovery_counts[count_key]} found; "
+            f"status={stage_diagnostics.get('status', 'not_reported')}; "
+            f"errors={stage_diagnostics.get('errors', 'not_reported')}"
+        )
+    console.print(
+        f"  RSS feeds: {discovery_counts['rss_feeds_completed']}/"
+        f"{discovery_counts['rss_feeds_attempted']} completed; "
+        f"{discovery_counts['rss_feeds_with_errors']} with errors; "
+        f"discovery errors={discovery_counts['rss_discovery_errors']}"
+    )
+    console.print(
+        f"  RSS fetch results: {discovery_counts['rss_fetch_successes']} succeeded, "
+        f"{discovery_counts['rss_fetch_failures']} failed "
+        f"of {discovery_counts['rss_fetch_attempts']} attempts"
+    )
+    for label, key in (
+        ("Discovered articles", "discovered_articles"),
+        ("Extraction attempts", "extraction_attempts"),
+        ("Successful extractions", "successful_extractions"),
+        ("Failed extractions", "failed_extractions"),
+        ("Invalid extraction results", "invalid_extractions"),
+        ("Validated events", "validated_events"),
+        ("Publication-eligible candidates", "publication_eligible_candidates"),
+        ("Claims created", "claims_created"),
+        ("Claims with source attribution", "claims_with_source_attribution"),
+    ):
+        console.print(f"  {label}: {counts[key]}")
+    if error_type:
+        console.print(f"[red]Smoke test stopped safely ({error_type}); no publication was attempted.[/red]")
+        raise typer.Exit(code=1)
+    console.print("  Auto-publication: disabled")
+    console.print("  Storage: temporary directory (removed at completion)")
 
 
 @app.command()
@@ -488,14 +750,16 @@ def legacy_run(
     # 4. Scoring & Publishing
     console.print("\n[bold]4. SCORING & PUBLISHING[/bold]")
     publisher = EventPublisher()
-    events = event_store.get_all()
-    unpublished = [e for e in events if not e.published_at]
-    
     published = 0
-    for event in unpublished:
-        result = publisher.publish_event(event)
-        if result.get("published"):
-            published += 1
+    if get_settings().enable_autopublish:
+        events = event_store.get_all()
+        unpublished = [e for e in events if not e.published_at]
+        for event in unpublished:
+            result = publisher.publish_event(event)
+            if result.get("published"):
+                published += 1
+    else:
+        console.print("  [yellow]Auto-publication disabled; eligible events remain unpublished[/yellow]")
     
     # 5. Daily Brief
     console.print("\n[bold]5. DAILY BRIEF[/bold]")

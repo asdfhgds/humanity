@@ -66,6 +66,14 @@ class GDELTDiscovery:
         )
         self.source_store = get_source_store()
         self.run_store = get_ingestion_run_store()
+        self.diagnostics = {
+            "events": {"status": "not_run", "errors": 0},
+            "gkg": {"status": "not_run", "errors": 0},
+        }
+
+    def _record_error(self, stage: str) -> None:
+        self.diagnostics[stage]["errors"] += 1
+        self.diagnostics[stage]["status"] = "failed"
 
     async def close(self):
         await self.client.aclose()
@@ -76,7 +84,7 @@ class GDELTDiscovery:
         retry=retry_if_exception_type((httpx.TimeoutException, httpx.ConnectError, httpx.HTTPStatusError)),
         reraise=True
     )
-    async def get_latest_master_file(self, hours_back: int = 6) -> Optional[str]:
+    async def get_latest_master_file(self, hours_back: int = 6, stage: str = "events") -> Optional[str]:
         """Get the latest GDELT master file URL."""
         try:
             response = await self.client.get(GDELT_MASTER_URL)
@@ -91,10 +99,13 @@ class GDELTDiscovery:
                         date_str = file_url.split("/")[-1].replace(".export.CSV.zip", "")
                         file_date = datetime.strptime(date_str, "%Y%m%d%H%M%S")
                         if file_date >= cutoff:
+                            self.diagnostics[stage]["status"] = "master_file_found"
                             return file_url
                     except (ValueError, IndexError):
                         continue
+            self.diagnostics[stage]["status"] = "no_recent_data"
         except Exception as e:
+            self._record_error(stage)
             print(f"Error fetching GDELT master file: {e}")
         return None
 
@@ -104,7 +115,9 @@ class GDELTDiscovery:
         retry=retry_if_exception_type((httpx.TimeoutException, httpx.ConnectError, httpx.HTTPStatusError)),
         reraise=True
     )
-    async def download_and_parse_events(self, file_url: str, max_records: int = 5000) -> List[Dict[str, Any]]:
+    async def download_and_parse_events(
+        self, file_url: str, max_records: int = 5000
+    ) -> List[Dict[str, Any]]:
         """Download and parse GDELT events file."""
         events = []
         try:
@@ -144,6 +157,7 @@ class GDELTDiscovery:
                     continue
                     
         except Exception as e:
+            self._record_error("events")
             print(f"Error parsing GDELT events: {e}")
         return events
 
@@ -232,11 +246,15 @@ class GDELTDiscovery:
 
     async def discover(self, hours_back: int = 6, max_records: int = 1000) -> List[Dict[str, Any]]:
         """Main discovery entry point."""
-        master_file = await self.get_latest_master_file(hours_back)
+        master_file = await self.get_latest_master_file(hours_back, stage="events")
         if not master_file:
             return []
         
         events = await self.download_and_parse_events(master_file, max_records)
+        if self.diagnostics["events"]["errors"] and events:
+            self.diagnostics["events"]["status"] = "partial_failure"
+        elif self.diagnostics["events"]["status"] != "failed":
+            self.diagnostics["events"]["status"] = "succeeded"
         return events
 
     @retry(
@@ -248,12 +266,14 @@ class GDELTDiscovery:
     async def discover_gkg(self, hours_back: int = 6, max_records: int = 500) -> List[Dict[str, Any]]:
         """Discover from GDELT Global Knowledge Graph."""
         articles = []
+        self.diagnostics["gkg"]["status"] = "attempted"
         try:
             response = await self.client.get(GDELT_MASTER_URL)
             response.raise_for_status()
+            self.diagnostics["gkg"]["status"] = "master_index_retrieved"
             lines = response.text.strip().split("\n")
             cutoff = datetime.utcnow() - timedelta(hours=hours_back)
-            
+
             gkg_files = []
             for line in reversed(lines):
                 parts = line.split()
@@ -268,7 +288,12 @@ class GDELTDiscovery:
                             break
                     except (ValueError, IndexError):
                         continue
-            
+
+            if not gkg_files:
+                self.diagnostics["gkg"]["status"] = "no_recent_data"
+            else:
+                self.diagnostics["gkg"]["status"] = "files_found"
+
             for file_url in gkg_files:
                 if len(articles) >= max_records:
                     break
@@ -295,9 +320,14 @@ class GDELTDiscovery:
                         if article:
                             articles.append(article)
                 except Exception as e:
+                    self._record_error("gkg")
                     print(f"Error parsing GKG file {file_url}: {e}")
-                    
+            if self.diagnostics["gkg"]["errors"] and articles:
+                self.diagnostics["gkg"]["status"] = "partial_failure"
+            elif self.diagnostics["gkg"]["status"] != "failed" and gkg_files:
+                self.diagnostics["gkg"]["status"] = "succeeded"
         except Exception as e:
+            self._record_error("gkg")
             print(f"Error in GKG discovery: {e}")
         return articles
 
@@ -385,6 +415,7 @@ async def run_gdelt_discovery(hours_back: int = 6, max_events: int = 1000, max_a
             "events_found": len(events),
             "articles_found": len(articles),
             "sources_created": run.sources_succeeded,
+            "diagnostics": discovery.diagnostics,
         }
     except Exception as e:
         run.finished_at = datetime.utcnow()
