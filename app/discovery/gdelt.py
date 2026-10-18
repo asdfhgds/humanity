@@ -75,7 +75,14 @@ class GDELTDiscovery:
         stage_diagnostics = self.diagnostics[stage]
         stage_diagnostics["errors"] += 1
         self.diagnostics[stage]["status"] = "failed"
-        category = type(error).__name__
+        response = getattr(error, "response", None)
+        status_code = getattr(response, "status_code", None)
+        category = (
+            f"HTTPStatusError_{status_code}"
+            if type(error).__name__ == "HTTPStatusError"
+            and isinstance(status_code, int)
+            else type(error).__name__
+        )
         categories = stage_diagnostics["error_categories"]
         categories[category] = categories.get(category, 0) + 1
 

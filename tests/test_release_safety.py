@@ -365,6 +365,8 @@ def test_multi_source_fetch_respects_global_article_budget(monkeypatch):
         ("not-json", None, "invalid_json"),
         ("{}", None, "invalid_schema"),
         (None, RuntimeError("sensitive provider message"), "RuntimeError"),
+        (None, RuntimeError("quota exceeded: private detail"), "quota_or_rate_limit"),
+        (None, RuntimeError("503 service unavailable: private detail"), "provider_server_error"),
     ],
 )
 def test_gemini_failure_categories_exclude_provider_messages(
@@ -385,6 +387,23 @@ def test_gemini_failure_categories_exclude_provider_messages(
 
     assert result is None
     assert extractor.last_error_category == expected_category
+    assert "private detail" not in capsys.readouterr().out
+
+
+def test_gdelt_http_error_category_includes_only_status_code():
+    from app.discovery.gdelt import GDELTDiscovery
+
+    discovery = GDELTDiscovery.__new__(GDELTDiscovery)
+    discovery.diagnostics = {
+        "gkg": {"status": "not_run", "errors": 0, "error_categories": {}}
+    }
+    http_error = type("HTTPStatusError", (Exception,), {})
+    error = http_error()
+    error.response = SimpleNamespace(status_code=403)
+
+    discovery._record_error("gkg", error)
+
+    assert discovery.diagnostics["gkg"]["error_categories"] == {"HTTPStatusError_403": 1}
 
 
 def test_publisher_refuses_to_publish_when_auto_publication_is_disabled(

@@ -117,6 +117,23 @@ REQUIRED JSON SCHEMA (must match exactly):
 Return ONLY valid JSON matching the schema above. Do not include any other text."""
 
 
+def _safe_api_error_category(error: Exception) -> str:
+    message = str(error).lower()
+    if any(term in message for term in ("quota", "rate limit", "resource_exhausted", "too many requests", "429")):
+        return "quota_or_rate_limit"
+    if any(term in message for term in ("unauthorized", "permission denied", "invalid api key", "401", "403")):
+        return "authentication_or_permission"
+    if any(term in message for term in ("timeout", "timed out", "deadline")):
+        return "timeout"
+    if any(term in message for term in ("connection", "dns", "transport", "network", "unreachable")):
+        return "network"
+    if any(term in message for term in ("500", "502", "503", "504", "internal server", "service unavailable")):
+        return "provider_server_error"
+    if any(term in message for term in ("safety", "blocked", "finish_reason")):
+        return "response_blocked"
+    return type(error).__name__
+
+
 class GeminiExtractor:
     def __init__(self):
         settings = get_settings()
@@ -175,7 +192,7 @@ Respond with valid JSON only."""
             print(f"Gemini extraction failed: {e}")
             return None
         except Exception as e:
-            self.last_error_category = type(e).__name__
+            self.last_error_category = _safe_api_error_category(e)
             print(f"Gemini API error: {e}")
             return None
 

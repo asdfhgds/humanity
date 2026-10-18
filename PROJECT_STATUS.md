@@ -286,17 +286,16 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   GDELT events completed with no errors. RSS completed 12/12 feeds with 6
   feed errors. This confirms external source and Gemini calls were attempted
   but does not validate broad successful live extraction.
-- The diagnostic follow-up is pushed at `0add447c92b772216206070bc7030da49b414f2b`
-  with its smoke results documented in commit `dcf0b232476bfffb22e01e0533f328cdfde6762e`;
-  it is open as [PR #3](https://github.com/asdfhgds/humanity/pull/3). Both
-  PR-triggered checks passed on the latest head in
-  [run 39138288742](https://github.com/asdfhgds/humanity/actions/runs/39138288742).
-  The targeted release-safety tests pass (13 tests), and the full Python
-  suite passes (81 tests, 513 existing deprecation warnings). Frontend
-  validation passed (`npm run check`: zero diagnostics; build: 13 pages;
-  static audit: zero missing links, fragments, or assets). The first audit
-  invocation used the wrong working directory and was rerun from the
-  repository root successfully.
+- PR #3 remains open for the diagnostic follow-up. A further local refinement
+  maps only allow-listed failure indicators to safe Gemini categories and
+  reports GDELT HTTP status codes without request text; it has regression
+  coverage and has not yet been pushed or exercised against live services.
+  The full Python suite passes (84 tests, 513 existing deprecation warnings),
+  `npm run check` reports zero diagnostics, the build generated 13 pages, and
+  the static audit found no missing links, fragments, or assets. The prior PR
+  head passed both checks in
+  [run 39138288742](https://github.com/asdfhgds/humanity/actions/runs/39138288742);
+  CI must rerun for the new refinement before it can be merged.
 - Production release variable remains unset/disabled, auto-publication remains
   disabled, and the 5-minute and daily production schedules must not be
   activated while extraction failures remain unexplained and no candidate
