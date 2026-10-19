@@ -632,3 +632,24 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   not repeat live calls during cooldown or without a new diagnostic reason;
   keep production ingestion, recurring schedules, publishing, and deployment
   gated.
+- A one-call isolated recovery check ran as
+  [workflow run 39282399821](https://github.com/asdfhgds/humanity/actions/runs/39282399821)
+  on current `master` after the prior cooldowns expired and with no newer
+  provider failures. It discovered 188 articles and spent exactly one request
+  on the first pool slot; the request again failed with sanitized category
+  `provider_server_error`, and the other three slots were untried. There were
+  zero successful extractions, validated events, claims, or eligible
+  candidates. The attempted slot's cooldown ended at 16:11:46 UTC. Auto-
+  publication was disabled and storage was temporary. During GitHub Actions'
+  reported degraded performance, the run-level API remained stale at queued/
+  in-progress even after the job had completed successfully at 16:06:49 UTC;
+  the job endpoint and logs later confirmed the result, and the cancellation
+  request was rejected while the run state was stale. This does not change
+  the provider blocker; do not dispatch another probe without a distinct
+  diagnostic purpose.
+- The public site homepage and static JSON endpoints were checked directly:
+  the homepage, `/data/events/all.json`, `/data/events/recent.json`, and
+  `/data/stats/global.json` returned HTTP 200. Both event feeds contained
+  `[]`; no new deployment or production state write was performed. The
+  production release variable remains unset, and recurring ingestion,
+  publication, and deployment remain disabled.
