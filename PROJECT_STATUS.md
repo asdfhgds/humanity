@@ -603,3 +603,15 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   repeat calls during the cooldown or continue probing without a distinct
   diagnostic purpose. Recurring ingestion, automatic publication, and
   deployment remain gated.
+- A final two-call failover probe on current `master` ran as
+  [workflow run 39275820388](https://github.com/asdfhgds/humanity/actions/runs/39275820388).
+  It discovered 188 articles, made two requests, and successfully failed over
+  from the first slot to the second (`failover attempts=1`); both requests
+  returned `provider_server_error`, with no recovery. The remaining two slots
+  were untried at the two-call cap. Both attempted slots received five-minute
+  cooldowns through 15:19:30–15:19:31 UTC. There were zero validated events,
+  claims, or publication-eligible candidates. The isolated smoke remained
+  non-publishing, non-deploying, and used temporary storage. This confirms
+  rotation/failover behavior but not successful live extraction; stop live
+  probes until a distinct diagnostic reason exists. Production ingestion,
+  recurring schedules, publication, and deployment remain gated.
