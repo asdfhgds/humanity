@@ -500,10 +500,14 @@ Phase 3, Milestone 3.1 — Live Source Verification.
 - The latest real smoke was [run 39141724221](https://github.com/asdfhgds/humanity/actions/runs/39141724221),
   completed at 2026-10-18 15:49:32 UTC: 203 discovered articles, 10 extraction
   attempts, 3 successful and 7 quota/rate-limited failures, 2 validated events,
-  12 source-attributed claims, and 0 publication-eligible candidates. The
-  merged smoke report currently lacks per-slot rotation diagnostics; the
-  pending change adds sanitized slot-level outcomes. The conservative
-  24-hour cooldown expires no earlier than 2026-10-19 15:49:30 UTC.
+  12 source-attributed claims, and 0 publication-eligible candidates. PR #11
+  adds sanitized per-slot rotation diagnostics to the smoke report after a
+  pre-release review found that the CLI called a diagnostics method missing
+  from the extractor. It merged to master at
+  `21ba306ebbbb17dfda61a7d20b94b853dd7267ff`; fresh Python and frontend CI
+  passed in [run 39247868073](https://github.com/asdfhgds/humanity/actions/runs/39247868073).
+  The conservative 24-hour cooldown expires no earlier than 2026-10-19
+  15:49:30 UTC; no new live Gemini smoke has been run.
 - Local validation passed: 111 Python tests; Astro check (zero diagnostics)
   and build (13 pages); all four workflow YAML files parsed; static-site audit
   found no missing local links, fragments, or assets; `git diff --check`
