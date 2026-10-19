@@ -1,0 +1,82 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Privacy | HUMANITY"
+  description="Privacy and data-processing disclosure for the HUMANITY public website."
+>
+  <main class="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
+    <header class="border-b border-humanity-border pb-7">
+      <p class="eyebrow">Transparency</p>
+      <h1 class="editorial-title mt-3 text-4xl font-semibold sm:text-5xl">
+        Privacy notice
+      </h1>
+      <p class="mt-4 text-sm text-humanity-textMuted">
+        Engineering disclosure draft · Requires owner and legal review
+      </p>
+    </header>
+    <div
+      class="prose-copy max-w-3xl space-y-7 py-8 leading-relaxed text-humanity-textMuted"
+    >
+      <section>
+        <h2 class="editorial-title text-2xl font-semibold text-humanity-text">
+          Public website
+        </h2><p class="mt-3">
+          The reviewed application contains no first-party accounts, login,
+          payment, advertising, or analytics feature. The site requests
+          published data feeds and, when a map is opened, map tiles from
+          OpenStreetMap. The host and tile provider may receive standard
+          connection data such as IP address, browser information, requested
+          URL, and request time under their own policies. HUMANITY does not
+          control their logs or retention.
+        </p>
+      </section>
+      <section>
+        <h2 class="editorial-title text-2xl font-semibold text-humanity-text">
+          Source and event data
+        </h2><p class="mt-3">
+          Ingestion processes public-source metadata and may retrieve feed, API,
+          or article-page text for extraction. Source records are persisted for
+          pipeline processing. Public event records may contain locations,
+          source links, and short attributed claim excerpts. Source access is
+          not permission to retain or republish content. Source-specific rights
+          and retention review remains pending in the <a
+            class="link"
+            href="/source-rights">source-rights register</a
+          >.
+        </p>
+      </section>
+      <section>
+        <h2 class="editorial-title text-2xl font-semibold text-humanity-text">
+          Questions and corrections
+        </h2><p class="mt-3">
+          There is no private account or in-product request form. Use the <a
+            class="link"
+            href="https://github.com/asdfhgds/humanity/issues"
+            target="_blank"
+            rel="noopener noreferrer">public issue tracker</a
+          > for privacy questions or corrections; do not post sensitive personal information
+          publicly. It is not an emergency contact.
+        </p>
+      </section>
+      <section>
+        <h2 class="editorial-title text-2xl font-semibold text-humanity-text">
+          Scope and updates
+        </h2><p class="mt-3">
+          This draft reflects the application code reviewed for this release and
+          does not independently verify host settings. The project owner should
+          confirm cookies, provider logging, retention, security, and legal
+          requirements before relying on it. If accounts, analytics, alerts, or
+          paid services are added, update this notice before enabling them.
+        </p>
+      </section>
+    </div>
+    <p
+      class="border-t border-humanity-border pt-5 text-xs text-humanity-textMuted"
+    >
+      This notice is an engineering disclosure, not legal advice or a promise
+      that third-party providers retain no data.
+    </p>
+  </main>
+</BaseLayout>

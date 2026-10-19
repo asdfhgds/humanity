@@ -1,13 +1,14 @@
 ---
-import '../styles/global.css';
+import "../styles/global.css";
 
 interface Props {
   title: string;
   description?: string;
 }
 const { title, description } = Astro.props;
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 ---
+
 <!doctype html>
 <html lang="en">
   <head>
@@ -15,40 +16,98 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content={Astro.generator} />
     <title>{title} | HUMANITY</title>
-    <meta name="description" content={description || "A live global map and evidence-based database of protests, conflicts, humanitarian crises, disasters and other major human events."} />
+    <meta
+      name="description"
+      content={description ||
+        "A live global map and evidence-based database of protests, conflicts, humanitarian crises, disasters and other major human events."}
+    />
     <link rel="icon" type="image/svg+xml" href={`${basePath}/favicon.svg`} />
     <meta property="og:title" content={title} />
-    <meta property="og:description" content={description || "A live global map and evidence-based database of protests, conflicts, humanitarian crises, disasters and other major human events."} />
+    <meta
+      property="og:description"
+      content={description ||
+        "A live global map and evidence-based database of protests, conflicts, humanitarian crises, disasters and other major human events."}
+    />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
-    <meta name="twitter:description" content={description || "A live global map and evidence-based database of protests, conflicts, humanitarian crises, disasters and other major human events."} />
+    <meta
+      name="twitter:description"
+      content={description ||
+        "A live global map and evidence-based database of protests, conflicts, humanitarian crises, disasters and other major human events."}
+    />
   </head>
-  <body class="bg-humanity-darker text-humanity-text min-h-screen font-sans antialiased">
+  <body
+    class="bg-humanity-darker text-humanity-text min-h-screen font-sans antialiased"
+  >
     <slot />
     <footer class="border-t border-humanity-border bg-humanity-dark">
-      <div class="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr] lg:px-8">
+      <div
+        class="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr] lg:px-8"
+      >
         <div>
-          <a href="/" class="font-serif text-xl font-semibold tracking-wide text-humanity-text">HUMANITY</a>
-          <p class="mt-2 max-w-md text-sm leading-relaxed text-humanity-textMuted">A public-interest view of human events, grounded in traceable sources and transparent uncertainty.</p>
+          <a
+            href="/"
+            class="font-serif text-xl font-semibold tracking-wide text-humanity-text"
+            >HUMANITY</a
+          >
+          <p
+            class="mt-2 max-w-md text-sm leading-relaxed text-humanity-textMuted"
+          >
+            A public-interest view of human events, grounded in traceable
+            sources and transparent uncertainty.
+          </p>
         </div>
         <div>
-          <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-humanity-textMuted">Explore</h2>
+          <h2
+            class="text-xs font-semibold uppercase tracking-[0.18em] text-humanity-textMuted"
+          >
+            Explore
+          </h2>
           <nav class="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm">
-            <a class="link" href="/events">Events</a><a class="link" href="/map">Map</a>
-            <a class="link" href="/protests">Protests</a><a class="link" href="/conflicts">Conflicts</a>
-            <a class="link" href="/human-cost">Human cost</a><a class="link" href="/countries">Countries</a>
-            <a class="link" href="/timelines">Timelines</a><a class="link" href="/daily-brief">Daily brief</a>
+            <a class="link" href="/events">Events</a><a class="link" href="/map"
+              >Map</a
+            >
+            <a class="link" href="/protests">Protests</a><a
+              class="link"
+              href="/conflicts">Conflicts</a
+            >
+            <a class="link" href="/human-cost">Human cost</a><a
+              class="link"
+              href="/countries">Countries</a
+            >
+            <a class="link" href="/timelines">Timelines</a><a
+              class="link"
+              href="/daily-brief">Daily brief</a
+            >
           </nav>
         </div>
         <div>
-          <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-humanity-textMuted">Transparency</h2>
+          <h2
+            class="text-xs font-semibold uppercase tracking-[0.18em] text-humanity-textMuted"
+          >
+            Transparency
+          </h2>
           <nav class="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm">
             <a class="link" href="/methodology">Methodology</a>
             <a class="link" href="/sources">Sources</a>
+            <a class="link" href="/source-rights">Source rights</a>
             <a class="link" href="/image-credits">Image credits</a>
-            <a class="link" href="https://github.com/asdfhgds/humanity" target="_blank" rel="noopener noreferrer">GitHub</a>
-            <a class="link" href="https://github.com/asdfhgds/humanity/issues" target="_blank" rel="noopener noreferrer">Corrections / contact</a>
+            <a class="link" href="/research-teams">Research teams</a>
+            <a class="link" href="/privacy">Privacy</a>
+            <a class="link" href="/terms">Terms</a>
+            <a
+              class="link"
+              href="https://github.com/asdfhgds/humanity"
+              target="_blank"
+              rel="noopener noreferrer">GitHub</a
+            >
+            <a
+              class="link"
+              href="https://github.com/asdfhgds/humanity/issues"
+              target="_blank"
+              rel="noopener noreferrer">Corrections / contact</a
+            >
           </nav>
         </div>
       </div>
@@ -60,9 +119,9 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
       const withBasePath = (value) => {
         if (
           !basePath ||
-          typeof value !== 'string' ||
-          !value.startsWith('/') ||
-          value.startsWith('//') ||
+          typeof value !== "string" ||
+          !value.startsWith("/") ||
+          value.startsWith("//") ||
           value === basePath ||
           value.startsWith(`${basePath}/`)
         ) {
@@ -73,21 +132,24 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
 
       const nativeFetch = window.fetch.bind(window);
       window.fetch = (input, init) =>
-        nativeFetch(typeof input === 'string' ? withBasePath(input) : input, init);
+        nativeFetch(
+          typeof input === "string" ? withBasePath(input) : input,
+          init,
+        );
 
       const rewriteLinks = (root) => {
-        if (root instanceof Element && root.matches('a[href], area[href]')) {
-          const href = root.getAttribute('href');
+        if (root instanceof Element && root.matches("a[href], area[href]")) {
+          const href = root.getAttribute("href");
           if (href) {
             const rewritten = withBasePath(href);
-            if (rewritten !== href) root.setAttribute('href', rewritten);
+            if (rewritten !== href) root.setAttribute("href", rewritten);
           }
         }
-        root.querySelectorAll('a[href], area[href]').forEach((link) => {
-          const href = link.getAttribute('href');
+        root.querySelectorAll("a[href], area[href]").forEach((link) => {
+          const href = link.getAttribute("href");
           if (href) {
             const rewritten = withBasePath(href);
-            if (rewritten !== href) link.setAttribute('href', rewritten);
+            if (rewritten !== href) link.setAttribute("href", rewritten);
           }
         });
       };
@@ -95,7 +157,7 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
       rewriteLinks(document);
       new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
-          if (mutation.type === 'attributes') {
+          if (mutation.type === "attributes") {
             rewriteLinks(mutation.target);
           } else {
             mutation.addedNodes.forEach((node) => {
@@ -105,7 +167,7 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
         });
       }).observe(document.documentElement, {
         attributes: true,
-        attributeFilter: ['href'],
+        attributeFilter: ["href"],
         childList: true,
         subtree: true,
       });

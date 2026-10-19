@@ -653,3 +653,44 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   `[]`; no new deployment or production state write was performed. The
   production release variable remains unset, and recurring ingestion,
   publication, and deployment remain disabled.
+
+### Product discovery and transparency update (2026-10-19)
+
+- Reworked the events index as a research surface: title/summary/description/
+  location search, validated type/country/severity/date URL filters, an
+  accessible result count, clear-filters control, and copyable share links.
+  The empty published feed is distinguished from a filter that matches no
+  records. Browser refresh continues to fetch the deployed feed only; it does
+  not imply new ingestion.
+- Added deterministic frontend tests for query parsing/serialization,
+  summary/description search, filter combinations, and invalid/future/old
+  dates. Four frontend tests pass.
+- Added `config/source_rights.yaml` as a per-source review register and a
+  regression test that requires every configured source to match its group,
+  type, and pending rights status. Every source remains pending; commercial
+  reuse and redistribution are not cleared. Documentation states that source
+  records, including fetched text, may be persisted for processing, and that
+  source-specific storage, display, and retention permissions need review.
+- Replaced outdated methodology claims about automatic publishing, schedules,
+  and unsupported pipeline stages with the implemented flow, evidence gates,
+  provider limitations, and known incomplete CLI-to-clustering handoff.
+- Added research-team packaging and price ranges explicitly labeled as
+  unvalidated hypotheses (no account, checkout, paid service, or customer
+  validation), plus architecture, source-rights, privacy, and terms drafts.
+  Privacy and terms pages are also accessible from the public site and are
+  labeled as requiring legal review.
+- Updated README claims to describe the current static, gated, incomplete
+  product rather than imply comprehensive or continuously refreshed coverage.
+- Validation: `python -m pytest tests -q` — 114 passed; `npm test` — 4 passed;
+  `npm run check` — 0 errors/warnings/hints; `npm run build` — 17 pages built
+  (the existing large MapLibre chunk advisory remains); all four workflow YAML
+  files parsed; `scripts/audit_static_site.py web/dist` — 17 HTML pages and no
+  missing local links, fragments, or assets; `git diff --check` passed.
+- Local browser review confirmed the `type=PROTEST` URL populates the filter,
+  typing updates the shareable URL, clearing removes the filters, and the
+  current empty feed is explained without implying that no events occurred.
+- No Gemini request, production write, workflow/schedule change, publication,
+  or deployment was made. The previously verified provider-side
+  `provider_server_error` remains unresolved; public feeds remain empty and
+  production gates remain closed. Source-rights, privacy, and terms review
+  remain blockers to commercial use.

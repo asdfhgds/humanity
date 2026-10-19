@@ -1,0 +1,41 @@
+# This is an operational review register, not a grant of rights or legal advice.
+# New configured sources must have an explicit row here before registry tests pass.
+policy:
+  rights_review: pending
+  provenance: source URL and configured connector type are recorded in sources.yaml
+  storage: fetched source records and text can be persisted for processing; permission is not assessed
+  public_display: source metadata, links, and short attributed excerpts may be shown; permission is not cleared
+  commercial_reuse: not_cleared
+  redistribution: not_cleared
+  attribution: link to the originating publisher and article where available
+sources:
+  Reuters: { group: global_news, type: news, rights_review: pending }
+  Associated Press: { group: global_news, type: news, rights_review: pending }
+  BBC World: { group: global_news, type: news, rights_review: pending }
+  Al Jazeera English: { group: global_news, type: news, rights_review: pending }
+  France 24 English: { group: global_news, type: news, rights_review: pending }
+  Deutsche Welle English: { group: global_news, type: news, rights_review: pending }
+  The Guardian World: { group: regional_news, type: news, rights_review: pending }
+  Le Monde English: { group: regional_news, type: news, rights_review: pending }
+  El País English: { group: regional_news, type: news, rights_review: pending }
+  UN OCHA ReliefWeb: { group: government, type: un, rights_review: pending }
+  UNHCR Data: { group: government, type: un, rights_review: pending }
+  WHO Emergencies: { group: government, type: un, rights_review: pending }
+  ACLED: { group: ngo, type: ngo, rights_review: pending }
+  UCDP: { group: ngo, type: academic, rights_review: pending }
+  ICRC: { group: ngo, type: ngo, rights_review: pending }
+  GDELT GKG: { group: data_provider, type: data_provider, rights_review: pending }
+  GDELT Events: { group: data_provider, type: data_provider, rights_review: pending }
+  ReliefWeb API: { group: data_provider, type: api, rights_review: pending }
+  Reuters World RSS: { group: rss_feeds, type: rss, rights_review: pending }
+  AP News World RSS: { group: rss_feeds, type: rss, rights_review: pending }
+  BBC World RSS: { group: rss_feeds, type: rss, rights_review: pending }
+  Al Jazeera English RSS: { group: rss_feeds, type: rss, rights_review: pending }
+  France 24 English RSS: { group: rss_feeds, type: rss, rights_review: pending }
+  Deutsche Welle RSS: { group: rss_feeds, type: rss, rights_review: pending }
+  Guardian World RSS: { group: rss_feeds, type: rss, rights_review: pending }
+  Le Monde English RSS: { group: rss_feeds, type: rss, rights_review: pending }
+  El País English RSS: { group: rss_feeds, type: rss, rights_review: pending }
+  ReliefWeb Updates RSS: { group: rss_feeds, type: rss, rights_review: pending }
+  UN News RSS: { group: rss_feeds, type: rss, rights_review: pending }
+  ICRC News RSS: { group: rss_feeds, type: rss, rights_review: pending }

@@ -1,445 +1,232 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
+import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<BaseLayout title="Methodology | HUMANITY" description="How HUMANITY discovers, verifies, and publishes human events. Full transparency on sources, algorithms, and editorial standards.">
-  <div class="min-h-screen">
-    <header class="border-b border-humanity-border bg-humanity-darker/80 backdrop-blur-sm sticky top-0 z-50">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between h-16">
-          <div class="flex items-center gap-3">
-            <a href="/" class="flex items-center gap-3">
-              <svg class="w-8 h-8 text-humanity-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M2 12h20" />
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-              </svg>
-              <span class="text-2xl font-bold tracking-tight text-humanity-text">HUMANITY</span>
-            </a>
-            <span class="text-humanity-textMuted">/</span>
-            <span class="text-humanity-text">Methodology</span>
-          </div>
-          <nav class="hidden md:flex items-center gap-6">
-            <a href="/" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Home</a>
-            <a href="/map" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Map</a>
-            <a href="/events" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Live Events</a>
-            <a href="/protests" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Protests</a>
-            <a href="/conflicts" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Conflicts</a>
-            <a href="/human-cost" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Human Cost</a>
-            <a href="/countries" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Countries</a>
-            <a href="/timelines" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Timelines</a>
-            <a href="/methodology" class="text-humanity-accent font-medium text-sm">Methodology</a>
-          </nav>
-        </div>
-      </div>
+<BaseLayout
+  title="Methodology | HUMANITY"
+  description="How HUMANITY collects source reports, structures candidate events, assesses evidence, and controls publication."
+>
+  <main class="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+    <header class="max-w-3xl border-b border-humanity-border pb-9">
+      <p class="eyebrow">Evidence, provenance, limits</p>
+      <h1 class="editorial-title mt-3 text-4xl font-semibold sm:text-6xl">
+        How the record is made.
+      </h1>
+      <p class="mt-5 text-lg leading-relaxed text-humanity-textMuted">
+        HUMANITY turns reports from configured sources into candidate event
+        records. Automation can organize evidence; it cannot establish that a
+        report is true or make the source mix complete.
+      </p>
     </header>
 
-    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16">
-      <header class="text-center">
-        <h1 class="text-4xl sm:text-5xl font-bold text-humanity-text mb-4">Methodology</h1>
-        <p class="text-lg text-humanity-textMuted max-w-2xl mx-auto">
-          How we discover, verify, structure, and publish human events. Full transparency on every step.
+    <section
+      class="grid gap-0 border-b border-humanity-border py-8 md:grid-cols-2"
+      aria-label="Method principles"
+    >
+      <article class="border-b border-humanity-border py-5 md:border-r md:pr-8">
+        <p class="eyebrow">01 · Provenance</p>
+        <h2 class="editorial-title mt-2 text-2xl font-semibold">
+          Claims point back to reporting.
+        </h2>
+        <p class="mt-3 leading-relaxed text-humanity-textMuted">
+          An extraction is a candidate, not a source. Public records retain
+          source links and claim attribution so a reader can inspect the
+          original reporting.
         </p>
-      </header>
-
-      <!-- Core Principles -->
-      <section>
-        <h2 class="text-2xl font-bold text-humanity-text mb-6 flex items-center gap-2">
-          <span style="color: #7c3aed;">🎯</span>
-          Core Principles
+      </article>
+      <article class="border-b border-humanity-border py-5 md:pl-8">
+        <p class="eyebrow">02 · Independence</p>
+        <h2 class="editorial-title mt-2 text-2xl font-semibold">
+          Copies do not make corroboration.
         </h2>
-        <div class="space-y-4">
-          <div class="card p-6 border-l-4 border-violet-500">
-            <h3 class="text-lg font-semibold text-humanity-text mb-2">The Event is the Central Object</h3>
-            <p class="text-humanity-textMuted">An article is only a presentation layer around an event. The event itself—structured, sourced, versioned—is the primary data entity.</p>
-          </div>
-          <div class="card p-6 border-l-4 border-emerald-500">
-            <h3 class="text-lg font-semibold text-humanity-text mb-2">No Number Without Provenance</h3>
-            <p class="text-humanity-textMuted">Every figure—deaths, injuries, participants, displaced—must trace to one or more source records. We never store a number without its evidence chain.</p>
-          </div>
-          <div class="card p-6 border-l-4 border-amber-500">
-            <h3 class="text-lg font-semibold text-humanity-text mb-2">AI is a Tool, Not a Source</h3>
-            <p class="text-humanity-textMuted">AI-generated statements are never evidence. AI assists with classification, extraction, clustering, and synthesis—but never invents facts or fills missing numbers.</p>
-          </div>
-          <div class="card p-6 border-l-4 border-blue-500">
-            <h3 class="text-lg font-semibold text-humanity-text mb-2">Traceable Claims</h3>
-            <p class="text-humanity-textMuted">Every factual claim links to a source quote, a source URL, and a confidence assessment. You can always verify what we say.</p>
-          </div>
-          <div class="card p-6 border-l-4 border-red-500">
-            <h3 class="text-lg font-semibold text-humanity-text mb-2">Uncertainty Over False Precision</h3>
-            <p class="text-humanity-textMuted">We distinguish: reported, verified, corroborated, disputed, estimated, unknown. We never turn uncertain information into false precision.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- Source Acquisition -->
-      <section id="sources">
-        <h2 class="text-2xl font-bold text-humanity-text mb-6 flex items-center gap-2">
-          <span style="color: #3b82f6;">📡</span>
-          Source Acquisition
-        </h2>
-        <div class="space-y-6">
-          <div>
-            <h3 class="text-xl font-semibold text-humanity-text mb-4">Layer 1: Broad Discovery (GDELT)</h3>
-            <p class="text-humanity-textMuted mb-4">We use the Global Database of Events, Language, and Tone (GDELT) for global, multilingual news discovery across 65+ languages. GDELT provides structured event records, article URLs, and metadata for initial candidate detection.</p>
-            <div class="card p-4 bg-humanity-darker/50">
-              <p class="text-sm text-humanity-textMuted"><strong>Why GDELT:</strong> Unparalleled global coverage, structured output, free access. <strong>Limitations:</strong> Noisy, requires heavy filtering, not a verified source itself.</p>
-            </div>
-          </div>
-          <div>
-            <h3 class="text-xl font-semibold text-humanity-text mb-4">Layer 2: Structured Datasets</h3>
-            <ul class="space-y-2 text-humanity-textMuted">
-              <li><strong>UCDP (Uppsala Conflict Data Program):</strong> Authoritative conflict event data, battle-related deaths</li>
-              <li><strong>ReliefWeb / UN OCHA:</strong> Humanitarian reports, displacement figures, disaster data</li>
-              <li><strong>ACLED:</strong> Armed Conflict Location & Event Data (when available)</li>
-              <li><strong>UNHCR / IOM:</strong> Official displacement and refugee statistics</li>
-              <li><strong>WHO:</strong> Health emergency and disease outbreak data</li>
-            </ul>
-          </div>
-          <div>
-            <h3 class="text-xl font-semibold text-humanity-text mb-4">Layer 3: RSS & Official Feeds</h3>
-            <p class="text-humanity-textMuted mb-4">Configurable source registry (<code>sources.yaml</code>) with global/regional news, government feeds, NGO reports, and UN agencies. Each source has priority, poll interval, and robots.txt compliance.</p>
-            <div class="card p-4 bg-humanity-darker/50">
-              <p class="text-sm text-humanity-textMuted"><strong>Principle:</strong> Respect robots.txt, rate limits, copyright. Prefer RSS and public APIs. Never scrape indiscriminately. Store metadata and link to original.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Discovery & Processing Pipeline -->
-      <section>
-        <h2 class="text-2xl font-bold text-humanity-text mb-6 flex items-center gap-2">
-          <span style="color: #f97316;">⚙️</span>
-          Discovery & Processing Pipeline
-        </h2>
-        <div class="space-y-4">
-          <div class="card p-6">
-            <h3 class="text-lg font-semibold text-humanity-text mb-4">Automated Pipeline Stages</h3>
-            <ol class="space-y-3 text-humanity-textMuted">
-              <li class="flex items-start gap-3"><span class="text-humanity-accent font-bold">1.</span><strong>DISCOVER</strong> – Fetch from GDELT, RSS, datasets</li>
-              <li class="flex items-start gap-3"><span class="text-humanity-accent font-bold">2.</span><strong>FETCH METADATA</strong> – Title, URL, date, source</li>
-              <li class="flex items-start gap-3"><span class="text-humanity-accent font-bold">3.</span><strong>NORMALIZE URL</strong> – Canonicalize, deduplicate</li>
-              <li class="flex items-start gap-3"><span class="text-humanity-accent font-bold">4.</span><strong>DEDUPLICATE</strong> – Exact URL, content hash, title similarity</li>
-              <li class="flex items-start gap-3"><span class="text-humanity-accent font-bold">5.</span><strong>EXTRACT CANDIDATE FACTS</strong> – LLM-structured extraction (Gemini)</li>
-              <li class="flex items-start gap-3"><span class="text-humanity-accent font-bold">6.</span><strong>CLASSIFY EVENT</strong> – Type, location, date, severity</li>
-              <li class="flex items-start gap-3"><span class="text-humanity-accent font-bold">7.</span><strong>CLUSTER RELATED ARTICLES</strong> – Multi-source → single event</li>
-              <li class="flex items-start gap-3"><span class="text-humanity-accent font-bold">8.</span><strong>CREATE EVENT CANDIDATE</strong> – Structured event with claims</li>
-              <li class="flex items-start gap-3"><span class="text-humanity-accent font-bold">9.</span><strong>VERIFY & SCORE</strong> – Cross-source corroboration, importance scoring</li>
-              <li class="flex items-start gap-3"><span class="text-humanity-accent font-bold">10.</span><strong>PUBLISH DECISION</strong> – Auto-publish / Auto-publish with warning / Hold</li>
-              <li class="flex items-start gap-3"><span class="text-humanity-accent font-bold">11.</span><strong>GENERATE</strong> – Event page, map marker, summary, share card</li>
-            </ol>
-          </div>
-        </div>
-      </section>
-
-      <!-- Event Clustering -->
-      <section>
-        <h2 class="text-2xl font-bold text-humanity-text mb-6 flex items-center gap-2">
-          <span style="color: #10b981;">🔗</span>
-          Event Clustering (Multi-Source → Single Event)
-        </h2>
-        <div class="card p-6">
-          <p class="text-humanity-textMuted mb-4">Ten news articles describing one protest become ONE event with multiple sources.</p>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="p-4 rounded" style="background: #141414;">
-              <h4 class="font-medium text-humanity-text mb-2">Clustering Signals</h4>
-              <ul class="space-y-1 text-sm text-humanity-textMuted">
-                <li>✓ Exact URL canonicalization</li>
-                <li>✓ Title similarity (fuzzy matching)</li>
-                <li>✓ Named entity overlap (actors, organizations)</li>
-                <li>✓ Location proximity (within 50km)</li>
-                <li>✓ Temporal proximity (within 48 hours)</li>
-                <li>✓ Semantic similarity (embeddings)</li>
-              </ul>
-            </div>
-            <div class="p-4 rounded" style="background: #141414;">
-              <h4 class="font-medium text-humanity-text mb-2">Example Cluster</h4>
-              <ul class="space-y-1 text-sm text-humanity-textMuted">
-                <li>Reuters: "Protests in Paris over pension reform"</li>
-                <li>AP: "French unions mobilize against retirement age"</li>
-                <li>Le Monde: "Manifestations à Paris : 15 000 selon la CGT"</li>
-                <li>Gov statement: "Ministry confirms 7 arrests"</li>
-                <li>GDELT: Event code 1401, Paris, 2026-10-08</li>
-                <li><strong>→ ONE EVENT with 5 sources</strong></li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- AI Role & Constraints -->
-      <section>
-        <h2 class="text-2xl font-bold text-humanity-text mb-6 flex items-center gap-2">
-          <span style="color: #ef4444;">🤖</span>
-          AI Role & Constraints
-        </h2>
-        <div class="card p-6">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h3 class="text-lg font-semibold text-humanity-text mb-3 text-green-400">AI Performs</h3>
-              <ul class="space-y-2 text-sm text-humanity-textMuted">
-                <li>✓ Event classification</li>
-                <li>✓ Entity extraction (actors, locations, dates)</li>
-                <li>✓ Fact/claim extraction with quotes</li>
-                <li>✓ Event clustering assistance</li>
-                <li>✓ Importance & novelty scoring</li>
-                <li>✓ Source comparison & conflict detection</li>
-                <li>✓ Summary & headline generation</li>
-                <li>✓ Daily brief & social card copy</li>
-              </ul>
-            </div>
-            <div>
-              <h3 class="text-lg font-semibold text-humanity-text mb-3 text-red-400">AI Must NOT</h3>
-              <ul class="space-y-2 text-sm text-humanity-textMuted">
-                <li>✗ Invent facts or casualty figures</li>
-                <li>✗ Fill missing numbers</li>
-                <li>✗ Pretend verification</li>
-                <li>✗ Merge incompatible numbers</li>
-                <li>✗ Create fake citations</li>
-                <li>✗ Publish unsourced claims</li>
-                <li>✗ Generate content without structured output</li>
-              </ul>
-            </div>
-          </div>
-          <div class="mt-6 p-4 rounded" style="background: #2d1515; border: 1px solid #ef444440;">
-            <h4 class="font-medium text-humanity-text mb-2">Structured Output Only</h4>
-            <p class="text-sm text-humanity-textMuted">We never ask for free-form prose. We request JSON with strict schema validation (Pydantic). Malformed output is rejected and retried.</p>
-            <pre class="mt-3 p-3 rounded text-xs overflow-x-auto" style="background: #050505;"><code>&#123;"event_type": "PROTEST", "claims": [&#123;"type": "participants", "min": 10000, "max": 20000, "source_id": "..."&#125;], "confidence_score": 82&#125;</code></pre>
-          </div>
-        </div>
-      </section>
-
-      <!-- Scoring & Publishing Policy -->
-      <section>
-        <h2 class="text-2xl font-bold text-humanity-text mb-6 flex items-center gap-2">
-          <span style="color: #f97316;">📊</span>
-          Scoring & Publishing Policy
-        </h2>
-        <div class="space-y-6">
-          <div class="card p-6">
-            <h3 class="text-lg font-semibold text-humanity-text mb-4">Interestingness Engine (Event Score)</h3>
-            <p class="text-humanity-textMuted mb-4">Weighted formula (configurable in <code>scoring.yaml</code>):</p>
-            <pre class="p-4 rounded text-sm overflow-x-auto" style="background: #050505;"><code>score =
-  0.25 × importance
-+ 0.20 × human_impact
-+ 0.15 × novelty
-+ 0.15 × corroboration
-+ 0.10 × velocity
-+ 0.10 × public_interest
-+ 0.05 × unusualness
-− penalties (duplicate, low confidence, single source, old event)</code></pre>
-          </div>
-          <div class="card p-6">
-            <h3 class="text-lg font-semibold text-humanity-text mb-4">Three-Tier Publishing</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div class="p-4 rounded border border-emerald-500/30 bg-emerald-500/5">
-                <h4 class="font-medium text-emerald-400 mb-2">✅ AUTO-PUBLISH</h4>
-                <ul class="text-sm text-humanity-textMuted space-y-1">
-                  <li>High confidence</li>
-                  <li>Multiple independent sources</li>
-                  <li>Clear location & date</li>
-                  <li>No major contradictions</li>
-                </ul>
-              </div>
-              <div class="p-4 rounded border border-amber-500/30 bg-amber-500/5">
-                <h4 class="font-medium text-amber-400 mb-2">⚠️ AUTO-PUBLISH WITH WARNING</h4>
-                <ul class="text-sm text-humanity-textMuted space-y-1">
-                  <li>Sources disagree on numbers</li>
-                  <li>Early/developing reports</li>
-                  <li>Page clearly states: "Reports differ"</li>
-                </ul>
-              </div>
-              <div class="p-4 rounded border border-red-500/30 bg-red-500/5">
-                <h4 class="font-medium text-red-400 mb-2">🔴 HOLD</h4>
-                <ul class="text-sm text-humanity-textMuted space-y-1">
-                  <li>Single weak source</li>
-                  <li>Location/date uncertain</li>
-                  <li>Major contradictions</li>
-                  <li>Possible misinformation</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Human Cost Metrics -->
-      <section>
-        <h2 class="text-2xl font-bold text-humanity-text mb-6 flex items-center gap-2">
-          <span style="color: #ef4444;">💔</span>
-          Human Cost Metrics
-        </h2>
-        <div class="card p-6">
-          <p class="text-humanity-textMuted mb-4">We never combine incompatible datasets. Each metric specifies exactly what is counted, by whom, and when.</p>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="p-4 rounded" style="background: #141414;">
-              <h4 class="font-medium text-humanity-text mb-2">Supported Metric Types</h4>
-              <ul class="space-y-1 text-sm text-humanity-textMuted">
-                <li>reported_deaths</li>
-                <li>reported_injuries</li>
-                <li>civilian_deaths</li>
-                <li>combatant_deaths</li>
-                <li>displaced_people</li>
-                <li>reported_airstrikes</li>
-                <li>reported_attacks</li>
-                <li>reported_missiles</li>
-              </ul>
-            </div>
-            <div class="p-4 rounded" style="background: #141414;">
-              <h4 class="font-medium text-humanity-text mb-2">Every Metric Includes</h4>
-              <ul class="space-y-1 text-sm text-humanity-textMuted">
-                <li>value + unit</li>
-                <li>source + source date</li>
-                <li>methodology</li>
-                <li>confidence level</li>
-                <li>cumulative vs period-specific</li>
-                <li>geography scope</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Revision & Contradiction Handling -->
-      <section>
-        <h2 class="text-2xl font-bold text-humanity-text mb-6 flex items-center gap-2">
-          <span style="color: #0ea5e9;">🔄</span>
-          Revision & Contradiction Handling
-        </h2>
-        <div class="space-y-4">
-          <div class="card p-6">
-            <h3 class="text-lg font-semibold text-humanity-text mb-3">Event Revisions</h3>
-            <p class="text-humanity-textMuted mb-4">Events evolve. We store historical claims, never overwrite.</p>
-            <div class="p-4 rounded" style="background: #141414; font-family: monospace; font-size: 0.875rem;">
-              <code>10:00 → Report: 5 killed (Source A)</code><br>
-              <code>12:00 → Official: 8 killed (Source B)</code><br>
-              <code>15:00 → UN: 7 killed (Source C)</code><br><br>
-              <code>UI shows: "Earlier reports: 5 (A), 8 (B). Latest: 7 (UN)."</code>
-            </div>
-          </div>
-          <div class="card p-6">
-            <h3 class="text-lg font-semibold text-humanity-text mb-3">Contradiction Engine</h3>
-            <p class="text-humanity-textMuted mb-4">Detects conflicting reports and flags them explicitly.</p>
-            <div class="p-4 rounded" style="background: #141414;">
-              <p class="text-sm text-humanity-textMuted"><strong>Source A:</strong> 23 deaths (UN)</p>
-              <p class="text-sm text-humanity-textMuted"><strong>Source B:</strong> 21 deaths (Gov)</p>
-              <p class="text-sm text-humanity-textMuted"><strong>System:</strong> value_min=21, value_max=23, status=conflicting_reports</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Tech Stack -->
-      <section>
-        <h2 class="text-2xl font-bold text-humanity-text mb-6 flex items-center gap-2">
-          <span style="color: #888;">🛠️</span>
-          Technology Stack
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="card p-6">
-            <h3 class="text-lg font-semibold text-humanity-text mb-4">Backend (Python)</h3>
-            <ul class="space-y-2 text-sm text-humanity-textMuted">
-              <li><strong>httpx</strong> – Async HTTP client</li>
-              <li><strong>feedparser</strong> – RSS/Atom parsing</li>
-              <li><strong>BeautifulSoup</strong> – HTML parsing</li>
-              <li><strong>Pydantic</strong> – Data validation</li>
-              <li><strong>RapidFuzz</strong> – String similarity</li>
-              <li><strong>Google Generative AI</strong> – Gemini API</li>
-              <li><strong>Tavily</strong> – Search API (optional)</li>
-            </ul>
-          </div>
-          <div class="card p-6">
-            <h3 class="text-lg font-semibold text-humanity-text mb-4">Frontend (Astro)</h3>
-            <ul class="space-y-2 text-sm text-humanity-textMuted">
-              <li><strong>Astro</strong> – Static site generation</li>
-              <li><strong>MapLibre GL JS</strong> – Interactive maps</li>
-              <li><strong>Tailwind CSS</strong> – Styling</li>
-              <li><strong>ECharts</strong> – Visualizations</li>
-              <li><strong>TypeScript</strong> – Type safety</li>
-            </ul>
-          </div>
-          <div class="card p-6">
-            <h3 class="text-lg font-semibold text-humanity-text mb-4">Deployment (Free Tier)</h3>
-            <ul class="space-y-2 text-sm text-humanity-textMuted">
-              <li><strong>GitHub Actions</strong> – Scheduled ingestion</li>
-              <li><strong>Cloudflare Pages</strong> – Static hosting</li>
-              <li><strong>Cloudflare D1</strong> – Database (later)</li>
-              <li><strong>GitHub Secrets</strong> – API keys</li>
-            </ul>
-          </div>
-          <div class="card p-6">
-            <h3 class="text-lg font-semibold text-humanity-text mb-4">Data Storage (MVP)</h3>
-            <ul class="space-y-2 text-sm text-humanity-textMuted">
-              <li><strong>Local JSON</strong> – Events, sources, claims</li>
-              <li><strong>Generated JSON</strong> – Map, timeline, stats</li>
-              <li><strong>Static files</strong> – Event pages, briefs</li>
-              <li>→ Migrate to D1 when JSON becomes cumbersome</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <!-- Schedule & Budget -->
-      <section>
-        <h2 class="text-2xl font-bold text-humanity-text mb-6 flex items-center gap-2">
-          <span style="color: #888;">⏰</span>
-          Schedule & Resource Budget
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="card p-6">
-            <h3 class="text-lg font-semibold text-humanity-text mb-4">Autonomous Schedule</h3>
-            <ul class="space-y-2 text-sm text-humanity-textMuted">
-              <li><strong>Every 5 min:</strong> Best-effort source discovery, processing, and publishing</li>
-              <li><strong>Every minute:</strong> Open news feeds check for newly published data; source ingestion runs on its own schedule</li>
-              <li><strong>Every 2–4 hrs:</strong> Recheck developing stories, update casualties</li>
-              <li><strong>Every 6 hrs:</strong> Rebuild daily summaries, refresh rankings</li>
-              <li><strong>Daily:</strong> Historical aggregation, sitemap, cleanup</li>
-            </ul>
-          </div>
-          <div class="card p-6">
-            <h3 class="text-lg font-semibold text-humanity-text mb-4">Economic Model (Free Tier)</h3>
-            <div class="p-4 rounded" style="background: #141414; font-family: monospace; font-size: 0.875rem;">
-              <code>1000 discovered articles</code><br>
-              <code>→ 200 candidates (deterministic filter)</code><br>
-              <code>→ 50 meaningful events (clustering)</code><br>
-              <code>→ 20 verified (LLM extraction)</code><br>
-              <code>→ 5–15 published</code>
-            </div>
-            <p class="text-sm text-humanity-textMuted mt-3">Gemini: 80% extraction, 15% verification, 5% editorial. Tavily: only high-interest cases.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- What We Don't Do -->
-      <section>
-        <h2 class="text-2xl font-bold text-humanity-text mb-6 flex items-center gap-2">
-          <span style="color: #ef4444;">🚫</span>
-          What We Don't Do (Yet)
-        </h2>
-        <div class="card p-6">
-          <ul class="space-y-2 text-humanity-textMuted">
-            <li>No chatbot, no mobile app, no user accounts</li>
-            <li>No comments, no social network, no subscriptions</li>
-            <li>No AI-generated images or videos</li>
-            <li>No full-text news republishing (copyright)</li>
-            <li>No paid APIs, paid scraping, paid LLMs (unless required later)</li>
-            <li>No browser extensions, no premium features</li>
-          </ul>
-          <p class="text-humanity-textMuted mt-4"><strong>Focus:</strong> Prove that autonomous event discovery + verification + visualization + SEO + publication creates useful traffic.</p>
-        </div>
-      </section>
-
-      <!-- Footer CTA -->
-      <section class="text-center pt-8 border-t border-humanity-border">
-        <h2 class="text-2xl font-bold text-humanity-text mb-4">Open Source & Transparent</h2>
-        <p class="text-humanity-textMuted mb-6">
-          This methodology is a living document. Code, configuration, and data pipelines are open source.
+        <p class="mt-3 leading-relaxed text-humanity-textMuted">
+          The pipeline checks for shared wire attribution and copied content.
+          Suspected syndication is not treated as independent confirmation; one
+          article can support extraction but cannot satisfy independent-source
+          corroboration by itself.
         </p>
-        <div class="flex items-center justify-center gap-4">
-          <a href="https://github.com/asdfhgds/humanity" class="btn-secondary" target="_blank" rel="noopener noreferrer">View on GitHub</a>
-          <a href="/events" class="btn-secondary">Browse Events</a>
-        </div>
-      </section>
-    </main>
-  </div>
+      </article>
+      <article class="border-b border-humanity-border py-5 md:border-r md:pr-8">
+        <p class="eyebrow">03 · Uncertainty</p>
+        <h2 class="editorial-title mt-2 text-2xl font-semibold">
+          Disagreement stays visible.
+        </h2>
+        <p class="mt-3 leading-relaxed text-humanity-textMuted">
+          Claims may be reported, corroborated, disputed, or uncertain.
+          Conflicts and weak evidence can hold a candidate out of public feeds
+          rather than be resolved by guessing.
+        </p>
+      </article>
+      <article class="border-b border-humanity-border py-5 md:pl-8">
+        <p class="eyebrow">04 · Restraint</p>
+        <h2 class="editorial-title mt-2 text-2xl font-semibold">
+          No threshold is lowered to fill a page.
+        </h2>
+        <p class="mt-3 leading-relaxed text-humanity-textMuted">
+          An empty feed is preferable to an unsupported publication. Extraction
+          success, model confidence, and story importance do not independently
+          qualify an event for publication.
+        </p>
+      </article>
+    </section>
+
+    <section class="py-9" aria-labelledby="pipeline-heading">
+      <p class="eyebrow">The processing path</p>
+      <h2
+        id="pipeline-heading"
+        class="editorial-title mt-2 text-3xl font-semibold"
+      >
+        From configured source to public record
+      </h2>
+      <ol
+        class="mt-6 divide-y divide-humanity-border border-y border-humanity-border"
+      >
+        <li class="grid gap-2 py-5 sm:grid-cols-[3rem_1fr]">
+          <span class="font-mono text-sm text-humanity-accent">01</span><div>
+            <h3 class="font-semibold">Discover and retain source records</h3><p
+              class="mt-1 text-sm leading-relaxed text-humanity-textMuted"
+            >
+              The configured registry includes news, RSS/API, data-provider, and
+              institutional sources. Adapters normalize reporting metadata and
+              may retrieve article text for extraction. A configured source is
+              not proof that it was successfully contacted or that its terms
+              have been reviewed.
+            </p>
+          </div>
+        </li>
+        <li class="grid gap-2 py-5 sm:grid-cols-[3rem_1fr]">
+          <span class="font-mono text-sm text-humanity-accent">02</span><div>
+            <h3 class="font-semibold">Extract candidate facts</h3><p
+              class="mt-1 text-sm leading-relaxed text-humanity-textMuted"
+            >
+              When a provider is available and a call budget permits, Gemini
+              returns structured candidate information that is schema-validated.
+              Quota, network, or provider failures may defer work. Model output
+              is not treated as independent evidence.
+            </p>
+          </div>
+        </li>
+        <li class="grid gap-2 py-5 sm:grid-cols-[3rem_1fr]">
+          <span class="font-mono text-sm text-humanity-accent">03</span><div>
+            <h3 class="font-semibold">Deduplicate cautiously</h3><p
+              class="mt-1 text-sm leading-relaxed text-humanity-textMuted"
+            >
+              Canonical source URLs and stored identifiers help make source
+              ingestion idempotent. Separate reporting about the same occurrence
+              may be matched conservatively; ambiguous or nearby events should
+              remain separate rather than be force-merged.
+            </p>
+          </div>
+        </li>
+        <li class="grid gap-2 py-5 sm:grid-cols-[3rem_1fr]">
+          <span class="font-mono text-sm text-humanity-accent">04</span><div>
+            <h3 class="font-semibold">
+              Assess evidence and publication readiness
+            </h3><p
+              class="mt-1 text-sm leading-relaxed text-humanity-textMuted"
+            >
+              Source independence, syndication, claim support, contradictions,
+              confidence, and configured policy thresholds are evaluated
+              separately from extraction. HELD and REJECTED records are excluded
+              from public artifacts.
+            </p>
+          </div>
+        </li>
+        <li class="grid gap-2 py-5 sm:grid-cols-[3rem_1fr]">
+          <span class="font-mono text-sm text-humanity-accent">05</span><div>
+            <h3 class="font-semibold">Build static public pages and feeds</h3><p
+              class="mt-1 text-sm leading-relaxed text-humanity-textMuted"
+            >
+              Only records admitted by publication policy are included in public
+              event feeds and derived pages. Browser refreshes reload the last
+              generated data; they do not run the source-ingestion pipeline.
+            </p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <section
+      class="grid gap-8 border-y border-humanity-border py-9 md:grid-cols-2"
+    >
+      <div>
+        <p class="eyebrow">What is not promised</p>
+        <h2 class="editorial-title mt-2 text-3xl font-semibold">
+          Coverage is partial.
+        </h2>
+        <p class="mt-4 leading-relaxed text-humanity-textMuted">
+          Sources vary in geography, language, access, and update cadence. The
+          project has no measured completeness denominator and cannot reliably
+          represent every event or affected person. Dates, locations, and impact
+          numbers can be incomplete or revised.
+        </p>
+      </div>
+      <div>
+        <p class="eyebrow">Current engineering limits</p>
+        <h2 class="editorial-title mt-2 text-3xl font-semibold">
+          Some handoffs remain unfinished.
+        </h2>
+        <p class="mt-4 leading-relaxed text-humanity-textMuted">
+          The source-identity and event-resolution components exist, but the
+          command-line ingestion path has not yet been verified to route every
+          extracted event through the full clusterer. Automated publication is
+          disabled by default, and production release and recurring ingestion
+          require explicit gates.
+        </p>
+      </div>
+    </section>
+
+    <section class="grid gap-8 py-9 md:grid-cols-2">
+      <div>
+        <p class="eyebrow">Provider reliability</p>
+        <h2 class="editorial-title mt-2 text-3xl font-semibold">
+          A successful call is not verification.
+        </h2>
+        <p class="mt-4 leading-relaxed text-humanity-textMuted">
+          The Gemini integration uses the supported Google Gen AI SDK with
+          bounded calls and credential-slot rotation. The latest recorded
+          real-source tests encountered provider-side server errors; these
+          diagnostics do not establish a permanent provider cause. No real API
+          call is needed to verify deterministic application behavior.
+        </p>
+      </div>
+      <div>
+        <p class="eyebrow">Content rights</p>
+        <h2 class="editorial-title mt-2 text-3xl font-semibold">
+          Attribution is not permission.
+        </h2>
+        <p class="mt-4 leading-relaxed text-humanity-textMuted">
+          Fetched text can be persisted for processing, while public pages link
+          to reporting and may display short attributed excerpts.
+          Source-specific storage, quotation, commercial-use, and redistribution
+          rights remain under review. No commercial reuse is cleared.
+        </p>
+        <a href="/source-rights" class="link mt-4 inline-block"
+          >Read source-rights and reuse status →</a
+        >
+      </div>
+    </section>
+
+    <section class="border-t border-humanity-border pt-8">
+      <h2 class="editorial-title text-2xl font-semibold">
+        Review the implementation
+      </h2>
+      <p class="mt-3 max-w-3xl leading-relaxed text-humanity-textMuted">
+        The code, source configuration, scoring policy, and issue history are
+        public. Read the <a href="/sources" class="link"
+          >configured source registry</a
+        >, the <a href="/source-rights" class="link">rights register</a>, and <a
+          href="https://github.com/asdfhgds/humanity"
+          class="link"
+          target="_blank"
+          rel="noopener noreferrer">the project repository ↗</a
+        >. Report a correction through the public <a
+          href="https://github.com/asdfhgds/humanity/issues"
+          class="link"
+          target="_blank"
+          rel="noopener noreferrer">issue tracker ↗</a
+        >; avoid posting sensitive personal information.
+      </p>
+    </section>
+  </main>
 </BaseLayout>
