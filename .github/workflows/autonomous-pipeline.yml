@@ -10,6 +10,19 @@ on:
         description: 'Hours back for discovery'
         required: false
         default: '1'
+      confirm_nonpublishing_ingestion:
+        description: 'Run one manually confirmed ingestion cycle with publication disabled'
+        required: true
+        type: choice
+        options:
+          - 'no'
+          - 'yes'
+        default: 'no'
+      extract_limit:
+        description: 'Maximum sources to process (also caps Gemini calls)'
+        required: true
+        default: '25'
+        type: number
 
 concurrency:
   group: humanity-pipeline
@@ -21,7 +34,11 @@ permissions:
 jobs:
   discover-and-publish:
     name: Discover & Publish Events
-    if: vars.PRODUCTION_RELEASE_ENABLED == 'true'
+    if: >-
+      vars.PRODUCTION_RELEASE_ENABLED == 'true' ||
+      (github.event_name == 'workflow_dispatch' &&
+      inputs.confirm_nonpublishing_ingestion == 'yes' &&
+      vars.ENABLE_AUTOPUBLISH != 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -34,7 +51,7 @@ jobs:
       PRODUCTION_MODE: 'true'
       TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
       MAX_ARTICLES_PER_RUN: '500'
-      MAX_LLM_CALLS_PER_RUN: '25'
+      MAX_LLM_CALLS_PER_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.extract_limit || '25' }}
       MAX_SEARCH_CALLS_PER_RUN: ${{ vars.MAX_SEARCH_CALLS_PER_RUN || '50' }}
       MIN_PUBLISH_SCORE: ${{ vars.MIN_PUBLISH_SCORE || '70' }}
       MIN_CONFIDENCE: ${{ vars.MIN_CONFIDENCE || '0.6' }}
@@ -61,9 +78,21 @@ jobs:
           pip install -e .
           pip install -e ".[dev]"
 
-      - name: Run Discovery Pipeline
+      - name: Validate manual Gemini call budget
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          REQUESTED_GEMINI_CALLS: ${{ inputs.extract_limit }}
         run: |
-          python -m app.cli run --hours ${{ github.event.inputs.hours_back || '1' }}
+          if ! [[ "$REQUESTED_GEMINI_CALLS" =~ ^[0-9]+$ ]] || (( REQUESTED_GEMINI_CALLS < 1 || REQUESTED_GEMINI_CALLS > 25 )); then
+            echo "Manual Gemini call budget must be between 1 and 25."
+            exit 1
+          fi
+
+      - name: Run Discovery Pipeline
+        run: >-
+          python -m app.cli run
+          --hours ${{ github.event.inputs.hours_back || '1' }}
+          --extract-limit ${{ github.event_name == 'workflow_dispatch' && inputs.extract_limit || '25' }}
 
       - name: Generate Daily Brief
         if: github.event.schedule == '0 2 * * *'
