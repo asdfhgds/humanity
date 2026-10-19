@@ -24,7 +24,7 @@ def load_workflow(name: str):
     )
 
 
-def test_production_pipeline_requires_release_enable_and_has_no_force_publish():
+def test_production_pipeline_requires_release_enable_or_confirmed_nonpublishing_run():
     workflow = load_workflow("autonomous-pipeline.yml")
 
     assert [entry["cron"] for entry in workflow["on"]["schedule"]] == [
@@ -33,7 +33,25 @@ def test_production_pipeline_requires_release_enable_and_has_no_force_publish():
     ]
     assert (
         workflow["jobs"]["discover-and-publish"]["if"]
-        == "vars.PRODUCTION_RELEASE_ENABLED == 'true'"
+        == (
+            "vars.PRODUCTION_RELEASE_ENABLED == 'true' || "
+            "(github.event_name == 'workflow_dispatch' && "
+            "inputs.confirm_nonpublishing_ingestion == 'yes' && "
+            "vars.ENABLE_AUTOPUBLISH != 'true')"
+        )
+    )
+    manual_inputs = workflow["on"]["workflow_dispatch"]["inputs"]
+    assert manual_inputs["confirm_nonpublishing_ingestion"]["default"] == "no"
+    assert manual_inputs["extract_limit"]["default"] == "25"
+    steps = workflow["jobs"]["discover-and-publish"]["steps"]
+    assert any(
+        step.get("name") == "Validate manual Gemini call budget"
+        and "REQUESTED_GEMINI_CALLS > 25" in step["run"]
+        for step in steps
+    )
+    assert (
+        workflow["jobs"]["discover-and-publish"]["env"]["MAX_LLM_CALLS_PER_RUN"]
+        == "${{ github.event_name == 'workflow_dispatch' && inputs.extract_limit || '25' }}"
     )
     assert "force_publish" not in workflow["on"]["workflow_dispatch"]["inputs"]
     assert (
@@ -43,7 +61,7 @@ def test_production_pipeline_requires_release_enable_and_has_no_force_publish():
     assert workflow["jobs"]["discover-and-publish"]["env"]["PRODUCTION_MODE"] == "true"
     assert (
         workflow["jobs"]["discover-and-publish"]["env"]["MAX_LLM_CALLS_PER_RUN"]
-        == "25"
+        == "${{ github.event_name == 'workflow_dispatch' && inputs.extract_limit || '25' }}"
     )
     assert (
         workflow["jobs"]["discover-and-publish"]["env"]["MAX_ARTICLES_PER_RUN"]
@@ -53,7 +71,6 @@ def test_production_pipeline_requires_release_enable_and_has_no_force_publish():
     assert workflow["jobs"]["discover-and-publish"]["permissions"] == {
         "contents": "write"
     }
-    steps = workflow["jobs"]["discover-and-publish"]["steps"]
     assert any("git push" in step.get("run", "") for step in steps)
     assert not any(
         "upload-pages-artifact" in step.get("uses", "") for step in steps
