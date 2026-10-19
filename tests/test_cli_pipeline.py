@@ -31,6 +31,7 @@ from app.models.schemas import Source
 def test_run_validates_extraction_and_preserves_discovery_result(
     monkeypatch, capsys, extraction, expected_event_count
 ):
+    monkeypatch.setattr(cli_main.get_settings(), "enable_autopublish", True)
     source = SimpleNamespace(
         id="source-1",
         publisher="Example News",
@@ -118,7 +119,7 @@ def test_run_validates_extraction_and_preserves_discovery_result(
     assert "Run ID: test-run-id" in output
     assert len(event_store.created) == expected_event_count
     assert len(publisher.published) == expected_event_count
-    assert publisher.brief_generated is True
+    assert publisher.brief_generated is False
     if expected_event_count:
         assert event_store.created[0].summary == "Extracted summary"
     else:
