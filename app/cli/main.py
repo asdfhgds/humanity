@@ -457,19 +457,14 @@ def run(
     console.print("\n[bold]4. SCORING & PUBLISHING[/bold]")
     publisher = EventPublisher()
     published = 0
-    if get_settings().enable_autopublish:
-        events = event_store.get_all()
-        unpublished = [e for e in events if not e.published_at]
-        for event in unpublished:
-            result = publisher.publish_event(event)
-            if result.get("published"):
-                published += 1
-    else:
+    events = event_store.get_all()
+    unpublished = [e for e in events if not e.published_at]
+    for event in unpublished:
+        result = publisher.publish_event(event)
+        if result.get("published"):
+            published += 1
+    if not get_settings().enable_autopublish:
         console.print("  [yellow]Auto-publication disabled; eligible events remain unpublished[/yellow]")
-
-    # 5. Daily Brief
-    console.print("\n[bold]5. DAILY BRIEF[/bold]")
-    publisher.generate_daily_brief()
 
     console.print("\n[bold green]Pipeline complete![/bold green]")
     console.print(f"  Events published: {published}")
@@ -532,6 +527,7 @@ def smoke_test(
     }
     error_type: str | None = None
     event_diagnostics: list[tuple[str, int, int, int, int, int, str, list[str]]] = []
+    credential_diagnostics = None
 
     try:
         with tempfile.TemporaryDirectory(prefix="humanity-smoke-") as temp_dir:
@@ -576,6 +572,7 @@ def smoke_test(
                     extraction_results = asyncio.run(
                         _extract_sources(sources, extractor)
                     )
+                    credential_diagnostics = extractor.rotation_diagnostics()
                     for source, outcome in extraction_results:
                         counts["extraction_attempts"] += outcome.attempts
                         extraction_result = outcome.result
@@ -775,6 +772,31 @@ def smoke_test(
         f"{discovery_counts['rss_fetch_failures']} failed "
         f"of {discovery_counts['rss_fetch_attempts']} attempts"
     )
+    if credential_diagnostics is not None:
+        console.print(
+            f"  Gemini credential slots configured: "
+            f"{credential_diagnostics['configured_slot_count']}"
+        )
+        console.print(
+            f"  Gemini calls spent: {credential_diagnostics['api_calls']}/"
+            f"{credential_diagnostics['call_budget']}; "
+            f"failover attempts={credential_diagnostics['failover_attempts']}; "
+            f"recovered={credential_diagnostics['failover_recoveries']}"
+        )
+        console.print("  Sanitized Gemini slot diagnostics:")
+        for slot in credential_diagnostics["slots"]:
+            failures = ",".join(
+                f"{category}:{count}"
+                for category, count in slot["failure_categories"].items()
+            ) or "none"
+            cooldown = slot["cooldown_until"] or "none"
+            last_error = slot["last_error_category"] or "none"
+            console.print(
+                f"    {slot['slot_id']}: requests={slot['attempts']}; "
+                f"successes={slot['successful_responses']}; "
+                f"failures={failures}; cooldown_until={cooldown}; "
+                f"last_error={last_error}"
+            )
     for label, key in (
         ("Discovered articles", "discovered_articles"),
         ("Extraction attempts", "extraction_attempts"),

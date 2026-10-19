@@ -62,6 +62,7 @@ node_modules/
 web/node_modules*/
 
 # Data (keep structure, ignore content)
+data/.gemini-key-rotation.json
 data/events/*.json
 data/sources/*.json
 data/locations/*.json

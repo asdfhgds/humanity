@@ -489,9 +489,21 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   exercise publishing explicitly opt in, while a separate test asserts the
   application default remains disabled.
 - The production workflow remains gated by the unset
-  `PRODUCTION_RELEASE_ENABLED` repository variable. Its hourly schedule
-  serializes runs, uses a 25-call Gemini budget per run, and has a 30-minute
-  timeout; the manual smoke workflow remains isolated and non-publishing.
+  `PRODUCTION_RELEASE_ENABLED` repository variable. Before this operational
+  follow-up, master scheduled every five minutes, allowed 100 Gemini calls and
+  1,000 articles per run, and built/deployed Pages from the production job.
+  This change moves ingestion to hourly plus one daily brief run, caps each
+  run at 25 Gemini calls and 500 articles, preserves single-run concurrency,
+  and removes Pages deployment permissions/artifacts from ingestion. Its
+  theoretical ceiling is 625 calls/day; site deployment stays in the separate
+  manually confirmed Pages workflow.
+- The latest real smoke was [run 39141724221](https://github.com/asdfhgds/humanity/actions/runs/39141724221),
+  completed at 2026-10-18 15:49:32 UTC: 203 discovered articles, 10 extraction
+  attempts, 3 successful and 7 quota/rate-limited failures, 2 validated events,
+  12 source-attributed claims, and 0 publication-eligible candidates. The
+  merged smoke report currently lacks per-slot rotation diagnostics; the
+  pending change adds sanitized slot-level outcomes. The conservative
+  24-hour cooldown expires no earlier than 2026-10-19 15:49:30 UTC.
 - Local validation passed: 111 Python tests; Astro check (zero diagnostics)
   and build (13 pages); all four workflow YAML files parsed; static-site audit
   found no missing local links, fragments, or assets; `git diff --check`

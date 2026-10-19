@@ -27,7 +27,10 @@ def load_workflow(name: str):
 def test_production_pipeline_requires_release_enable_and_has_no_force_publish():
     workflow = load_workflow("autonomous-pipeline.yml")
 
-    assert "schedule" in workflow["on"]
+    assert [entry["cron"] for entry in workflow["on"]["schedule"]] == [
+        "17 * * * *",
+        "0 2 * * *",
+    ]
     assert (
         workflow["jobs"]["discover-and-publish"]["if"]
         == "vars.PRODUCTION_RELEASE_ENABLED == 'true'"
@@ -38,16 +41,41 @@ def test_production_pipeline_requires_release_enable_and_has_no_force_publish():
         == "${{ vars.ENABLE_AUTOPUBLISH || 'false' }}"
     )
     assert workflow["jobs"]["discover-and-publish"]["env"]["PRODUCTION_MODE"] == "true"
+    assert (
+        workflow["jobs"]["discover-and-publish"]["env"]["MAX_LLM_CALLS_PER_RUN"]
+        == "25"
+    )
+    assert (
+        workflow["jobs"]["discover-and-publish"]["env"]["MAX_ARTICLES_PER_RUN"]
+        == "500"
+    )
+    assert workflow["jobs"]["discover-and-publish"]["timeout-minutes"] == "30"
+    assert workflow["jobs"]["discover-and-publish"]["permissions"] == {
+        "contents": "write"
+    }
     steps = workflow["jobs"]["discover-and-publish"]["steps"]
     assert any("git push" in step.get("run", "") for step in steps)
-    assert any("upload-pages-artifact" in step.get("uses", "") for step in steps)
-    assert workflow["jobs"]["deploy-site"]["needs"] == "discover-and-publish"
+    assert not any(
+        "upload-pages-artifact" in step.get("uses", "") for step in steps
+    )
+    assert "deploy-site" not in workflow["jobs"]
+    persistence = next(
+        step["run"] for step in steps if "git add -- data/" in step.get("run", "")
+    )
+    assert "web/public/data/" in persistence
+    assert "git add -f -- data/.gemini-key-rotation.json" in persistence
+    assert "pages" not in workflow["jobs"]["discover-and-publish"]["permissions"]
+    assert "id-token" not in workflow["jobs"]["discover-and-publish"]["permissions"]
+
+    ignore_rules = (REPOSITORY_ROOT / ".gitignore").read_text(encoding="utf-8")
+    assert "data/.gemini-key-rotation.json" in ignore_rules
 
 
 def test_pages_deploy_requires_explicit_manual_confirmation():
     workflow = load_workflow("deploy-pages.yml")
 
-    assert "push" not in workflow["on"]
+    assert set(workflow["on"]) == {"workflow_dispatch"}
+    assert workflow["concurrency"]["group"] == "humanity-pages-deploy"
     assert (
         workflow["on"]["workflow_dispatch"]["inputs"]["confirm_deployment"]["default"]
         == "no"
@@ -195,6 +223,25 @@ def test_smoke_test_isolated_and_never_calls_publisher(
             assert content == source.content
             return extraction_result
 
+        def rotation_diagnostics(self):
+            return {
+                "configured_slot_count": 1,
+                "api_calls": 1,
+                "call_budget": 25,
+                "failover_attempts": 0,
+                "failover_recoveries": 0,
+                "slots": [
+                    {
+                        "slot_id": "slot_0123456789abcdef",
+                        "attempts": 1,
+                        "successful_responses": int(extraction_result is not None),
+                        "failure_categories": {},
+                        "cooldown_until": None,
+                        "last_error_category": None,
+                    }
+                ],
+            }
+
     async def discover(hours):
         assert hours == 3
         assert settings.enable_autopublish is False
@@ -256,6 +303,9 @@ def test_smoke_test_isolated_and_never_calls_publisher(
         assert "categories=HTTPStatusError:1" in output
         assert "RSS feeds: 3/3 completed; 1 with errors; discovery errors=0" in output
         assert "RSS fetch results: 3 succeeded, 1 failed of 4 attempts" in output
+        assert "Gemini credential slots configured: 1" in output
+        assert "Gemini calls spent: 1/25; failover attempts=0; recovered=0" in output
+        assert "slot_0123456789abcdef: requests=1;" in output
         if successful_count and validated_count:
             assert "Claims created: 1" in output
             assert "Claims with source attribution: 1" in output
