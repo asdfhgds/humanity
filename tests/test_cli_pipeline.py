@@ -31,6 +31,7 @@ from app.models.schemas import Source
 def test_run_validates_extraction_and_preserves_discovery_result(
     monkeypatch, capsys, extraction, expected_event_count
 ):
+    monkeypatch.setattr(cli_main.get_settings(), "enable_autopublish", True)
     source = SimpleNamespace(
         id="source-1",
         publisher="Example News",

@@ -6,6 +6,7 @@ import glob
 from datetime import datetime
 import uuid
 
+from app.config import Settings, get_settings
 from app.models.schemas import (
     Event, Source, Claim, Location, Country, Conflict, IngestionRun,
     EventType, EventStatus, ConfidenceLevel, VerificationStatus, SourceType, ClaimType, LocationPrecision
@@ -15,6 +16,23 @@ from app.utils import canonicalize_url, compute_article_hash, slugify, format_ra
 from app.clustering.cluster import EventClusterer
 from app.scoring.score import EventScorer, decide_publish
 from app.extraction.gemini import ExtractionResult, ExtractedClaim, validate_extraction_result, claims_to_model_claims
+
+
+@pytest.fixture
+def enable_autopublish_for_regression_tests(monkeypatch):
+    """Publication regression tests intentionally exercise the publish path.
+
+    The production safety gate keeps auto-publication disabled by default, so
+    each scenario that expects an actual publication decision opts in explicitly.
+    """
+    settings = get_settings()
+    monkeypatch.setattr(settings, "enable_autopublish", True)
+    yield
+
+
+def test_auto_publication_is_disabled_by_default(monkeypatch):
+    monkeypatch.delenv("ENABLE_AUTOPUBLISH", raising=False)
+    assert Settings(_env_file=None).enable_autopublish is False
 
 
 @pytest.fixture
@@ -441,6 +459,7 @@ class TestExtraction:
 
 # ===== Integration Tests =====
 
+@pytest.mark.usefixtures("enable_autopublish_for_regression_tests")
 class TestIntegration:
     def test_full_pipeline_mock(self, event_store, source_store, claim_store, isolated_publication_paths):
         """Test the full pipeline with mock data."""
@@ -660,6 +679,7 @@ class TestIntegration:
 
 # ===== Publication Boundary Tests =====
 
+@pytest.mark.usefixtures("enable_autopublish_for_regression_tests")
 class TestPublicationBoundary:
     """Tests to verify HELD/REJECTED events never leak into public outputs."""
 
@@ -1007,6 +1027,7 @@ class TestPublicationBoundary:
             assert len(brief.get("items", [])) <= 1
 
 
+@pytest.mark.usefixtures("enable_autopublish_for_regression_tests")
 class TestIdempotencyAndRevisions:
     """Tests for idempotency and publication revision handling."""
 
