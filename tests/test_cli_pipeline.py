@@ -119,7 +119,7 @@ def test_run_validates_extraction_and_preserves_discovery_result(
     assert "Run ID: test-run-id" in output
     assert len(event_store.created) == expected_event_count
     assert len(publisher.published) == expected_event_count
-    assert publisher.brief_generated is False
+    assert publisher.brief_generated is True
     if expected_event_count:
         assert event_store.created[0].summary == "Extracted summary"
     else:
