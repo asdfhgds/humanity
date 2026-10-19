@@ -436,9 +436,47 @@ class GeminiExtractor:
         )
         self._clients: dict[str, Any] = {}
         self._outcome_attempts = 0
+        self._slot_attempts = {slot_id: 0 for slot_id in self.rotation.slot_ids}
+        self._slot_successes = {slot_id: 0 for slot_id in self.rotation.slot_ids}
+        self._slot_failures: dict[str, dict[str, int]] = {
+            slot_id: {} for slot_id in self.rotation.slot_ids
+        }
+        self._failover_attempts = 0
+        self._failover_recoveries = 0
         if client is not None and self.rotation.slot_ids:
             self._clients[self.rotation.slot_ids[0]] = client
         self._sleep = sleep
+
+    def rotation_diagnostics(self) -> dict[str, Any]:
+        now = _utc_now()
+        slots = []
+        for slot_id in self.rotation.slot_ids:
+            state = self.rotation._slots[slot_id]
+            cooldown_until = state["cooldown_until"]
+            slots.append(
+                {
+                    "slot_id": slot_id,
+                    "attempts": self._slot_attempts[slot_id],
+                    "successful_responses": self._slot_successes[slot_id],
+                    "failure_categories": dict(
+                        sorted(self._slot_failures[slot_id].items())
+                    ),
+                    "cooldown_until": (
+                        cooldown_until.isoformat()
+                        if cooldown_until and cooldown_until > now
+                        else None
+                    ),
+                    "last_error_category": state["last_error_category"],
+                }
+            )
+        return {
+            "configured_slot_count": len(self.rotation.slot_ids),
+            "api_calls": self.api_calls,
+            "call_budget": self.max_calls,
+            "failover_attempts": self._failover_attempts,
+            "failover_recoveries": self._failover_recoveries,
+            "slots": slots,
+        }
 
     @property
     def api_calls_for_outcome(self) -> int:
@@ -474,6 +512,7 @@ Respond with valid JSON only."""
         attempt_errors: list[str] = []
         self._outcome_attempts = 0
         attempted_slots: set[str] = set()
+        failed_slots: set[str] = set()
         retries_by_slot: dict[str, int] = {}
         while True:
             if self.api_calls >= self.max_calls:
@@ -514,10 +553,13 @@ Respond with valid JSON only."""
                 )
 
             slot_id = available[0]
+            if failed_slots and slot_id not in failed_slots:
+                self._failover_attempts += 1
             attempted_slots.add(slot_id)
             self.rotation.record_use(slot_id)
             self.api_calls += 1
             self._outcome_attempts += 1
+            self._slot_attempts[slot_id] += 1
             try:
                 response = await self._client_for(slot_id).aio.models.generate_content(
                     model=self.model_name,
@@ -550,6 +592,9 @@ Respond with valid JSON only."""
                         attempts=self.api_calls_for_outcome,
                     )
                 self.rotation.mark_success(slot_id)
+                self._slot_successes[slot_id] += 1
+                if failed_slots and slot_id not in failed_slots:
+                    self._failover_recoveries += 1
                 if not result.is_event:
                     return ExtractionOutcome(
                         result=result,
@@ -565,6 +610,9 @@ Respond with valid JSON only."""
             except Exception as error:
                 policy = _classify_api_error(error)
                 attempt_errors.append(policy.category)
+                failed_slots.add(slot_id)
+                failures = self._slot_failures[slot_id]
+                failures[policy.category] = failures.get(policy.category, 0) + 1
                 if policy.category in ("quota_exhausted", "billing_or_quota_exhausted"):
                     cooldown_seconds = self.QUOTA_COOLDOWN_SECONDS
                 elif policy.category in (

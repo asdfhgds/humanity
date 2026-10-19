@@ -118,6 +118,19 @@ def test_quota_exhaustion_on_first_key_fails_over_to_second_key(monkeypatch, tmp
     assert outcomes[1].result is not None
     assert outcomes[2].result is not None
     assert extractor.api_calls == 4
+    diagnostics = extractor.rotation_diagnostics()
+    assert diagnostics["configured_slot_count"] == 2
+    assert diagnostics["api_calls"] == 4
+    assert diagnostics["call_budget"] == 5
+    assert diagnostics["failover_attempts"] == 1
+    assert diagnostics["failover_recoveries"] == 1
+    assert diagnostics["slots"][0]["failure_categories"] == {
+        "quota_exhausted": 1
+    }
+    assert diagnostics["slots"][0]["successful_responses"] == 0
+    assert diagnostics["slots"][1]["successful_responses"] == 3
+    assert "key-first" not in json.dumps(diagnostics)
+    assert "key-second" not in json.dumps(diagnostics)
     state = json.loads((tmp_path / ".gemini-key-rotation.json").read_text())
     assert "key-first" not in json.dumps(state)
     assert "key-second" not in json.dumps(state)
