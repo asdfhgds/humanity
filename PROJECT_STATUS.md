@@ -480,3 +480,22 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   this validation. A later live run is still needed to verify the configured
   credentials and real provider failover; no claim of live operational
   rotation or publication readiness is made.
+
+### Application publication-default correction (2026-10-19)
+
+- The application default and `.env.example` now keep `ENABLE_AUTOPUBLISH`
+  disabled. The example uses the multi-key `GEMINI_API_KEYS` setting and the
+  current `gemini-flash-latest` model default. Regression scenarios that
+  exercise publishing explicitly opt in, while a separate test asserts the
+  application default remains disabled.
+- The production workflow remains gated by the unset
+  `PRODUCTION_RELEASE_ENABLED` repository variable. Its hourly schedule
+  serializes runs, uses a 25-call Gemini budget per run, and has a 30-minute
+  timeout; the manual smoke workflow remains isolated and non-publishing.
+- Local validation passed: 111 Python tests; Astro check (zero diagnostics)
+  and build (13 pages); all four workflow YAML files parsed; static-site audit
+  found no missing local links, fragments, or assets; `git diff --check`
+  passed. Fresh pull-request CI is still required before merge.
+- The 24-hour live-provider cooldown has not elapsed. No real smoke,
+  production canary, publishing, recurring-release activation, or deployment
+  was performed as part of this correction.

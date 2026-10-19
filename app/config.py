@@ -71,13 +71,13 @@ class Settings(BaseSettings):
     cloudflare_account_id: str = ""
     reliefweb_appname: str = ""
 
-    max_articles_per_run: int = 1000
-    max_llm_calls_per_run: int = 100
+    max_articles_per_run: int = 500
+    max_llm_calls_per_run: int = 25
     max_search_calls_per_run: int = 50
     min_publish_score: float = 70.0
     min_confidence: float = 0.6
     enable_tavily: bool = False
-    enable_autopublish: bool = True
+    enable_autopublish: bool = False
     production_mode: bool = False
 
     data_dir: Path = Path("data")
