@@ -632,3 +632,18 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   not repeat live calls during cooldown or without a new diagnostic reason;
   keep production ingestion, recurring schedules, publishing, and deployment
   gated.
+- A one-call isolated recovery check was dispatched as
+  [workflow run 39282399821](https://github.com/asdfhgds/humanity/actions/runs/39282399821)
+  on current `master` after the prior cooldowns expired and with no newer
+  provider failures. As of 16:17 UTC on October 19, GitHub still reported the
+  job queued with no runner assigned and no provider requests logged. The
+  GitHub Status API reported degraded Actions performance (updated 15:49 UTC).
+  The Actions API rejected cancellation because the queued job was not
+  considered in progress, so its eventual execution is unresolved. Do not
+  dispatch another probe; inspect this run before any future live call.
+- The public site homepage and static JSON endpoints were checked directly:
+  the homepage, `/data/events/all.json`, `/data/events/recent.json`, and
+  `/data/stats/global.json` returned HTTP 200. Both event feeds contained
+  `[]`; no new deployment or production state write was performed. The
+  production release variable remains unset, and recurring ingestion,
+  publication, and deployment remain disabled.
