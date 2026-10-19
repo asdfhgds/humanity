@@ -99,7 +99,10 @@ class DiscoveryManager:
                                     article_hash=record.get("content_hash"),
                                     content=record.get("available_text"),  # Store article content for extraction
                                 )
-                                self.source_store.create(source)
+                                stored_source = self.source_store.create(source)
+                                if stored_source.id != source.id:
+                                    continue
+                                source = stored_source
                                 all_sources_created += 1
                                 total_rss_articles += 1
                                 run.source_health[source_name] = "healthy"
@@ -149,7 +152,10 @@ class DiscoveryManager:
                                         article_hash=record.get("content_hash"),
                                         content=record.get("available_text"),
                                     )
-                                    self.source_store.create(source)
+                                    stored_source = self.source_store.create(source)
+                                    if stored_source.id != source.id:
+                                        continue
+                                    source = stored_source
                                     all_sources_created += 1
                                     total_reliefweb_articles += 1
                                     
@@ -282,7 +288,10 @@ class DiscoveryManager:
                                     article_hash=compute_article_hash(article.title or "", article.final_url),
                                     content=article.content,  # Store article content for extraction
                                 )
-                                self.source_store.create(source)
+                                stored_source = self.source_store.create(source)
+                                if stored_source.id != source.id:
+                                    continue
+                                source = stored_source
                                 all_sources_created += 1
                                 total_rss_articles += 1
                                 

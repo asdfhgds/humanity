@@ -56,6 +56,25 @@ class JSONDataStore:
             self._save_collection(collection, items)
         return item
 
+    def create_if_absent(
+        self,
+        collection: str,
+        item: Dict[str, Any],
+        unique_keys: tuple[str, ...],
+    ) -> tuple[Dict[str, Any], bool]:
+        with self._get_lock(collection):
+            items = self._load_collection(collection)
+            for existing in items:
+                if any(
+                    item.get(key) not in (None, "")
+                    and existing.get(key) == item.get(key)
+                    for key in unique_keys
+                ):
+                    return existing, False
+            items.append(item)
+            self._save_collection(collection, items)
+        return item, True
+
     def bulk_create(self, collection: str, items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         with self._get_lock(collection):
             existing = self._load_collection(collection)
@@ -222,8 +241,24 @@ class SourceStore:
 
     def create(self, source: Source) -> Source:
         data = source.model_dump(mode="json")
-        self.store.create(self.collection, data)
-        return source
+        from app.utils import canonicalize_url
+
+        data["canonical_url"] = canonicalize_url(
+            str(source.canonical_url or source.url)
+        )
+        stored, created = self.store.create_if_absent(
+            self.collection,
+            data,
+            ("canonical_url", "article_hash"),
+        )
+        if not created and not stored.get("content") and data.get("content"):
+            updated = self.store.update(
+                self.collection, stored["id"], {"content": data["content"]}
+            )
+            if updated is None:
+                raise RuntimeError("Deduplicated source disappeared during content update")
+            stored = updated
+        return Source(**stored)
 
     def get(self, source_id: str) -> Optional[Source]:
         data = self.store.get(self.collection, source_id)

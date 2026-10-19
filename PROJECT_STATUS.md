@@ -568,3 +568,19 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   recurring ingestion or deploy a new site build until a controlled run
   demonstrates reliable extraction and repeated-run source/event/claim
   deduplication.
+- A later one-call isolated recovery probe,
+  [run 39271211524](https://github.com/asdfhgds/humanity/actions/runs/39271211524),
+  discovered 187 articles and spent exactly one Gemini request on the first
+  pool slot. It again returned `provider_server_error`; the remaining three
+  slots were not attempted because the one-call cap was reached. There were
+  zero validated events, claims, or eligible candidates. This probe confirms
+  the provider error persisted after the earlier five-minute cooldown; no
+  further calls were made.
+- Follow-up code hardens source persistence at the datastore boundary:
+  canonical URLs and article hashes are now atomically deduplicated, and
+  existing records missing article content can be enriched without replacing
+  their extraction state. Discovery counters now count newly persisted
+  sources, and regression tests cover repeated canonical URLs and safe content
+  backfill. The full Python suite passed (113 tests); all four workflow YAML
+  files parsed, Python modules compiled, and `git diff --check` passed. This
+  fix has not yet merged or been exercised in another production run.

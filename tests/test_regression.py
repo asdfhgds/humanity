@@ -238,6 +238,50 @@ class TestDatastore:
         
         by_url = source_store.get_by_url("https://example.com")
         assert by_url is not None
+
+    def test_source_store_create_is_idempotent_by_canonical_url(self, source_store):
+        original = Source(
+            id="source-original",
+            publisher="Test",
+            title="Original title",
+            url="https://example.com/story?utm_source=feed",
+            content="Fetched article body",
+        )
+        duplicate = Source(
+            id="source-duplicate",
+            publisher="Test",
+            title="Updated title",
+            url="https://example.com/story",
+        )
+
+        stored_original = source_store.create(original)
+        stored_duplicate = source_store.create(duplicate)
+
+        assert stored_duplicate.id == stored_original.id
+        assert source_store.store.count("sources") == 1
+        assert source_store.get(stored_original.id).content == "Fetched article body"
+
+    def test_source_store_backfills_missing_content_on_duplicate(self, source_store):
+        original = Source(
+            id="source-original",
+            publisher="Test",
+            title="Report",
+            url="https://example.com/story",
+        )
+        enriched = Source(
+            id="source-enriched",
+            publisher="Test",
+            title="Report",
+            url="https://example.com/story?utm_medium=rss",
+            content="Fetched article body",
+        )
+
+        stored_original = source_store.create(original)
+        stored_enriched = source_store.create(enriched)
+
+        assert stored_enriched.id == stored_original.id
+        assert stored_enriched.content == "Fetched article body"
+        assert source_store.store.count("sources") == 1
     
     def test_claim_store(self, claim_store):
         claim = Claim(

@@ -400,8 +400,9 @@ async def run_gdelt_discovery(hours_back: int = 6, max_events: int = 1000, max_a
                 country=event.get("actor1_country"),
                 article_hash=compute_article_hash(event.get("actor1", ""), event["source_url"]),
             )
-            source_store.create(source)
-            run.sources_succeeded += 1
+            stored_source = source_store.create(source)
+            if stored_source.id == source.id:
+                run.sources_succeeded += 1
         
         for article in articles:
             source = Source(
@@ -414,8 +415,9 @@ async def run_gdelt_discovery(hours_back: int = 6, max_events: int = 1000, max_a
                 language=article.get("language", "en"),
                 article_hash=compute_article_hash(article.get("title", ""), article["url"]),
             )
-            source_store.create(source)
-            run.sources_succeeded += 1
+            stored_source = source_store.create(source)
+            if stored_source.id == source.id:
+                run.sources_succeeded += 1
         
         run.finished_at = datetime.utcnow()
         run.status = "completed"
