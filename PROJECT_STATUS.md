@@ -689,6 +689,11 @@ Phase 3, Milestone 3.1 — Live Source Verification.
 - Local browser review confirmed the `type=PROTEST` URL populates the filter,
   typing updates the shareable URL, clearing removes the filters, and the
   current empty feed is explained without implying that no events occurred.
+- Commit `29e41b1` was pushed for PR
+  [#22](https://github.com/asdfhgds/humanity/pull/22). Fresh PR run
+  [39301591978](https://github.com/asdfhgds/humanity/actions/runs/39301591978)
+  passed both required checks: Python tests and frontend check/build/link
+  audit. The PR remains open and unmerged.
 - No Gemini request, production write, workflow/schedule change, publication,
   or deployment was made. The previously verified provider-side
   `provider_server_error` remains unresolved; public feeds remain empty and
