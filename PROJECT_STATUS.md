@@ -587,6 +587,19 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   regression already verifies that repeating extraction for the same source
   does not duplicate its event or claims, while separate reports attach to
   the canonical event with their own claim source IDs. Production has not yet
-  exercised the source-deduplication fix because the latest provider probe
-  still failed with `provider_server_error`; no newer live attempts have been
-  made.
+  exercised the source-deduplication fix because live provider calls continue
+  to fail with `provider_server_error`.
+- After the prior five-minute slot cooldown elapsed, an isolated one-call
+  smoke on current `master` ran as
+  [workflow run 39274141449](https://github.com/asdfhgds/humanity/actions/runs/39274141449).
+  It discovered 186 articles and spent exactly one request on the first pool
+  slot. That request again failed with sanitized category
+  `provider_server_error`; the other three slots were not tried because the
+  explicit call cap was one. The slot received a new five-minute cooldown
+  through 15:09:56 UTC. There were zero validated events, claims, and
+  publication-eligible candidates; evidence-hold counts were zero because no
+  event reached evidence assessment. This isolated smoke used temporary
+  storage, did not publish or deploy, and made no production writes. Do not
+  repeat calls during the cooldown or continue probing without a distinct
+  diagnostic purpose. Recurring ingestion, automatic publication, and
+  deployment remain gated.
