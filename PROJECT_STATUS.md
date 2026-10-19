@@ -615,3 +615,20 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   rotation/failover behavior but not successful live extraction; stop live
   probes until a distinct diagnostic reason exists. Production ingestion,
   recurring schedules, publication, and deployment remain gated.
+- After those cooldowns elapsed, a bounded four-request full-pool probe on
+  current `master` ran as
+  [workflow run 39277212684](https://github.com/asdfhgds/humanity/actions/runs/39277212684).
+  It discovered 188 articles and made exactly four requests, one per
+  configured slot. All four returned the sanitized category
+  `provider_server_error`; rotation attempted three failovers and recovered
+  none. Each attempted slot received a five-minute cooldown (ending around
+  15:31:07–15:31:09 UTC). The smoke reported zero successful extractions,
+  validated events, claims, and publication-eligible candidates. The
+  per-event evidence diagnostics were empty because no event was validated;
+  no evidence thresholds were evaluated. Auto-publication was disabled and
+  the run used temporary storage, so there were no production writes,
+  publication, or deployment. The complete configured pool has now been
+  tested and provider-side server errors remain the extraction blocker. Do
+  not repeat live calls during cooldown or without a new diagnostic reason;
+  keep production ingestion, recurring schedules, publishing, and deployment
+  gated.
