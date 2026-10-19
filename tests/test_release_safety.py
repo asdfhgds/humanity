@@ -92,8 +92,13 @@ def test_smoke_workflow_is_manual_read_only_and_has_no_deploy_or_persistence():
     job = workflow["jobs"]["verify"]
     assert job["permissions"] == {"contents": "read"}
     assert job["env"]["ENABLE_AUTOPUBLISH"] == "false"
-    assert "GEMINI_API_KEY" in job["env"]
     assert "GEMINI_API_KEYS" in job["env"]
+    assert "GEMINI_API_KEY" not in job["env"]
+    assert job["env"]["MAX_LLM_CALLS_PER_RUN"] == "${{ inputs.extract_limit }}"
+    assert (
+        workflow["on"]["workflow_dispatch"]["inputs"]["extract_limit"]["default"]
+        == "25"
+    )
     workflow_text = (
         (WORKFLOW_DIRECTORY / "live-source-smoke.yml")
         .read_text(encoding="utf-8")
