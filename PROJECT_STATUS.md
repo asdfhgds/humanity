@@ -517,3 +517,54 @@ Phase 3, Milestone 3.1 — Live Source Verification.
 - The 24-hour live-provider cooldown has not elapsed. No real smoke,
   production canary, publishing, recurring-release activation, or deployment
   was performed as part of this correction.
+
+### Gemini pool verification and ingestion canary (2026-10-19)
+
+- PR [#13](https://github.com/asdfhgds/humanity/pull/13) merged the smoke
+  workflow isolation fix at `4861ac5f89962b77edc297c829a1f4d21f4f8548`.
+  The smoke receives `GEMINI_API_KEYS` only, does not fall back to the legacy
+  single-key secret, and binds the provider call budget to `extract_limit`.
+  Fresh Python and frontend checks passed in
+  [run 39261299658](https://github.com/asdfhgds/humanity/actions/runs/39261299658).
+- Pool-only isolated smoke
+  [run 39261667091](https://github.com/asdfhgds/humanity/actions/runs/39261667091)
+  used a 3-hour discovery window and a five-request maximum. It discovered 187
+  articles (GDELT: 0; RSS: 187 fetches succeeded, 6 failed of 193 attempts),
+  used five Gemini requests across four configured credential slots, and got
+  two successful model responses. Three requests failed with sanitized
+  `provider_server_error`; one response was a non-event. One extraction
+  validated, creating five claims, all with source attribution. Its only
+  attached source had unknown independence, so the event was held for
+  `insufficient_independent_sources`; there were zero publication-eligible
+  candidates. Auto-publication was disabled and smoke data was removed with
+  its temporary directory. This verifies that the new pool can return real
+  model responses, but not reliable extraction across the configured slots.
+- PR [#14](https://github.com/asdfhgds/humanity/pull/14) added an explicit
+  manual-only ingestion path, guarded by confirmation and by auto-publication
+  remaining disabled; the recurring workflow still requires
+  `PRODUCTION_RELEASE_ENABLED == 'true'`. The manual request budget is bounded
+  to 1–25 calls. Fresh Python and frontend checks passed in
+  [run 39265003504](https://github.com/asdfhgds/humanity/actions/runs/39265003504).
+- The five-call production-state canary
+  [run 39265454247](https://github.com/asdfhgds/humanity/actions/runs/39265454247)
+  discovered 185 RSS articles and 0 GDELT events. Four Gemini calls failed
+  with `provider_server_error`; all credential slots became temporarily
+  unavailable, so the remaining source was deferred. No event or claim was
+  created and no event was published. The workflow persisted 185 new source
+  rows; comparison with the parent commit found zero canonical-URL or
+  article-hash duplicates against prior sources or within the new rows.
+  Event and claim collections remained unchanged (48 events, 51 claims), so
+  this run did not exercise event/claim re-ingestion idempotency. The workflow
+  successfully persisted source/discovery state and sanitized slot cooldowns in commit
+  [`7ced060`](https://github.com/asdfhgds/humanity/commit/7ced060); the rotation
+  file contains only opaque slot IDs, cooldown deadlines, and sanitized error
+  categories.
+- The public event feed remains empty and global statistics remain zero. No
+  deployment, recurring production activation, or automatic publication was
+  performed. The production release variable is still unset. The pipeline
+  blocker is provider instability (`provider_server_error` across all four
+  slots in the canary); publication additionally remains blocked by the
+  absence of independently corroborated eligible events. Do not enable
+  recurring ingestion or deploy a new site build until a controlled run
+  demonstrates reliable extraction and repeated-run source/event/claim
+  deduplication.
