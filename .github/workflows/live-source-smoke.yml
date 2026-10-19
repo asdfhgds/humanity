@@ -29,6 +29,7 @@ jobs:
     permissions:
       contents: read
     env:
+      GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       GEMINI_MODEL: ${{ secrets.GEMINI_MODEL || 'gemini-flash-latest' }}
       ENABLE_AUTOPUBLISH: 'false'

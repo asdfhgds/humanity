@@ -5,7 +5,7 @@ import pytest
 
 import app.datastore
 from app.cli import main as cli_main
-from app.datastore import SourceStore, JSONDataStore
+from app.datastore import JSONDataStore, SourceStore
 from app.extraction.gemini import ExtractionOutcome, ExtractionResult
 from app.models.schemas import Source
 
@@ -156,6 +156,8 @@ def test_extraction_identity_attaches_reports_and_preserves_claim_sources():
 
     event_store = EventStore()
     claim_store = ClaimStore()
+    source_records = []
+    extraction_results = []
     articles = [
         (
             "source-1",
@@ -220,14 +222,24 @@ def test_extraction_identity_attaches_reports_and_preserves_claim_sources():
                 },
             ],
         )
+        source_records.append(source)
+        extraction_results.append(result)
         results.append(
             cli_main._persist_extracted_event(source, result, event_store, claim_store)
         )
+
+    repeated, repeated_is_new, repeated_claims = cli_main._persist_extracted_event(
+        source_records[0], extraction_results[0], event_store, claim_store
+    )
 
     assert len(event_store.events) == 2
     assert results[0][1] is True
     assert results[1][1] is False
     assert results[2][1] is True
+    assert repeated.id == results[0][0].id
+    assert repeated_is_new is False
+    assert repeated_claims == []
+    assert len(claim_store.claims) == 3
     protest_event = event_store.get(results[0][0].id)
     assert protest_event.source_ids == ["source-1", "source-2"]
     assert results[2][0].canonical_id != protest_event.canonical_id

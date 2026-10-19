@@ -1,7 +1,7 @@
+import asyncio
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
-import asyncio
 
 import pytest
 import yaml
@@ -9,10 +9,9 @@ import yaml
 import app.discovery.manager as discovery_manager
 import app.sources.fetcher as source_fetcher
 from app.cli import main as cli_main
-from app.models.schemas import Event, IngestionRun, Source
-from app.extraction.gemini import ExtractionOutcome, ExtractionResult, GeminiExtractor
+from app.extraction.gemini import ExtractionResult, GeminiExtractor
+from app.models.schemas import Event, Source
 from app.sources.fetcher import FetchResult
-
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW_DIRECTORY = REPOSITORY_ROOT / ".github" / "workflows"
@@ -29,9 +28,15 @@ def test_production_pipeline_requires_release_enable_and_has_no_force_publish():
     workflow = load_workflow("autonomous-pipeline.yml")
 
     assert "schedule" in workflow["on"]
-    assert workflow["jobs"]["discover-and-publish"]["if"] == "vars.PRODUCTION_RELEASE_ENABLED == 'true'"
+    assert (
+        workflow["jobs"]["discover-and-publish"]["if"]
+        == "vars.PRODUCTION_RELEASE_ENABLED == 'true'"
+    )
     assert "force_publish" not in workflow["on"]["workflow_dispatch"]["inputs"]
-    assert workflow["jobs"]["discover-and-publish"]["env"]["ENABLE_AUTOPUBLISH"] == "${{ vars.ENABLE_AUTOPUBLISH || 'false' }}"
+    assert (
+        workflow["jobs"]["discover-and-publish"]["env"]["ENABLE_AUTOPUBLISH"]
+        == "${{ vars.ENABLE_AUTOPUBLISH || 'false' }}"
+    )
     assert workflow["jobs"]["discover-and-publish"]["env"]["PRODUCTION_MODE"] == "true"
     steps = workflow["jobs"]["discover-and-publish"]["steps"]
     assert any("git push" in step.get("run", "") for step in steps)
@@ -43,7 +48,10 @@ def test_pages_deploy_requires_explicit_manual_confirmation():
     workflow = load_workflow("deploy-pages.yml")
 
     assert "push" not in workflow["on"]
-    assert workflow["on"]["workflow_dispatch"]["inputs"]["confirm_deployment"]["default"] == "no"
+    assert (
+        workflow["on"]["workflow_dispatch"]["inputs"]["confirm_deployment"]["default"]
+        == "no"
+    )
     assert workflow["jobs"]["build"]["if"] == "inputs.confirm_deployment == 'yes'"
     assert workflow["jobs"]["deploy"]["needs"] == "build"
 
@@ -57,7 +65,12 @@ def test_smoke_workflow_is_manual_read_only_and_has_no_deploy_or_persistence():
     assert job["permissions"] == {"contents": "read"}
     assert job["env"]["ENABLE_AUTOPUBLISH"] == "false"
     assert "GEMINI_API_KEY" in job["env"]
-    workflow_text = (WORKFLOW_DIRECTORY / "live-source-smoke.yml").read_text(encoding="utf-8").lower()
+    assert "GEMINI_API_KEYS" in job["env"]
+    workflow_text = (
+        (WORKFLOW_DIRECTORY / "live-source-smoke.yml")
+        .read_text(encoding="utf-8")
+        .lower()
+    )
     assert "git push" not in workflow_text
     assert "git commit" not in workflow_text
     assert "deploy-pages" not in workflow_text
@@ -98,7 +111,9 @@ def test_smoke_workflow_is_manual_read_only_and_has_no_deploy_or_persistence():
             0,
         ),
         (
-            ExtractionResult(is_event=True, event_type="INVALID", title="Invalid", country="US"),
+            ExtractionResult(
+                is_event=True, event_type="INVALID", title="Invalid", country="US"
+            ),
             1,
             0,
             0,
@@ -249,11 +264,12 @@ def test_smoke_test_isolated_and_never_calls_publisher(
         if validated_count:
             assert "Insufficient independent sources: 1" in output
             assert "Sanitized per-event diagnostics:" in output
-            assert " ".join((
+            expected_diagnostic = (
                 "sources=1 (independent=0, syndicated=0, unknown=1); "
                 "contradictions=0; gate=evidence_hold; "
                 "reasons=insufficient_independent_sources"
-            ).split()) in " ".join(output.split()), output
+            )
+            assert expected_diagnostic in " ".join(output.split()), output
             assert "Reported event" not in output
         else:
             assert "Sanitized per-event diagnostics:\n    none" in output
@@ -262,7 +278,9 @@ def test_smoke_test_isolated_and_never_calls_publisher(
         assert "Article text that must not be printed" not in output
         assert "Auto-publication: disabled" in output
         assert list(tmp_path.iterdir()) == []
-        assert temporary_storage_paths and all(not path.exists() for path in temporary_storage_paths)
+        assert temporary_storage_paths and all(
+            not path.exists() for path in temporary_storage_paths
+        )
         assert settings.enable_autopublish == original_values[2]
         assert settings.production_mode == original_values[3]
     finally:
@@ -400,12 +418,36 @@ def test_multi_source_fetch_respects_global_article_budget(monkeypatch):
         ("not-json", None, "invalid_model_output"),
         ("{}", None, "invalid_model_output"),
         (None, RuntimeError("sensitive provider message"), "provider_error"),
-        (None, type("QuotaError", (Exception,), {"code": 429, "status": "RESOURCE_EXHAUSTED", "message": "quota exceeded: private detail"})(), "quota_exhausted"),
-        (None, type("ServerError", (Exception,), {"code": 503, "status": "UNAVAILABLE", "message": "503 service unavailable: private detail"})(), "provider_server_error"),
+        (
+            None,
+            type(
+                "QuotaError",
+                (Exception,),
+                {
+                    "code": 429,
+                    "status": "RESOURCE_EXHAUSTED",
+                    "message": "quota exceeded: private detail",
+                },
+            )(),
+            "quota_exhausted",
+        ),
+        (
+            None,
+            type(
+                "ServerError",
+                (Exception,),
+                {
+                    "code": 503,
+                    "status": "UNAVAILABLE",
+                    "message": "503 service unavailable: private detail",
+                },
+            )(),
+            "provider_server_error",
+        ),
     ],
 )
 def test_gemini_failure_categories_exclude_provider_messages(
-    response_text, error, expected_category
+    monkeypatch, tmp_path, response_text, error, expected_category
 ):
     class Models:
         async def generate_content(self, **kwargs):
@@ -414,9 +456,15 @@ def test_gemini_failure_categories_exclude_provider_messages(
             return SimpleNamespace(text=response_text)
 
     client = SimpleNamespace(aio=SimpleNamespace(models=Models()))
+    settings = SimpleNamespace(
+        gemini_api_keys="",
+        gemini_api_key="test-key",
+        gemini_model="test-model",
+        max_llm_calls_per_run=3,
+        data_dir=tmp_path,
+    )
+    monkeypatch.setattr("app.extraction.gemini.get_settings", lambda: settings)
     extractor = GeminiExtractor(client=client, sleep=lambda _: asyncio.sleep(0))
-    extractor.enabled = True
-    extractor.max_calls = 3
 
     outcome = asyncio.run(
         extractor.extract_with_diagnostics("title", "content", "https://example.test")
@@ -449,7 +497,7 @@ def test_publisher_refuses_to_publish_when_auto_publication_is_disabled(
 ):
     from app.config import get_settings
     from app.datastore import ClaimStore, EventStore, JSONDataStore, SourceStore
-    from app.models.schemas import Event, EventType
+    from app.models.schemas import EventType
     from app.publishing.publisher import EventPublisher
 
     settings = get_settings()

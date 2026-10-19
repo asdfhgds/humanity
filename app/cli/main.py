@@ -4,33 +4,47 @@ import asyncio
 import io
 import tempfile
 from collections import Counter
-from datetime import datetime, timedelta
 from contextlib import redirect_stderr, redirect_stdout
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
+
 import typer
 from rich.console import Console
 from rich.table import Table
 
-from app.discovery.manager import run_discovery
+from app.clustering.cluster import EventClusterer
+from app.clustering.identity_resolver import EventIdentityResolver
+from app.config import get_settings
+from app.datastore import (
+    get_claim_store,
+    get_event_store,
+    get_ingestion_run_store,
+    get_source_store,
+)
 from app.discovery.gdelt import run_gdelt_discovery
+from app.discovery.manager import run_discovery
 from app.extraction.gemini import (
     ExtractionOutcome,
     ExtractionResult,
     GeminiExtractor,
     claims_to_model_claims,
+    configured_gemini_keys,
     validate_extraction_result,
 )
-from app.clustering.cluster import EventClusterer
-from app.clustering.identity_resolver import EventIdentityResolver
-from app.scoring.score import EventScorer, decide_publish
+from app.models.schemas import (
+    Claim,
+    ConfidenceLevel,
+    Event,
+    EventIdentity,
+    EventStatus,
+    EventType,
+)
 from app.publishing.publisher import EventPublisher
-from app.datastore import get_claim_store, get_event_store, get_source_store, get_ingestion_run_store
-from app.config import get_settings
-from app.models.schemas import Claim, Event, EventIdentity, EventType, ConfidenceLevel, EventStatus
 from app.utils import parse_date_flexible
 
-app = typer.Typer(help="HUMANITY - Autonomous Global Human Events Intelligence Platform")
+app = typer.Typer(
+    help="HUMANITY - Autonomous Global Human Events Intelligence Platform"
+)
 console = Console()
 
 _EXTRACTION_RETRY_DELAYS = {
@@ -56,28 +70,24 @@ def _source_needs_extraction(source, *, now=None) -> bool:
 
 def _sources_ready_for_extraction(sources, events, limit, *, now=None):
     processed_source_ids = {
-        source_id
-        for event in events
-        for source_id in event.source_ids
+        source_id for event in events for source_id in event.source_ids
     }
     return [
         source
         for source in sources
-        if source.id not in processed_source_ids and _source_needs_extraction(source, now=now)
+        if source.id not in processed_source_ids
+        and _source_needs_extraction(source, now=now)
     ][:limit]
 
 
-def _record_extraction_outcome(source, outcome: ExtractionOutcome, source_store) -> None:
+def _record_extraction_outcome(
+    source, outcome: ExtractionOutcome, source_store
+) -> None:
     result = outcome.result
     category = outcome.error_category
-    if result is not None and category == "non_event":
-        updates = {
-            "extraction_status": "completed",
-            "extraction_error_category": None,
-            "extraction_last_attempt_at": datetime.utcnow(),
-            "extraction_retry_after": None,
-        }
-    elif result is not None and validate_extraction_result(result):
+    if result is not None and (
+        category == "non_event" or validate_extraction_result(result)
+    ):
         updates = {
             "extraction_status": "completed",
             "extraction_error_category": None,
@@ -101,11 +111,15 @@ def _record_extraction_outcome(source, outcome: ExtractionOutcome, source_store)
             "after_authentication_failure": "authentication_failure",
             "after_permission_failure": "permission_failure",
         }.get(retry_category, retry_category)
-        retry_delay = _EXTRACTION_RETRY_DELAYS.get(
-            retry_category, timedelta(hours=6)
+        retry_delay = (
+            timedelta(seconds=outcome.retry_after_seconds)
+            if outcome.retry_after_seconds is not None
+            else _EXTRACTION_RETRY_DELAYS.get(retry_category, timedelta(hours=6))
         )
         updates = {
-            "extraction_status": "deferred" if outcome.attempts == 0 else "retryable_failure",
+            "extraction_status": (
+                "deferred" if outcome.attempts == 0 else "retryable_failure"
+            ),
             "extraction_error_category": category,
             "extraction_retry_after": datetime.utcnow() + retry_delay,
         }
@@ -250,7 +264,7 @@ def discover(
     console.print("Fetching from all sources...")
     result = asyncio.run(run_discovery(hours))
     
-    console.print(f"[green]Discovery complete:[/green]")
+    console.print("[green]Discovery complete:[/green]")
     console.print(f"  GDELT events: {result['gdelt_events']}")
     console.print(f"  RSS articles fetched: {result['rss_articles_fetched']}")
     console.print(f"  Sources created: {result['sources_created']}")
@@ -379,21 +393,21 @@ def run(
     """Run complete autonomous pipeline: discovery -> extraction -> clustering -> scoring -> publishing."""
     console.print("[bold green]HUMANITY - Autonomous Pipeline Starting[/bold green]")
     console.print("=" * 50)
-    
+
     # 1. Discovery (GDELT + RSS + article fetching)
     console.print("\n[bold]1. DISCOVERY[/bold]")
     discovery_result = asyncio.run(run_discovery(hours))
     console.print(f"  GDELT events: {discovery_result['gdelt_events']}")
     console.print(f"  RSS articles with content: {discovery_result['rss_articles_fetched']}")
     console.print(f"  Sources created: {discovery_result['sources_created']}")
-    
+
     # 2. Extraction (Gemini structured extraction from article content)
     console.print("\n[bold]2. EXTRACTION[/bold]")
     extractor = GeminiExtractor()
     if not extractor.enabled:
         console.print("  [yellow]Gemini not configured, skipping extraction[/yellow]")
         return
-    
+
     source_store = get_source_store()
     event_store = get_event_store()
     sources = _sources_ready_for_extraction(
@@ -429,16 +443,16 @@ def run(
                 f"{outcome.error_category or 'invalid_model_output'}[/yellow]"
             )
             _record_extraction_outcome(source, outcome, source_store)
-    
+
     console.print(f"  [green]Created {created} events; attached {attached} additional reports[/green]")
     console.print(f"  Gemini API attempts: {api_attempts}")
     if attempt_errors:
         console.print(f"  Attempt errors: {dict(sorted(attempt_errors.items()))}")
-    
+
     # 3. Clustering
     console.print("\n[bold]3. CLUSTERING[/bold]")
     console.print("  Extraction-time identity resolution attached matching reports without heuristic post-merge.")
-    
+
     # 4. Scoring & Publishing
     console.print("\n[bold]4. SCORING & PUBLISHING[/bold]")
     publisher = EventPublisher()
@@ -452,12 +466,12 @@ def run(
                 published += 1
     else:
         console.print("  [yellow]Auto-publication disabled; eligible events remain unpublished[/yellow]")
-    
+
     # 5. Daily Brief
     console.print("\n[bold]5. DAILY BRIEF[/bold]")
     publisher.generate_daily_brief()
-    
-    console.print(f"\n[bold green]Pipeline complete![/bold green]")
+
+    console.print("\n[bold green]Pipeline complete![/bold green]")
     console.print(f"  Events published: {published}")
     console.print(f"  Run ID: {discovery_result['run_id']}")
 
@@ -465,12 +479,16 @@ def run(
 @app.command("smoke-test")
 def smoke_test(
     hours: int = typer.Option(6, min=1, max=72, help="Hours back for source discovery"),
-    extract_limit: int = typer.Option(25, min=1, max=50, help="Maximum articles to send to Gemini"),
+    extract_limit: int = typer.Option(
+        25, min=1, max=50, help="Maximum articles to send to Gemini"
+    ),
 ):
     """Verify live source discovery and Gemini extraction without publishing."""
     settings = get_settings()
-    if not settings.gemini_api_key:
-        console.print("[red]Smoke test requires GEMINI_API_KEY; no source requests were made.[/red]")
+    if not configured_gemini_keys(settings):
+        console.print(
+            "[red]Smoke test requires Gemini credentials; no source requests were made.[/red]"
+        )
         raise typer.Exit(code=1)
 
     original_settings = {
@@ -512,10 +530,8 @@ def smoke_test(
         "rss_fetch_failures": 0,
         "rss_discovery_errors": 0,
     }
-    error_type: Optional[str] = None
-    event_diagnostics: list[
-        tuple[str, int, int, int, int, int, str, list[str]]
-    ] = []
+    error_type: str | None = None
+    event_diagnostics: list[tuple[str, int, int, int, int, int, str, list[str]]] = []
 
     try:
         with tempfile.TemporaryDirectory(prefix="humanity-smoke-") as temp_dir:
@@ -540,20 +556,26 @@ def smoke_test(
                         source for source in source_store.get_all() if source.content
                     ]
                     counts["discovered_articles"] = len(discovered_sources)
-                    sources = discovered_sources[:min(extract_limit, settings.max_llm_calls_per_run)]
+                    sources = discovered_sources[
+                        : min(extract_limit, settings.max_llm_calls_per_run)
+                    ]
                     extractor = GeminiExtractor()
                     if not extractor.enabled:
                         raise RuntimeError("Gemini extraction provider is not enabled")
 
+                    from app.config import load_scoring
+                    from app.models.schemas import SourceIndependence
                     from app.scoring.score import EventScorer, decide_publish
                     from app.verification.evidence import EvidenceAssessor
                     from app.verification.syndication import SyndicationDetector
-                    from app.models.schemas import SourceIndependence
-                    from app.config import load_scoring
 
                     claim_store = get_claim_store()
-                    scorer = EventScorer(event_store=event_store, source_store=source_store)
-                    extraction_results = asyncio.run(_extract_sources(sources, extractor))
+                    scorer = EventScorer(
+                        event_store=event_store, source_store=source_store
+                    )
+                    extraction_results = asyncio.run(
+                        _extract_sources(sources, extractor)
+                    )
                     for source, outcome in extraction_results:
                         counts["extraction_attempts"] += outcome.attempts
                         extraction_result = outcome.result
@@ -610,14 +632,18 @@ def smoke_test(
                             related = [
                                 relationship
                                 for relationship in relationships
-                                if source.id in (
+                                if source.id
+                                in (
                                     relationship.source_id_a,
                                     relationship.source_id_b,
                                 )
                             ]
-                            classifications = [relationship.relationship for relationship in related]
+                            classifications = [
+                                relationship.relationship for relationship in related
+                            ]
                             if any(
-                                classification in (
+                                classification
+                                in (
                                     SourceIndependence.LIKELY_COPIED,
                                     SourceIndependence.LIKELY_SYNDICATED,
                                 )
@@ -634,12 +660,16 @@ def smoke_test(
                             if classification != source.independence_classification:
                                 source_store.update(
                                     source.id,
-                                    {"independence_classification": classification.value},
+                                    {
+                                        "independence_classification": classification.value
+                                    },
                                 )
                                 source.independence_classification = classification
 
                         claims = claim_store.get_by_event(event.id)
-                        evidence = EvidenceAssessor().assess(event, event_sources, claims)
+                        evidence = EvidenceAssessor().assess(
+                            event, event_sources, claims
+                        )
                         reasons = counts["publication_reason_counts"]
                         if not evidence.publication_ready:
                             counts["evidence_assessment_failures"] += 1
@@ -652,7 +682,11 @@ def smoke_test(
                         for reason in evidence.reasons:
                             reasons[reason] = reasons.get(reason, 0) + 1
                         gate_reasons = list(evidence.reasons)
-                        gate = "evidence_hold" if not evidence.publication_ready else "eligible_unpublished"
+                        gate = (
+                            "evidence_hold"
+                            if not evidence.publication_ready
+                            else "eligible_unpublished"
+                        )
                         if evidence.publication_ready:
                             scores = scorer.score_event(event, event_sources)
                             decision = decide_publish(event, scores, source_store)
@@ -664,17 +698,22 @@ def smoke_test(
                                     scores.get("final", 0)
                                     < load_scoring().thresholds["auto_publish_warning"]
                                 )
-                                confidence_hold = (
-                                    event.confidence.value
-                                    not in {"HIGH", "VERIFIED", "MEDIUM"}
-                                )
+                                confidence_hold = event.confidence.value not in {
+                                    "HIGH",
+                                    "VERIFIED",
+                                    "MEDIUM",
+                                }
                                 counts["publication_score_holds"] += int(score_hold)
                                 counts["confidence_holds"] += int(confidence_hold)
                                 gate = "publication_policy_hold"
                                 if score_hold:
-                                    gate_reasons.append("below_publication_score_threshold")
+                                    gate_reasons.append(
+                                        "below_publication_score_threshold"
+                                    )
                                 if confidence_hold:
-                                    gate_reasons.append("below_publication_confidence_threshold")
+                                    gate_reasons.append(
+                                        "below_publication_confidence_threshold"
+                                    )
 
                         independence_counts = Counter(
                             source.independence_classification.value
@@ -701,17 +740,24 @@ def smoke_test(
         for name, value in original_settings.items():
             setattr(settings, name, value)
 
-    console.print("[bold]HUMANITY live-source smoke test (isolated; publishing disabled)[/bold]")
+    console.print(
+        "[bold]HUMANITY live-source smoke test (isolated; publishing disabled)[/bold]"
+    )
     gdelt_diagnostics = discovery_counts["gdelt_diagnostics"]
     for stage, result_key, count_key in (
         ("GDELT events", "events", "gdelt_events"),
         ("GDELT GKG", "gkg", "gdelt_articles"),
     ):
         stage_diagnostics = gdelt_diagnostics.get(stage.split()[-1].lower(), {})
-        error_categories = ",".join(
-            f"{category}:{count}"
-            for category, count in sorted(stage_diagnostics.get("error_categories", {}).items())
-        ) or "none"
+        error_categories = (
+            ",".join(
+                f"{category}:{count}"
+                for category, count in sorted(
+                    stage_diagnostics.get("error_categories", {}).items()
+                )
+            )
+            or "none"
+        )
         console.print(
             f"  {stage}: {discovery_counts[count_key]} found; "
             f"status={stage_diagnostics.get('status', 'not_reported')}; "
@@ -744,20 +790,29 @@ def smoke_test(
         ("Evidence contradictions", "evidence_contradictions"),
         ("Publication-score holds", "publication_score_holds"),
         ("Confidence holds", "confidence_holds"),
-        ("Eligible candidates retained as unpublished", "eligible_unpublished_candidates"),
+        (
+            "Eligible candidates retained as unpublished",
+            "eligible_unpublished_candidates",
+        ),
         ("Claims created", "claims_created"),
         ("Claims with source attribution", "claims_with_source_attribution"),
     ):
         console.print(f"  {label}: {counts[key]}")
-    extraction_errors = ",".join(
-        f"{category}:{count}"
-        for category, count in sorted(counts["extraction_error_categories"].items())
-    ) or "none"
+    extraction_errors = (
+        ",".join(
+            f"{category}:{count}"
+            for category, count in sorted(counts["extraction_error_categories"].items())
+        )
+        or "none"
+    )
     console.print(f"  Extraction error categories: {extraction_errors}")
-    publication_reasons = ",".join(
-        f"{reason}:{count}"
-        for reason, count in sorted(counts["publication_reason_counts"].items())
-    ) or "none"
+    publication_reasons = (
+        ",".join(
+            f"{reason}:{count}"
+            for reason, count in sorted(counts["publication_reason_counts"].items())
+        )
+        or "none"
+    )
     console.print(f"  Evidence assessment reasons: {publication_reasons}")
     console.print("  Sanitized per-event diagnostics:")
     if event_diagnostics:
@@ -782,7 +837,9 @@ def smoke_test(
     else:
         console.print("    none")
     if error_type:
-        console.print(f"[red]Smoke test stopped safely ({error_type}); no publication was attempted.[/red]")
+        console.print(
+            f"[red]Smoke test stopped safely ({error_type}); no publication was attempted.[/red]"
+        )
         raise typer.Exit(code=1)
     console.print("  Auto-publication: disabled")
     console.print("  Storage: temporary directory (removed at completion)")
@@ -794,30 +851,30 @@ def stats():
     event_store = get_event_store()
     source_store = get_source_store()
     run_store = get_ingestion_run_store()
-    
+
     events = event_store.get_all()
     sources = source_store.get_all()
     runs = run_store.get_latest(5)
-    
+
     table = Table(title="HUMANITY Database Stats")
     table.add_column("Metric", style="cyan")
     table.add_column("Value", style="green")
-    
+
     table.add_row("Total Events", str(len(events)))
     table.add_row("Published Events", str(len([e for e in events if e.visibility])))
     table.add_row("Total Sources", str(len(sources)))
     table.add_row("Ingestion Runs", str(len(runs)))
-    
+
     # By type
     type_counts = {}
     for e in events:
         type_counts[e.event_type.value] = type_counts.get(e.event_type.value, 0) + 1
-    
+
     for etype, count in sorted(type_counts.items(), key=lambda x: -x[1]):
         table.add_row(f"  {etype}", str(count))
-    
+
     console.print(table)
-    
+
     # Recent runs
     if runs:
         run_table = Table(title="Recent Ingestion Runs")
@@ -827,7 +884,7 @@ def stats():
         run_table.add_column("Articles", style="blue")
         run_table.add_column("Events", style="blue")
         run_table.add_column("Published", style="blue")
-        
+
         for run in runs:
             run_table.add_row(
                 run.id[:8],
@@ -930,7 +987,7 @@ def legacy_run(
     console.print("\n[bold]5. DAILY BRIEF[/bold]")
     publisher.generate_daily_brief()
     
-    console.print(f"\n[bold green]✓ Pipeline complete![/bold green]")
+    console.print("\n[bold green]✓ Pipeline complete![/bold green]")
     console.print(f"  Events published: {published}")
     console.print(f"  Run ID: {result['run_id']}")
 
