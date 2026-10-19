@@ -495,7 +495,9 @@ Phase 3, Milestone 3.1 — Live Source Verification.
 - Local validation passed: 111 Python tests; Astro check (zero diagnostics)
   and build (13 pages); all four workflow YAML files parsed; static-site audit
   found no missing local links, fragments, or assets; `git diff --check`
-  passed. Fresh pull-request CI is still required before merge.
+  passed. Fresh required PR checks also passed on commit `507a5d7` in
+  [run 39237768866](https://github.com/asdfhgds/humanity/actions/runs/39237768866):
+  Python tests (111 passed) and frontend check/build/link audit.
 - The 24-hour live-provider cooldown has not elapsed. No real smoke,
   production canary, publishing, recurring-release activation, or deployment
   was performed as part of this correction.
