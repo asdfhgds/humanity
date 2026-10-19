@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 import yaml
 from pydantic import BaseModel, HttpUrl
 from pydantic_settings import BaseSettings
@@ -19,7 +20,7 @@ class SourceConfig(BaseModel):
     robots_policy: str
     enabled: bool
     reason: str
-    roles: List[str] = ["discovery", "evidence"]
+    roles: list[str] = ["discovery", "evidence"]
     connector_type: str = "rss"
     timeout_seconds: int = 30
     rate_limit_per_minute: int = 30
@@ -30,13 +31,13 @@ class SourceConfig(BaseModel):
 
 
 class TopicConfig(BaseModel):
-    event_types: List[Dict[str, Any]]
-    severity_scale: Dict[int, str]
-    status_values: List[str]
-    confidence_levels: List[str]
-    verification_status: List[str]
-    source_types: List[str]
-    claim_types: List[str]
+    event_types: list[dict[str, Any]]
+    severity_scale: dict[int, str]
+    status_values: list[str]
+    confidence_levels: list[str]
+    verification_status: list[str]
+    source_types: list[str]
+    claim_types: list[str]
 
 
 class CountryConfig(BaseModel):
@@ -45,23 +46,24 @@ class CountryConfig(BaseModel):
     region: str
     subregion: str
     priority: int
-    conflict_zones: List[str] = []
+    conflict_zones: list[str] = []
     monitored: bool
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 class ScoringConfig(BaseModel):
-    weights: Dict[str, float]
-    penalties: Dict[str, float]
-    thresholds: Dict[str, Any]
-    importance_factors: Dict[str, Any]
-    score_caps: Dict[str, int]
-    daily_brief: Dict[str, Any]
-    overlooked_engine: Dict[str, Any]
+    weights: dict[str, float]
+    penalties: dict[str, float]
+    thresholds: dict[str, Any]
+    importance_factors: dict[str, Any]
+    score_caps: dict[str, int]
+    daily_brief: dict[str, Any]
+    overlooked_engine: dict[str, Any]
 
 
 class Settings(BaseSettings):
+    gemini_api_keys: str = ""
     gemini_api_key: str = ""
     gemini_model: str = "gemini-flash-latest"
     tavily_api_key: str = ""
@@ -94,7 +96,7 @@ def get_settings() -> Settings:
 
 
 @lru_cache
-def load_sources() -> Dict[str, List[SourceConfig]]:
+def load_sources() -> dict[str, list[SourceConfig]]:
     config_path = get_settings().config_dir / "sources.yaml"
     with open(config_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
@@ -113,7 +115,7 @@ def load_topics() -> TopicConfig:
 
 
 @lru_cache
-def load_countries() -> List[CountryConfig]:
+def load_countries() -> list[CountryConfig]:
     config_path = get_settings().config_dir / "countries.yaml"
     with open(config_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
@@ -128,7 +130,7 @@ def load_scoring() -> ScoringConfig:
     return ScoringConfig(**data)
 
 
-def get_enabled_sources() -> List[SourceConfig]:
+def get_enabled_sources() -> list[SourceConfig]:
     all_sources = load_sources()
     enabled = []
     for category_sources in all_sources.values():
@@ -136,13 +138,13 @@ def get_enabled_sources() -> List[SourceConfig]:
     return sorted(enabled, key=lambda s: -s.priority)
 
 
-def get_country_by_code(code: str) -> Optional[CountryConfig]:
+def get_country_by_code(code: str) -> CountryConfig | None:
     for country in load_countries():
         if country.code == code.upper():
             return country
     return None
 
 
-def get_conflict_zones_for_country(code: str) -> List[str]:
+def get_conflict_zones_for_country(code: str) -> list[str]:
     country = get_country_by_code(code)
     return country.conflict_zones if country else []

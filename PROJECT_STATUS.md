@@ -430,3 +430,53 @@ Phase 3, Milestone 3.1 — Live Source Verification.
   clear and must retain both aggregate hold totals and these per-event
   diagnostics; an eligible candidate still requires genuine independent
   coverage under the unchanged policy.
+
+### Multi-project Gemini credential rotation (2026-10-19)
+
+- Runtime configuration accepts newline-delimited `GEMINI_API_KEYS` and the
+  legacy `GEMINI_API_KEY`. Blank entries are discarded and duplicate keys are
+  removed without changing the first-seen order; the legacy key is appended as
+  a backward-compatible fallback.
+- Gemini requests now rotate round-robin through available credential slots.
+  Quota and billing exhaustion, authentication/permission failures, rate
+  limits, and temporary provider/network failures are classified separately.
+  Unavailable credentials are skipped; rate limits honor provider retry
+  guidance and use a bounded cooldown, while one-key transient retries remain
+  bounded and every request is charged to the existing call budget. If all
+  configured credentials are cooling down, extraction stops and source
+  records are deferred until the earliest credential cooldown expires.
+- The versioned `.gemini-key-rotation.json` state stores only hashed stable
+  slot IDs, cooldown deadlines, sanitized error categories, and the last-used
+  slot. It is written under the configured data directory, so production
+  workflow state persistence can retain cooldowns; isolated smoke uses its
+  temporary data directory. Missing, corrupt, and outdated state safely starts
+  with no inherited cooldowns. Added and removed keys retain the order of the
+  configured pool; only matching hashed slots reuse prior state.
+- Both production and isolated smoke workflows now pass the key-pool secret
+  alongside the legacy secret. README documents secure repository Actions
+  secret setup. GitHub secret-name inspection confirmed `GEMINI_API_KEYS` and
+  `GEMINI_API_KEY` are configured; their values were not retrieved or logged.
+  The supplied pool was configured through the authorized secret mechanism,
+  but real credential validity and project ownership remain unverified without
+  a provider request.
+- Deterministic mocked tests cover quota failover, missing numeric status codes
+  for `RESOURCE_EXHAUSTED`, rate-limit cooldown persistence, credential
+  quarantine, all-credentials-unavailable deferral, call budgets, round-robin
+  order, legacy single-key compatibility, duplicate/blank handling, secret
+  redaction, and repeated event/claim persistence.
+- Validation on the dedicated `gemini-key-rotation` branch: Python suite
+  passed (110 tests); Python import-order and changed-region formatting checks
+  passed; `npm ci`, Astro check (30 files, zero diagnostics), and Astro build
+  (13 pages) passed; the built-site audit passed with no missing links,
+  fragments, or assets; all four GitHub Actions workflow YAML files parsed;
+  `git diff --check` passed. The build emitted its existing large-chunk
+  advisory. The broad Ruff run reports pre-existing lint findings in the
+  touched legacy files; no blanket lint cleanup was included.
+- `PRODUCTION_RELEASE_ENABLED` is unset, which leaves the production job
+  safely gated by its workflow condition. Publishing, recurring execution,
+  and deployment were not enabled or run. No live Gemini smoke was run: the
+  prior ambiguous quota/rate-limit failures occurred on 2026-10-18 at about
+  15:49 UTC, and the conservative 24-hour quota cooldown had not elapsed at
+  this validation. A later live run is still needed to verify the configured
+  credentials and real provider failover; no claim of live operational
+  rotation or publication readiness is made.

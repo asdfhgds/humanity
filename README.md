@@ -75,16 +75,27 @@ cp .env.example .env
 
 ### Required API Keys
 
-1. **Gemini API Key** (required): Get from [Google AI Studio](https://makersuite.google.com/app/apikey)
+1. **Gemini API key(s)** (required): Get from [Google AI Studio](https://makersuite.google.com/app/apikey)
 2. **Tavily API Key** (optional): Get from [Tavily](https://tavily.com)
 3. **Cloudflare** (optional): For deployment
 
 Add to `.env`:
 ```env
-GEMINI_API_KEY=your_gemini_key
-GEMINI_MODEL=gemini-1.5-flash
+GEMINI_API_KEYS="key-from-project-one
+key-from-project-two"
+GEMINI_MODEL=gemini-flash-latest
 TAVILY_API_KEY=your_tavily_key  # optional
 ```
+
+For GitHub Actions, store the pool as the repository Actions secret
+`GEMINI_API_KEYS`, with one key per line. Keep its existing line order and append
+new credentials; blank lines and duplicate values are ignored. The legacy
+`GEMINI_API_KEY` secret remains supported and is appended after the pool for
+backward compatibility. Never put credentials in workflow YAML, repository
+variables, source files, issues, pull requests, or logs. Runtime rotation state
+stores hashed slot identifiers, cooldowns, sanitized error categories, and the
+last-used slot only; adding keys appends slots, while removed keys' state is
+ignored.
 
 ### Run Locally
 
