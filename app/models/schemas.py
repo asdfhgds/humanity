@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime
-from enum import Enum
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, HttpUrl
 import uuid
+from datetime import date, datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field, HttpUrl
 
 
 class EventType(str, Enum):
@@ -335,3 +336,59 @@ class IngestionRun(BaseModel):
     source_health: Dict[str, str] = Field(default_factory=dict)
     errors: List[str] = Field(default_factory=list)
     status: str = "running"
+
+
+class DatasetRecord(BaseModel):
+    """A source-native observation, kept separate from HUMANITY news events."""
+
+    id: str
+    source_dataset: str
+    dataset_version: str
+    source_record_id: str
+    record_number: str
+    event_year: int
+    date_start: Optional[date] = None
+    date_end: Optional[date] = None
+    country: Optional[str] = None
+    region: Optional[str] = None
+    location: Optional[str] = None
+    admin1: Optional[str] = None
+    admin2: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    violence_type: int
+    conflict_name: Optional[str] = None
+    deaths_a: Optional[int] = None
+    deaths_b: Optional[int] = None
+    deaths_civilians: Optional[int] = None
+    deaths_unknown: Optional[int] = None
+    deaths_best: Optional[int] = None
+    deaths_high: Optional[int] = None
+    deaths_low: Optional[int] = None
+    date_precision: Optional[int] = None
+    location_precision: Optional[int] = None
+    event_clarity: Optional[int] = None
+    number_of_sources: Optional[int] = None
+
+
+class DatasetImportState(BaseModel):
+    id: str = "ucdp-ged"
+    last_attempt_at: Optional[datetime] = None
+    last_attempt_status: str = "not_imported"
+    last_error_category: Optional[str] = None
+    failure_count: int = 0
+    last_failure_at: Optional[datetime] = None
+    last_failure_category: Optional[str] = None
+    last_success_at: Optional[datetime] = None
+    last_success_dataset_version: Optional[str] = None
+    coverage_start: Optional[date] = None
+    coverage_end: Optional[date] = None
+    records_received: int = 0
+    records_added: int = 0
+    records_updated: int = 0
+    records_removed: int = 0
+    observations_missing_dates: int = 0
+    observations_invalid_dates: int = 0
+    observations_missing_coordinates: int = 0
+    observations_invalid_coordinates: int = 0
+    observations_missing_source_counts: int = 0

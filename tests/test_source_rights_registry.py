@@ -62,8 +62,11 @@ def test_structured_dataset_permissions_are_narrow_and_attributed():
     assert ucdp["rights_review"] == "reviewed"
     assert ucdp["commercial_use"] == "allowed_with_attribution"
     assert ucdp["redistribution"] == "allowed_with_attribution"
+    assert "publicly downloadable" in ucdp["access_method"]
     assert "token" in ucdp["access_method"]
-    assert "no HUMANITY adapter" in ucdp["access_method"]
+    assert "source-article text" in ucdp["storage_retention_constraints"]
+    assert "source headlines" in ucdp["display_rights"]
+    assert "ged261.pdf" in ucdp["evidence_reference"]
 
     assert rights_sources["Reuters"]["rights_review"] == "pending"
     assert rights_config["policy"]["commercial_use"] == "not_cleared"

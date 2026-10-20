@@ -31,14 +31,14 @@ sources:
     type: academic
     rights_review: reviewed
     terms_url: https://ucdp.uu.se/downloads/
-    access_method: Public dataset downloads are available; versioned API access requires a token requested from the API maintainer (https://ucdp.uu.se/apidocs/); no HUMANITY adapter or token is configured.
-    attribution_requirements: Attribute the UCDP GED dataset and cite the relevant UCDP publication; link the CC BY 4.0 license and identify changes.
-    storage_retention_constraints: CC BY 4.0 permits copying and adaptation; API access is token-gated and requires a separate access request.
-    display_rights: UCDP GED dataset records may be displayed with attribution; underlying source articles are not included in this clearance.
+    access_method: The versioned GED 26.1 CSV archive is publicly downloadable at https://ucdp.uu.se/downloads/ged/ged261-csv.zip. The separate versioned API requires a token requested from the API maintainer (https://ucdp.uu.se/apidocs/).
+    attribution_requirements: Attribute Uppsala Conflict Data Program (UCDP), Georeferenced Event Dataset (GED), cite the relevant UCDP publication, link CC BY 4.0, and identify field selection/omissions.
+    storage_retention_constraints: The GED dataset download is identified as CC BY 4.0; attribution and indication of changes are required. This dataset review excludes source-article text and metadata.
+    display_rights: Selected source-native UCDP GED event-level fields may be displayed with attribution and uncertainty fields; publisher article text, source headlines, source URLs, and media are excluded.
     commercial_use: allowed_with_attribution
     redistribution: allowed_with_attribution
     review_date: "2026-10-20"
-    evidence_reference: https://ucdp.uu.se/downloads/
+    evidence_reference: UCDP GED 26.1 downloads and codebook (https://ucdp.uu.se/downloads/; https://ucdp.uu.se/downloads/ged/ged261.pdf); CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
   ICRC: { group: ngo, type: ngo, rights_review: pending }
   GDELT GKG:
     group: data_provider

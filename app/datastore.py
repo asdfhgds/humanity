@@ -4,10 +4,20 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type, TypeVar
 from threading import Lock
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
-from app.models.schemas import Event, Source, Claim, Location, Country, Conflict, IngestionRun
+from app.models.schemas import (
+    Claim,
+    Conflict,
+    Country,
+    DatasetImportState,
+    DatasetRecord,
+    Event,
+    IngestionRun,
+    Location,
+    Source,
+)
 
 T = TypeVar("T")
 
@@ -81,6 +91,29 @@ class JSONDataStore:
             existing.extend(items)
             self._save_collection(collection, existing)
         return items
+
+    def upsert_many(
+        self, collection: str, items: List[Dict[str, Any]]
+    ) -> tuple[int, int]:
+        """Atomically insert or replace records by their stable id."""
+        if not items:
+            return 0, 0
+        with self._get_lock(collection):
+            existing = self._load_collection(collection)
+            positions = {item["id"]: index for index, item in enumerate(existing)}
+            added = 0
+            updated = 0
+            for item in items:
+                position = positions.get(item["id"])
+                if position is None:
+                    positions[item["id"]] = len(existing)
+                    existing.append(item)
+                    added += 1
+                elif existing[position] != item:
+                    existing[position] = item
+                    updated += 1
+            self._save_collection(collection, existing)
+        return added, updated
 
     def get(self, collection: str, item_id: str) -> Optional[Dict[str, Any]]:
         index = self._get_index(collection)
@@ -383,6 +416,80 @@ class IngestionRunStore:
         return [IngestionRun(**item) for item in items[:limit]]
 
 
+class DatasetRecordStore:
+    def __init__(
+        self, data_store: JSONDataStore, *, partition_dir: Optional[Path] = None
+    ):
+        self.store = data_store
+        self.partition_dir = partition_dir or data_store.base_path / "dataset_records"
+
+    def replace_snapshot(self, records: List[DatasetRecord]) -> tuple[int, int, int]:
+        grouped: Dict[int, List[DatasetRecord]] = {}
+        for record in records:
+            grouped.setdefault(record.event_year, []).append(record)
+
+        previous_records = self.get_all()
+        previous_by_id = {record.id: record for record in previous_records}
+        current_by_id = {record.id: record for record in records}
+        added = sum(record_id not in previous_by_id for record_id in current_by_id)
+        updated = sum(
+            record_id in previous_by_id and previous_by_id[record_id] != record
+            for record_id, record in current_by_id.items()
+        )
+        removed = sum(record_id not in current_by_id for record_id in previous_by_id)
+
+        self.partition_dir.mkdir(parents=True, exist_ok=True)
+        for year, year_records in grouped.items():
+            path = self.partition_dir / f"{year}.json"
+            temporary_path = path.with_suffix(".json.tmp")
+            temporary_path.write_text(
+                json.dumps(
+                    [record.model_dump(mode="json") for record in year_records],
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ),
+                encoding="utf-8",
+            )
+            temporary_path.replace(path)
+        for existing_path in self.partition_dir.glob("*.json"):
+            if existing_path.stem.isdigit() and int(existing_path.stem) not in grouped:
+                existing_path.unlink()
+        return added, updated, removed
+
+    def get_all(self, dataset_version: Optional[str] = None) -> List[DatasetRecord]:
+        if not self.partition_dir.exists():
+            return []
+        records: List[DatasetRecord] = []
+        for path in self.partition_dir.glob("*.json"):
+            if not path.stem.isdigit():
+                continue
+            document = json.loads(path.read_text(encoding="utf-8"))
+            items = document.get("records", []) if isinstance(document, dict) else document
+            if not isinstance(items, list):
+                raise ValueError(f"Invalid dataset partition: {path.name}")
+            records.extend(DatasetRecord(**item) for item in items)
+        if dataset_version:
+            records = [
+                record for record in records if record.dataset_version == dataset_version
+            ]
+        return records
+
+
+class DatasetImportStateStore:
+    def __init__(self, data_store: JSONDataStore):
+        self.store = data_store
+        self.collection = "dataset_import_state"
+
+    def get_ucdp(self) -> DatasetImportState:
+        data = self.store.get(self.collection, "ucdp-ged")
+        return DatasetImportState(**data) if data else DatasetImportState()
+
+    def save_ucdp(self, state: DatasetImportState) -> DatasetImportState:
+        data = state.model_dump(mode="json")
+        self.store.upsert_many(self.collection, [data])
+        return state
+
+
 def get_data_store() -> JSONDataStore:
     from app.config import get_settings
     return JSONDataStore(get_settings().data_dir)
@@ -406,3 +513,11 @@ def get_location_store() -> LocationStore:
 
 def get_ingestion_run_store() -> IngestionRunStore:
     return IngestionRunStore(get_data_store())
+
+
+def get_dataset_record_store() -> DatasetRecordStore:
+    return DatasetRecordStore(get_data_store())
+
+
+def get_dataset_import_state_store() -> DatasetImportStateStore:
+    return DatasetImportStateStore(get_data_store())

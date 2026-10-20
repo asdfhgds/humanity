@@ -1,12 +1,73 @@
 # HUMANITY Project Status
 
+## Phase 3 structured-data slice (2026-10-20)
+
+- PR #23 was merged to `master` at `dbd16b1cc58f8c712bdef64147bc03b62eb3ebdf`;
+  PR #22 is also merged at `23df5fc759aa40e2412c5dd21353e8bd797e11a0`.
+  This work is on `phase3-structured-data`, branched from that merged baseline.
+- Implemented a separate bounded UCDP GED CSV importer, versioned
+  `DatasetRecord` persistence and distinct import-health state, an explicit
+  `python -m app.cli import-ucdp` command, and a static feed contract. It does
+  not create or change HUMANITY events, claims, sources, or publication.
+  Invalid/missing dates and coordinates are not filled in. Source article
+  text, publisher headlines, URLs and source metadata are discarded. Operational
+  records live under the configured data directory; public year partitions are
+  generated only after a completed import. Stable IDs use UCDP `relid`, so a
+  release update replaces the same source-native record instead of duplicating it.
+- Implemented the `/research` Research Explorer with source/version/coverage/
+  freshness display, year partition selection, filters, precision and fatality
+  uncertainty fields, a map restricted to valid source coordinates, and stable
+  attributed CSV/JSON exports. It loads one year partition at a time; these are
+  historical dataset observations, not live alerts or corroborating news
+  reports.
+- One bounded real-source UCDP GED 26.1 import succeeded on 2026-10-20 at
+  07:55 UTC in disposable temporary storage, which was removed afterward.
+  The source archive was 39,122,522 compressed bytes and contained 417,968
+  records with coverage 1989-01-01 through 2025-12-31. The check found zero
+  missing or invalid dates and coordinates; 97,496 rows had a negative or
+  unavailable source-count value, represented as unavailable rather than a
+  negative count. A first complete JSON rendering measured 275,098,816 bytes;
+  public delivery was consequently changed to a small year index plus separate
+  year files. Isolated partition generation measured a 2,517-byte index and
+  275,192,599 total partition bytes; the largest year was 20,150,769 bytes
+  (2024), and the median was 4,913,230 bytes. Browser loading of a real
+  populated partition has not yet been measured. The isolated check created
+  zero HUMANITY news events and did not touch repository data or production state.
+- The full importer emits an index and year-partitioned records, not the 275 MB
+  full JSON object. Year sizes are measured, but an end-to-end browser load of
+  populated data has not been independently measured. Import health retains
+  cumulative failure count and last failure time/category across successful
+  refreshes; latest-attempt failure state remains distinct.
+- UCDP's official downloads page says datasets are CC BY 4.0 and require
+  citation to relevant publications. The registry records the public GED
+  download scope, attribution and exclusions; the token-gated API is not used.
+  This is operational source review, not legal advice. Other pending news and
+  article rights remain unchanged.
+- Validation on this worktree: `python -m pytest tests -q` passed (139 tests;
+  existing deprecation warnings remain); focused importer/rights tests passed
+  (22 tests); `npm ci` completed with zero reported vulnerabilities; frontend
+  tests passed (17), Astro check passed with zero diagnostics, and the build
+  generated 18 pages. The static-site audit found no missing local links,
+  fragments, or assets; all four workflow YAML files parsed; CLI help,
+  focused Ruff lint/format, and `git diff --check` passed. A pre-existing
+  undefined helper in `app/cli/main.py` remains outside this change and is
+  reported by the broader undefined-name lint selection. Pull-request CI is
+  pending.
+- No dataset rows from the isolated run were persisted or added to the
+  repository. The committed empty index remains `not_imported` until an
+  authorized explicit import and site-data update. The public published-event
+  feed remains separate. Production ingestion schedules, release publishing,
+  auto-publication and deployment remain gated; no deployment was performed.
+- The pre-existing unstaged change in `app/publishing/publisher.py` is
+  unrelated and must remain unmodified and unstaged.
+
 ## Current Status
 
-Phase 2 product work is in review on `phase2-real-product`, based on merged
-baseline `23df5fc`. Live Gemini extraction remains blocked by repeated
-provider-server failures.
-Production ingestion, recurring execution, publication, and deployment remain
-gated.
+Phase 2 product work was merged in PR #23 at
+`dbd16b1cc58f8c712bdef64147bc03b62eb3ebdf`. Phase 3 structured-data work is
+underway on `phase3-structured-data`. Live Gemini extraction remains blocked
+by repeated provider-server failures. Production ingestion schedules,
+publication, release, and deployment remain gated.
 
 ### Phase 2 product implementation (2026-10-20)
 
@@ -33,16 +94,16 @@ gated.
   attribution, storage/retention, display, commercial/reuse, review date, and
   evidence reference. GDELT dataset terms explicitly permit commercial use
   and redistribution with attribution; that review excludes linked publisher
-  articles and media. UCDP GED is CC BY 4.0 with attribution, but its API
-  requires an access token requested from the maintainer and there is no
-  HUMANITY adapter or token. All news publishers, feeds, and ReliefWeb remain
+  articles and media. UCDP GED is CC BY 4.0 with attribution. The earlier
+  assessment did not yet have a GED importer; the Phase 3 implementation now
+  reads the public CSV, while the distinct API remains token-gated. All news
+  publishers, feeds, and ReliefWeb remain
   pending/not cleared. This is an operational terms review, not legal advice.
 - Added an initial pilot hypothesis and clear delivery/source/cost boundaries.
   No enquiry form was added because there is no secure destination, consent and
   retention policy, or response owner configured.
 - Remaining technical product blockers: Gemini provider-side server errors
-  remain unresolved; UCDP API access is unavailable until approval and an
-  adapter is implemented; JSON/repository-backed persistence is unsuitable
+  remain unresolved; higher-concurrency JSON/repository-backed persistence is unsuitable
   for higher-concurrency or per-customer updates; no synced accounts, alerts,
   privacy-protected enquiry channel, or source-specific news-content reuse
   clearance exists.
@@ -64,8 +125,9 @@ gated.
   publication, or deployment were made. Implementation commit `5b832ea` is in
   PR [#23](https://github.com/asdfhgds/humanity/pull/23); fresh required CI run
   [39374308202](https://github.com/asdfhgds/humanity/actions/runs/39374308202)
-  passed both Python tests and frontend check/build/link audit. The PR remains
-  open and has not been merged.
+  passed both Python tests and frontend check/build/link audit. PR #23 was
+  subsequently merged to `master` at
+  `dbd16b1cc58f8c712bdef64147bc03b62eb3ebdf`.
 
 ## Status
 
