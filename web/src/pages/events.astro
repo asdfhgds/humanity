@@ -211,6 +211,66 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         </div>
       </div>
 
+      <section class="card mb-8" aria-labelledby="research-workspace-heading">
+        <div class="mb-4">
+          <h2
+            id="research-workspace-heading"
+            class="text-lg font-semibold text-humanity-text"
+          >
+            Monitoring workspace
+          </h2>
+          <p class="mt-1 text-sm text-humanity-textMuted">
+            Saved searches and review snapshots stay in this browser on this
+            device. They are not synced or used to trigger ingestion.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-end gap-3">
+          <div class="min-w-[220px] flex-1">
+            <label
+              for="saved-search-name"
+              class="mb-1 block text-sm text-humanity-textMuted"
+              >Save current filters as</label
+            >
+            <input
+              id="saved-search-name"
+              type="text"
+              maxlength="80"
+              class="input"
+              placeholder="e.g. Kenya protests"
+            />
+          </div>
+          <button id="save-search" type="button" class="btn-secondary"
+            >Save search</button
+          >
+          <div class="min-w-[220px] flex-1">
+            <label
+              for="saved-search-select"
+              class="mb-1 block text-sm text-humanity-textMuted"
+              >Saved searches on this device</label
+            >
+            <select id="saved-search-select" class="input">
+              <option value="">No saved searches</option>
+            </select>
+          </div>
+          <button id="apply-saved-search" type="button" class="btn-secondary"
+            >Apply</button
+          >
+          <button id="review-saved-search" type="button" class="btn-secondary"
+            >Mark reviewed</button
+          >
+          <button id="export-research-brief" type="button" class="btn-secondary"
+            >Export source-linked brief</button
+          >
+        </div>
+        <p
+          id="research-workspace-status"
+          class="mt-3 text-sm text-humanity-textMuted"
+          aria-live="polite"
+        >
+          Save a search to compare published records on a later visit.
+        </p>
+      </section>
+
       <!-- Results -->
       <div id="events-container" class="space-y-4">
         <div class="card text-center py-12">
@@ -241,8 +301,24 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       serializeEventFilters,
       type EventFilters,
     } from "../lib/event-filters.mjs";
+    import {
+      compareSearch,
+      createResearchBrief,
+      loadSavedSearches,
+      markSearchReviewed,
+      saveSearch,
+    } from "../lib/research-workspace.mjs";
+
+    type LocalResearchSearch = {
+      id: string;
+      name: string;
+      filters: EventFilters;
+      snapshot: Record<string, string>;
+    };
 
     let allEvents: PublishedEvent[] = [];
+    let savedSearches: LocalResearchSearch[] = [];
+    let savedSearchStorageAvailable = true;
     let currentPage = 1;
     const pageSize = 20;
     const filterIds = [
@@ -255,6 +331,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
     document.addEventListener("DOMContentLoaded", async () => {
       setupFilters();
+      setupResearchWorkspace();
       await loadEvents();
       applyFiltersFromUrl();
       renderEvents();
@@ -274,6 +351,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         allEvents = events;
         populateCountryFilter();
         renderEvents();
+        refreshSavedSearchStatus();
         requireElement("events-refresh-status", "p").textContent =
           `Checked ${new Date().toLocaleTimeString()} · refreshes every minute`;
       } catch (error) {
@@ -361,6 +439,171 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         if (!button || button.disabled) return;
         changePage(Number(button.dataset.page));
       });
+    }
+
+    function setupResearchWorkspace() {
+      try {
+        savedSearches = loadSavedSearches(window.localStorage);
+        renderSavedSearchOptions(savedSearches[0]?.id || "");
+      } catch (error) {
+        savedSearchStorageAvailable = false;
+        console.error("Could not read browser-local monitoring data:", error);
+        requireElement("research-workspace-status", "p").textContent =
+          "Browser storage is unavailable or contains unreadable data. Saved-search controls are disabled.";
+        requireElement("save-search", "button").disabled = true;
+        requireElement("saved-search-select", "select").disabled = true;
+        requireElement("apply-saved-search", "button").disabled = true;
+        requireElement("review-saved-search", "button").disabled = true;
+      }
+
+      requireElement("save-search", "button").addEventListener("click", () => {
+        const name = requireElement("saved-search-name", "input").value;
+        try {
+          const search = saveSearch(window.localStorage, {
+            id: window.crypto.randomUUID(),
+            name,
+            filters: readFilters(),
+            events: filterPublishedEvents(allEvents, readFilters()),
+          });
+          savedSearches = loadSavedSearches(window.localStorage);
+          renderSavedSearchOptions(search.id);
+          requireElement("saved-search-name", "input").value = "";
+          refreshSavedSearchStatus(
+            `Saved “${search.name}” on this device. Its current results are the review baseline.`,
+          );
+        } catch (error) {
+          console.error(
+            "Could not save browser-local monitoring search:",
+            error,
+          );
+          requireElement("research-workspace-status", "p").textContent =
+            "The search could not be saved in this browser.";
+        }
+      });
+
+      requireElement("apply-saved-search", "button").addEventListener(
+        "click",
+        () => {
+          const search = selectedSavedSearch();
+          if (!search) return;
+          const values = search.filters;
+          requireElement("search-input", "input").value = values.q;
+          requireElement("type-filter", "select").value = values.type;
+          const countryFilter = requireElement("country-filter", "select");
+          if (
+            values.country &&
+            ![...countryFilter.options].some(
+              (option) => option.value === values.country,
+            )
+          ) {
+            const option = document.createElement("option");
+            option.value = values.country;
+            option.textContent = values.country;
+            countryFilter.appendChild(option);
+          }
+          countryFilter.value = values.country;
+          requireElement("severity-filter", "select").value = values.severity;
+          requireElement("date-filter", "select").value = values.days;
+          updateSearchUrl();
+          currentPage = 1;
+          renderEvents();
+          refreshSavedSearchStatus();
+        },
+      );
+
+      requireElement("saved-search-select", "select").addEventListener(
+        "change",
+        () => {
+          const selected = Boolean(selectedSavedSearch());
+          requireElement("apply-saved-search", "button").disabled = !selected;
+          requireElement("review-saved-search", "button").disabled = !selected;
+          refreshSavedSearchStatus();
+        },
+      );
+
+      requireElement("review-saved-search", "button").addEventListener(
+        "click",
+        () => {
+          const search = selectedSavedSearch();
+          if (!search) return;
+          try {
+            markSearchReviewed(
+              window.localStorage,
+              search.id,
+              filterPublishedEvents(allEvents, search.filters),
+            );
+            savedSearches = loadSavedSearches(window.localStorage);
+            refreshSavedSearchStatus(
+              `Marked “${search.name}” reviewed. Current results are the new baseline.`,
+            );
+          } catch (error) {
+            console.error("Could not update the local review snapshot:", error);
+            requireElement("research-workspace-status", "p").textContent =
+              "The review snapshot could not be updated in this browser.";
+          }
+        },
+      );
+
+      requireElement("export-research-brief", "button").addEventListener(
+        "click",
+        () => {
+          const brief = createResearchBrief(
+            filterPublishedEvents(allEvents, readFilters()),
+          );
+          const downloadUrl = URL.createObjectURL(
+            new Blob([brief], { type: "text/markdown;charset=utf-8" }),
+          );
+          const link = document.createElement("a");
+          link.href = downloadUrl;
+          link.download = "humanity-research-brief.md";
+          link.click();
+          window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+        },
+      );
+    }
+
+    function renderSavedSearchOptions(selectedId: string = "") {
+      const select = requireElement("saved-search-select", "select");
+      select.replaceChildren();
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = savedSearches.length
+        ? "Choose a saved search"
+        : "No saved searches";
+      select.appendChild(placeholder);
+      savedSearches.forEach((search) => {
+        const option = document.createElement("option");
+        option.value = search.id;
+        option.textContent = search.name;
+        select.appendChild(option);
+      });
+      select.value = selectedId;
+      const hasSelection = Boolean(selectedSavedSearch());
+      requireElement("apply-saved-search", "button").disabled = !hasSelection;
+      requireElement("review-saved-search", "button").disabled = !hasSelection;
+    }
+
+    function selectedSavedSearch() {
+      const id = requireElement("saved-search-select", "select").value;
+      return savedSearches.find((search) => search.id === id);
+    }
+
+    function refreshSavedSearchStatus(message: string = "") {
+      if (!savedSearchStorageAvailable) return;
+      const search = selectedSavedSearch();
+      const status = requireElement("research-workspace-status", "p");
+      if (message) {
+        status.textContent = message;
+      } else if (search) {
+        const results = filterPublishedEvents(allEvents, search.filters);
+        const changes = compareSearch(search, results);
+        status.textContent =
+          `Since the last review of “${search.name}”: ${changes.added.length} new, ` +
+          `${changes.changed.length} changed, ${changes.outsideCurrentResults.length} no longer in the current results.`;
+      } else {
+        status.textContent =
+          "Save a search to compare published records on a later visit.";
+      }
     }
 
     function readFilters(): EventFilters {

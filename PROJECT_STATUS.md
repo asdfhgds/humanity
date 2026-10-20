@@ -2,7 +2,70 @@
 
 ## Current Status
 
-Release verification — code deployed; live extraction is rate-limited; publishing remains gated.
+Phase 2 product work is in review on `phase2-real-product`, based on merged
+baseline `23df5fc`. Live Gemini extraction remains blocked by repeated
+provider-server failures.
+Production ingestion, recurring execution, publication, and deployment remain
+gated.
+
+### Phase 2 product implementation (2026-10-20)
+
+- Added browser-local saved monitoring searches, repeat-visit comparisons for
+  additions and changes to published event/source evidence, review snapshots,
+  and a deterministic Markdown citation brief. The workspace uses this
+  browser's local storage only; it does not sync, contact a backend, or trigger
+  ingestion. The brief contains event metadata and safe HTTP(S) source links,
+  not source article bodies or claim quotations.
+- Added deterministic frontend tests for missing/malformed local state,
+  stable repeated records, changed evidence, additions/removals, review
+  snapshots, safe URLs, and repeatable export.
+- Gemini failure taxonomy now identifies invalid requests, unsupported model
+  names, provider configuration errors, client configuration errors, and
+  provider 5xx/unavailable failures separately; provider output and exception
+  text remain excluded from public diagnostics. Mocked tests cover these
+  distinctions and fail-safe behavior. No new provider request was made:
+  existing evidence only establishes repeated sanitized provider 5xx errors,
+  not a model/configuration defect.
+- Replaced the placeholder `health` command that printed synthetic source
+  success with a read-only report of persisted ingestion-run freshness,
+  recorded per-source status, counts, and sanitized stored errors.
+- Expanded the rights registry to include terms URL, access method,
+  attribution, storage/retention, display, commercial/reuse, review date, and
+  evidence reference. GDELT dataset terms explicitly permit commercial use
+  and redistribution with attribution; that review excludes linked publisher
+  articles and media. UCDP GED is CC BY 4.0 with attribution, but its API
+  requires an access token requested from the maintainer and there is no
+  HUMANITY adapter or token. All news publishers, feeds, and ReliefWeb remain
+  pending/not cleared. This is an operational terms review, not legal advice.
+- Added an initial pilot hypothesis and clear delivery/source/cost boundaries.
+  No enquiry form was added because there is no secure destination, consent and
+  retention policy, or response owner configured.
+- Remaining technical product blockers: Gemini provider-side server errors
+  remain unresolved; UCDP API access is unavailable until approval and an
+  adapter is implemented; JSON/repository-backed persistence is unsuitable
+  for higher-concurrency or per-customer updates; no synced accounts, alerts,
+  privacy-protected enquiry channel, or source-specific news-content reuse
+  clearance exists.
+- Production ingestion, recurring execution, publication, release gate, and
+  deployment remain unchanged and disabled. The published feed remains empty
+  as last verified; no live production data was created or claimed.
+- This update supersedes the earlier 2026-10-19 paragraph that described PR
+  #22 as open; PR #22 was merged into `master` at `23df5fc`.
+- Validation on this branch: `python -m pytest tests -q` — 119 passed;
+  `npm test` — 10 passed; `npm run check` — 0 diagnostics; `npm run build` —
+  17 pages; all four workflow YAML files parsed; static-site audit — 17 HTML
+  pages with no missing links, fragments, or assets; `git diff --check` passed;
+  Prettier check passed. Targeted Ruff checks for the Gemini adapter and tests
+  passed. Full Ruff on touched legacy CLI files still reports existing issues
+  (including an undefined symbol and unused variable elsewhere in that
+  module), and Black's check reports pre-existing formatting differences in
+  those legacy files; these were not mass-reformatted. The existing MapLibre
+  chunk-size advisory remains. No provider calls, production writes,
+  publication, or deployment were made. Implementation commit `5b832ea` is in
+  PR [#23](https://github.com/asdfhgds/humanity/pull/23); fresh required CI run
+  [39374308202](https://github.com/asdfhgds/humanity/actions/runs/39374308202)
+  passed both Python tests and frontend check/build/link audit. The PR remains
+  open and has not been merged.
 
 ## Status
 

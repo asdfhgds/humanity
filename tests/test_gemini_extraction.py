@@ -523,3 +523,82 @@ def test_invalid_output_and_non_event_are_not_reported_as_valid_events(
     assert outcomes[1].result is not None
     assert outcomes[1].error_category == "non_event"
     assert outcomes[1].attempts == 1
+
+
+def test_invalid_request_is_classified_without_rotating_or_repeating(
+    monkeypatch, tmp_path
+):
+    error = api_error(
+        "ClientError", 400, "INVALID_ARGUMENT", "private invalid payload detail"
+    )
+    first = FakeClient([error])
+    second = FakeClient([event_json()])
+    extractor = configured_extractor(
+        monkeypatch,
+        keys=("first-key", "second-key"),
+        tmp_path=tmp_path,
+        clients={"first-key": first, "second-key": second},
+    )
+
+    outcome = asyncio.run(
+        extractor.extract_with_diagnostics("title", "article", "https://example.test")
+    )
+
+    assert outcome.error_category == "invalid_request"
+    assert outcome.stop_batch
+    assert first.models.calls == 1
+    assert second.models.calls == 0
+    assert "private invalid payload detail" not in repr(outcome)
+
+
+def test_unsupported_model_and_provider_configuration_are_distinct(
+    monkeypatch, tmp_path
+):
+    unsupported = api_error(
+        "NotFoundError", 404, "NOT_FOUND", "Model gemini-private is not found"
+    )
+    extractor = configured_extractor(
+        monkeypatch, FakeClient([unsupported]), tmp_path=tmp_path
+    )
+    unsupported_outcome = asyncio.run(
+        extractor.extract_with_diagnostics("title", "article", "https://example.test")
+    )
+    assert unsupported_outcome.error_category == "unsupported_model"
+    assert unsupported_outcome.stop_batch
+    assert "gemini-private" not in repr(unsupported_outcome)
+
+    endpoint_error = api_error(
+        "NotFoundError", 404, "NOT_FOUND", "private endpoint configuration"
+    )
+    extractor = configured_extractor(
+        monkeypatch, FakeClient([endpoint_error]), tmp_path=tmp_path / "endpoint"
+    )
+    endpoint_outcome = asyncio.run(
+        extractor.extract_with_diagnostics("title", "article", "https://example.test")
+    )
+    assert endpoint_outcome.error_category == "provider_configuration_error"
+    assert endpoint_outcome.stop_batch
+    assert "private endpoint configuration" not in repr(endpoint_outcome)
+
+
+def test_provider_server_error_remains_distinct_and_retryable(monkeypatch, tmp_path):
+    error = api_error(
+        "ServerError", 503, "UNAVAILABLE", "private provider response"
+    )
+    first = FakeClient([error])
+    second = FakeClient([event_json()])
+    extractor = configured_extractor(
+        monkeypatch,
+        keys=("first-key", "second-key"),
+        tmp_path=tmp_path,
+        clients={"first-key": first, "second-key": second},
+    )
+
+    outcome = asyncio.run(
+        extractor.extract_with_diagnostics("title", "article", "https://example.test")
+    )
+
+    assert outcome.result is not None
+    assert outcome.attempt_errors == ("provider_server_error",)
+    assert first.models.calls == second.models.calls == 1
+    assert "private provider response" not in repr(outcome)

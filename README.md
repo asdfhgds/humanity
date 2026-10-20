@@ -14,11 +14,12 @@ The project explores whether a structured public record can help readers:
 
 - **Published-record map and browse pages** - Show only records included in the generated public dataset; an empty feed is possible.
 - **Searchable event index** - Search and filter public records; filters can be shared by URL.
+- **Device-local monitoring** - Save searches, compare record and source-evidence changes on later visits, and download a source-linked citation brief. This data stays in the current browser and is not synced.
 - **Source-linked event pages** - Inspect source metadata and attributed claim excerpts where available.
 - **Transparency pages** - Read the methodology, configured source list, rights status, privacy draft, and use terms draft.
 - **Evidence safeguards** - Suspected syndication does not count as independent corroboration, and held or rejected events do not enter public artifacts.
 
-This is an early-stage research prototype. It does not provide complete global coverage, guaranteed live ingestion, user accounts, alerts, or a paid research service.
+This is an early-stage research prototype. It does not provide complete global coverage, guaranteed live ingestion, synchronized accounts, notifications, or a paid research service. A browser refresh reloads published data; it does not run ingestion.
 
 ## 🏗️ Architecture
 
@@ -74,13 +75,13 @@ cp .env.example .env
 # Edit .env only if you will run a provider-backed local pipeline
 ```
 
-### Required API Keys
+### Optional provider credentials
 
-1. **Gemini API key(s)** (required): Get from [Google AI Studio](https://makersuite.google.com/app/apikey)
+1. **Gemini API key(s)** (required only for provider-backed extraction): Get from [Google AI Studio](https://makersuite.google.com/app/apikey)
 2. **Tavily API Key** (optional): Get from [Tavily](https://tavily.com)
 3. **Cloudflare** (optional): For deployment
 
-Add to `.env`:
+For local provider-backed extraction, add to `.env`:
 ```env
 # Store real credentials locally and never commit .env
 GEMINI_API_KEYS="one-key-per-line"
@@ -192,7 +193,8 @@ Uncertainty and publication status
 
 - Real-provider reliability and persistent live ingestion need continued verification.
 - The CLI does not yet route every extracted candidate through the complete event-resolution handoff.
-- Source-specific storage, display, commercial-use, and redistribution rights remain under review; commercial reuse is not cleared.
+- News publishers, feeds, and ReliefWeb are not cleared for commercial reuse or redistribution; source-specific storage and display terms also remain under review.
+- GDELT dataset terms permit commercial use and redistribution with attribution, but do not grant rights to linked publisher articles or media. UCDP GED data is under CC BY 4.0 with attribution, while API access requires a separately approved token and HUMANITY has no UCDP adapter yet.
 - Coverage completeness is not measured, and a blank public feed must not be read as evidence that no events occurred.
 - Potential research-team services and pricing are unvalidated hypotheses only; there are no paid plans or checkout.
 - Accounts, alerts, paid APIs, and dynamic database services are not currently offered.
