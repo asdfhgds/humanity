@@ -38,19 +38,23 @@
   changed the shareable URL to `?year=2025&country=Ukraine` and narrowed results
   to 7,504. Clicking the year link loaded the complete 2024 partition (30,066
   rows), with its adjacent 2023 comparison (+2,644; +9.6%). Export controls and
-  source attribution remained available in the UI; stable CSV/JSON export
-  behavior is covered by frontend tests. This is local browser verification,
-  not a deployed feature verification.
-- Feature commit `d0c5d86578acb1a0fae5b1cd657143b65bf6f159` was pushed to
-  `phase3-2-research-summary`. PR creation was attempted but the GitHub project
-  integration reported that its linked account is unavailable. Consequently,
-  no PR CI run or deployment exists for this commit. The live site remains on
-  the prior UI; post-deployment summary/link/export behavior has not been
+  source attribution remained available. Browser-triggered CSV and JSON
+  exports each contained all 30,066 2024 records; JSON included attribution
+  and both export files had the stable expected release filename/columns.
+  This is local browser verification, not deployed feature verification.
+- Commits `d0c5d86578acb1a0fae5b1cd657143b65bf6f159`,
+  `c84c1a453b3aa585a4746ba3c181962d0b89e86d`, and
+  `75be06afaff1f13b2d769970cfa09bc02fe666c4` are pushed to
+  `phase3-2-research-summary` (latest branch head `75be06a`). PR creation was
+  attempted again after confirming the branch push, but the project GitHub
+  integration still reports that its linked account is unavailable. There is
+  no PR CI run or deployment for this branch. The public site remains on the
+  previous UI; post-deployment summary/link/export behavior has not been
   verified.
 - These changes are not yet merged or deployed. No news-ingestion,
   Gemini, automatic-publishing, or production-release settings were changed.
-  The user must re-link the GitHub project account before PR creation and
-  normal review/CI can proceed.
+  The GitHub project account must be re-linked before PR creation and normal
+  review/CI can proceed.
 
 ## Phase 3.1 UCDP public snapshot and deployment (2026-10-20)
 
