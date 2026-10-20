@@ -15,8 +15,11 @@ from rich.table import Table
 from app.clustering.cluster import EventClusterer
 from app.clustering.identity_resolver import EventIdentityResolver
 from app.config import get_settings
+from app.datasets.ucdp import UCDPGEDImporter, UCDPImportError, write_research_feed
 from app.datastore import (
     get_claim_store,
+    get_data_store,
+    get_dataset_import_state_store,
     get_event_store,
     get_ingestion_run_store,
     get_source_store,
@@ -62,6 +65,35 @@ _EXTRACTION_RETRY_DELAYS = {
     "client_configuration_error": timedelta(hours=6),
     "provider_error": timedelta(hours=6),
 }
+
+
+@app.command("import-ucdp")
+def import_ucdp():
+    """Import the versioned public UCDP GED dataset, outside the news pipeline."""
+    settings = get_settings()
+    data_store = get_data_store()
+    feed_path = (
+        settings.web_dir / "public" / "data" / "research" / "ucdp-ged.json"
+    )
+    importer = UCDPGEDImporter(data_store)
+    try:
+        state = importer.import_latest()
+    except UCDPImportError as error:
+        write_research_feed(
+            feed_path,
+            importer.record_store,
+            importer.state_store,
+        )
+        console.print(f"[red]UCDP GED import failed: {error.category}[/red]")
+        raise typer.Exit(code=1) from None
+    write_research_feed(feed_path, importer.record_store, importer.state_store)
+    console.print(
+        f"[green]UCDP GED {state.last_success_dataset_version} imported:[/green] "
+        f"{state.records_received} rows; added={state.records_added}; "
+        f"updated={state.records_updated}; "
+        f"coverage={state.coverage_start or 'unknown'}.."
+        f"{state.coverage_end or 'unknown'}"
+    )
 
 
 def _source_needs_extraction(source, *, now=None) -> bool:
@@ -926,6 +958,23 @@ def stats():
 @app.command()
 def health():
     """Report persisted ingestion outcomes and their freshness; do not probe sources."""
+    dataset_state = get_dataset_import_state_store().get_ucdp()
+    console.print("[bold blue]Structured dataset health[/bold blue]")
+    if dataset_state.last_attempt_at is None:
+        console.print("  UCDP GED: no import attempt recorded.")
+    else:
+        console.print(
+            f"  UCDP GED: latest attempt={dataset_state.last_attempt_status}; "
+            f"category={dataset_state.last_error_category or 'none'}; "
+            f"version={dataset_state.last_success_dataset_version or 'none'}; "
+            f"records={dataset_state.records_received} "
+            f"(added={dataset_state.records_added}, "
+            f"updated={dataset_state.records_updated}); "
+            f"last success={dataset_state.last_success_at or 'never'}; "
+            f"failures={dataset_state.failure_count}; "
+            f"last failure={dataset_state.last_failure_category or 'none'} "
+            f"at {dataset_state.last_failure_at or 'never'}"
+        )
     runs = get_ingestion_run_store().get_latest(10)
     if not runs:
         console.print("[yellow]No persisted ingestion runs are available.[/yellow]")

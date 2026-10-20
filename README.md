@@ -16,6 +16,7 @@ The project explores whether a structured public record can help readers:
 - **Searchable event index** - Search and filter public records; filters can be shared by URL.
 - **Device-local monitoring** - Save searches, compare record and source-evidence changes on later visits, and download a source-linked citation brief. This data stays in the current browser and is not synced.
 - **Source-linked event pages** - Inspect source metadata and attributed claim excerpts where available.
+- **Structured-data Research Explorer** - Filter source-native UCDP GED historical observations by year, place, date, violence category, and fatality estimate; inspect source uncertainty, map valid coordinates, and export attributed CSV/JSON. This is a separate dataset view, not the published-event feed. See the [feed and export contract](docs/RESEARCH_EXPLORER.md).
 - **Transparency pages** - Read the methodology, configured source list, rights status, privacy draft, and use terms draft.
 - **Evidence safeguards** - Suspected syndication does not count as independent corroboration, and held or rejected events do not enter public artifacts.
 
@@ -127,6 +128,11 @@ python -m app.cli cluster
 python -m app.cli score
 python -m app.cli publish
 
+# Explicitly import the public UCDP GED dataset into separate dataset storage
+python -m app.cli import-ucdp
+# Inspect persisted ingestion and structured-dataset freshness (read-only)
+python -m app.cli health
+
 # Database stats
 python -m app.cli stats
 
@@ -149,6 +155,7 @@ Core entities:
 - **Event** - Central object with type, location, time, severity, claims
 - **Source** - Publisher, URL, metadata, reliability
 - **Claim** - Extracted fact: subject, predicate, value, source quote, confidence
+- **DatasetRecord** - Versioned, source-native structured observation, stored separately from events, evidence, and publication
 - **Location** - Cached geocoding with precision levels
 - **Country/Conflict** - Aggregation entities
 
@@ -194,7 +201,8 @@ Uncertainty and publication status
 - Real-provider reliability and persistent live ingestion need continued verification.
 - The CLI does not yet route every extracted candidate through the complete event-resolution handoff.
 - News publishers, feeds, and ReliefWeb are not cleared for commercial reuse or redistribution; source-specific storage and display terms also remain under review.
-- GDELT dataset terms permit commercial use and redistribution with attribution, but do not grant rights to linked publisher articles or media. UCDP GED data is under CC BY 4.0 with attribution, while API access requires a separately approved token and HUMANITY has no UCDP adapter yet.
+- GDELT dataset terms permit commercial use and redistribution with attribution, but do not grant rights to linked publisher articles or media. UCDP GED 26.1 is available through a public CC BY 4.0 CSV download; the explicit bounded importer and separate historical-data Research Explorer omit publisher article text and remain separate from news publication. The UCDP API is distinct and still requires a token.
+- The current JSON store and generated Research Explorer feed load full filtered dataset records in the browser; this is an initial bounded research slice, not a scalable query API or a live event-alert service.
 - Coverage completeness is not measured, and a blank public feed must not be read as evidence that no events occurred.
 - Potential research-team services and pricing are unvalidated hypotheses only; there are no paid plans or checkout.
 - Accounts, alerts, paid APIs, and dynamic database services are not currently offered.

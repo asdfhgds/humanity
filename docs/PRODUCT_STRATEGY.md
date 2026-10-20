@@ -22,8 +22,11 @@ filters, source links, a map, and methodology/transparency pages. The event
 index now also supports browser-local saved searches, comparisons against a
 review snapshot, and a source-linked citation brief. This is device-local only;
 it is not an account, synchronized workspace, alerting service, or ingestion
-trigger. The empty published feed and uneven source coverage are material
-product limitations.
+trigger. The separate Research Explorer presents historical UCDP GED
+source-native observations with version/coverage/freshness, source uncertainty,
+filters, map, and attributed CSV/JSON exports. It is not the live news feed,
+independent corroboration, or publication path; the empty published feed and
+uneven source coverage remain material product limitations.
 
 ## Commercial packaging hypotheses
 
@@ -58,11 +61,21 @@ ingestion cadence. A human would have to review each brief before delivery.
 
 **Source and service boundaries:** do not redistribute article text, images, or
 claims beyond the rights granted by each source. GDELT dataset terms allow
-commercial use with attribution but do not cover linked articles. UCDP GED is
-CC BY 4.0 with attribution, but API access still requires a token request and
-the adapter is not implemented. Other listed sources remain not cleared for
-commercial reuse/redistribution. Never describe coverage as comprehensive or
-records as verified solely because extraction succeeded.
+commercial use with attribution but do not cover linked articles. The public
+UCDP GED download is CC BY 4.0 with attribution; its separate API remains
+token-gated. The Research Explorer uses selected dataset fields and excludes
+publisher article text and metadata. Other listed sources remain not cleared
+for commercial reuse/redistribution. Never describe coverage as comprehensive
+or records as verified solely because extraction succeeded.
+
+**Dataset workflow and scale:** the explicit UCDP import downloads and validates
+a bounded release, stores versioned dataset rows outside the news event model,
+and emits a source-attributed public feed for browser filtering and CSV/JSON
+export. It does not guarantee continuous updates, provide per-filter server
+queries, or produce event alerts. Full-release JSON download and client-side
+filtering are adequate only for an initial bounded dataset slice; a larger
+workload needs measured size/performance and likely columnar or transactional
+storage with query endpoints before customer-specific access is offered.
 
 **Delivery cost and success:** no measured per-brief labor, provider-call cost,
 or infrastructure cost is available, so the pilot has no defensible price yet.

@@ -25,9 +25,13 @@ Two dataset entries have a narrow, documented license basis:
   remain outside this dataset review.
 - **UCDP GED dataset**: UCDP identifies the dataset as CC BY 4.0 and permits
   redistribution with attribution to the relevant UCDP publication. The
-  versioned UCDP API requires an access token requested from its maintainer.
-  HUMANITY has not obtained that token and has not implemented a UCDP adapter.
-  Dataset licensing is not API access approval.
+  public [GED 26.1 CSV archive](https://ucdp.uu.se/downloads/ged/ged261-csv.zip)
+  and [codebook](https://ucdp.uu.se/downloads/ged/ged261.pdf) are used by a
+  separate bounded importer. The versioned UCDP API remains token-gated and is
+  not used. The importer displays selected event-level fields, dates,
+  coordinates, uncertainty and fatality ranges, while discarding all publisher
+  article text and source metadata. Public download access is distinct from API
+  access approval; the review is an operational record, not legal advice.
 
 Attribution does not imply endorsement. The downloadable browser-local research
 brief contains published event labels, dates, locations, and source links, not
@@ -57,6 +61,6 @@ The current source-status labels are deliberately conservative:
   conditions recorded in that entry; this is not a blanket legal clearance.
 
 News publishers, feeds, and ReliefWeb remain pending/not cleared. The UCDP
-dataset license is reviewed, but access is blocked on API-token approval and
-there is no integration. GDELT's dataset use is reviewed with attribution;
+dataset download is reviewed with attribution; API access remains token-gated.
+GDELT's dataset use is reviewed with attribution;
 linked article content remains excluded.
