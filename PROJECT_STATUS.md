@@ -1,6 +1,6 @@
 # HUMANITY Project Status
 
-## Phase 3.2 research-summary delivery (2026-10-20)
+## Phase 3.2 research-summary delivery (2026-10-20; deployed)
 
 - The summary improvements are implemented locally on `phase3-2-research-summary`,
   based on verified `master` commit `31e23314dd12a77545bfff0be07dcfe51501236f`.
@@ -30,7 +30,7 @@
   build generated 18 pages and the static link/asset audit passed; all four
   workflow YAML files parsed; formatting and `git diff --check` passed. The
   build retains the existing large MapLibre chunk advisory.
-- Local browser verification against the generated UI and live public partitions
+- Browser verification against the generated UI and live public partitions
   loaded 2025 and 2024: 2025 showed 25,770 records, 25,770 with best-estimate
   values, Ukraine as the most frequent country (7,504), and state-based
   violence as the most frequent type (17,786). Its adjacent-year comparison
@@ -41,20 +41,25 @@
   source attribution remained available. Browser-triggered CSV and JSON
   exports each contained all 30,066 2024 records; JSON included attribution
   and both export files had the stable expected release filename/columns.
-  This is local browser verification, not deployed feature verification.
-- Commits `d0c5d86578acb1a0fae5b1cd657143b65bf6f159`,
-  `c84c1a453b3aa585a4746ba3c181962d0b89e86d`, and
-  `75be06afaff1f13b2d769970cfa09bc02fe666c4` are pushed to
-  `phase3-2-research-summary` (latest branch head `75be06a`). PR creation was
-  attempted again after confirming the branch push, but the project GitHub
-  integration still reports that its linked account is unavailable. There is
-  no PR CI run or deployment for this branch. The public site remains on the
-  previous UI; post-deployment summary/link/export behavior has not been
-  verified.
-- These changes are not yet merged or deployed. No news-ingestion,
-  Gemini, automatic-publishing, or production-release settings were changed.
-  The GitHub project account must be re-linked before PR creation and normal
-  review/CI can proceed.
+  After deployment, the public research page showed GED 26.1, its 2025 summary,
+  and the 2024-to-2025 record-count comparison; selecting the Ukraine summary
+  applied the corresponding URL filter and displayed 7,504 rows.
+- PR [#26](https://github.com/asdfhgds/humanity/pull/26) passed required CI
+  run [39501324884](https://github.com/asdfhgds/humanity/actions/runs/39501324884)
+  and merged at `bd319b4b8c7a3447014641ac93fd2ab9cd3c4360` on 2026-10-20.
+  GitHub Pages deployment
+  [39502631128](https://github.com/asdfhgds/humanity/actions/runs/39502631128)
+  completed successfully. The deployed
+  [Research Explorer](https://asdfhgds.github.io/humanity/research/) and its
+  index return HTTP 200; the index reports 417,968 records. The 2024 and 1989
+  partitions return HTTP 200 with 30,066 and 2,659 records respectively.
+  The deployed events and global-stat endpoints also return HTTP 200 and
+  remain empty (zero events), confirming the historical dataset is not being
+  published as news.
+- Export contents were verified in the browser against the real 2024 data
+  partition; the deployed page retains the same source-attributed CSV and JSON
+  export controls. No news-ingestion, Gemini, automatic-publishing, or
+  production-release settings were changed.
 
 ## Phase 3.1 UCDP public snapshot and deployment (2026-10-20)
 
