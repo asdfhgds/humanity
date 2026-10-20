@@ -1,0 +1,117 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Source Rights and Reuse | HUMANITY"
+  description="How HUMANITY acquires, stores, attributes, and reviews third-party source material."
+>
+  <main class="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+    <header class="border-b border-humanity-border pb-8">
+      <p class="eyebrow">Transparency and reuse</p>
+      <h1 class="editorial-title mt-3 text-4xl font-semibold sm:text-5xl">
+        Source rights &amp; reuse
+      </h1>
+      <p class="mt-4 max-w-3xl text-lg leading-relaxed text-humanity-textMuted">
+        A source being listed or publicly accessible is not a license.
+        Source-specific rights, storage, and commercial reuse have not yet been
+        legally cleared.
+      </p>
+    </header>
+
+    <section
+      class="grid gap-5 border-b border-humanity-border py-8 sm:grid-cols-3"
+      aria-label="Current source rights status"
+    >
+      <article>
+        <p class="eyebrow">Review status</p><p
+          class="mt-2 text-xl font-semibold"
+        >
+          Pending
+        </p>
+      </article>
+      <article>
+        <p class="eyebrow">Commercial reuse</p><p
+          class="mt-2 text-xl font-semibold"
+        >
+          Not cleared
+        </p>
+      </article>
+      <article>
+        <p class="eyebrow">Redistribution</p><p
+          class="mt-2 text-xl font-semibold"
+        >
+          Not cleared
+        </p>
+      </article>
+    </section>
+
+    <div
+      class="prose-copy max-w-3xl space-y-7 py-8 leading-relaxed text-humanity-textMuted"
+    >
+      <section>
+        <h2 class="editorial-title text-2xl font-semibold text-humanity-text">
+          What the pipeline handles
+        </h2>
+        <p class="mt-3">
+          Configured connectors can retrieve feed or API metadata and may fetch
+          article-page text for candidate extraction. Fetched source records are
+          persisted for processing. Public event pages link to originating
+          reporting and may show short, attributed claim excerpts; full article
+          republication is not intended.
+        </p>
+        <p class="mt-3">
+          These technical behaviors are not a rights determination. Content
+          access, storage duration, quotation, attribution requirements, and
+          display permissions can differ by source and are still being reviewed.
+        </p>
+      </section>
+      <section>
+        <h2 class="editorial-title text-2xl font-semibold text-humanity-text">
+          Per-source register
+        </h2>
+        <p class="mt-3">
+          The machine-readable register records every configured connector and
+          its review state. A test ensures new or removed source configurations
+          cannot silently drift from that register.
+        </p>
+        <div class="mt-4 flex flex-wrap gap-3">
+          <a
+            class="btn-secondary"
+            href="https://github.com/asdfhgds/humanity/blob/master/config/source_rights.yaml"
+            target="_blank"
+            rel="noopener noreferrer">Review source-rights register ↗</a
+          >
+          <a class="btn-secondary" href="/sources">Browse configured sources</a>
+        </div>
+      </section>
+      <section>
+        <h2 class="editorial-title text-2xl font-semibold text-humanity-text">
+          Before commercial use
+        </h2>
+        <p class="mt-3">
+          The project must verify terms and licenses, API/feed conditions,
+          robots and rate limits, permitted content storage and retention,
+          quotation and display scope, attribution, commercial use,
+          redistribution, and privacy obligations for every connector. Qualified
+          legal review is required. This page is a project disclosure, not legal
+          advice or a grant of rights.
+        </p>
+        <p class="mt-3">
+          The software repository's MIT license applies to the software, not to
+          third-party reporting, data, photographs, or other source material.
+        </p>
+      </section>
+    </div>
+    <p
+      class="border-t border-humanity-border pt-5 text-sm text-humanity-textMuted"
+    >
+      For the complete operational notes, see <a
+        class="link"
+        href="https://github.com/asdfhgds/humanity/blob/master/docs/SOURCE_RIGHTS.md"
+        target="_blank"
+        rel="noopener noreferrer">the source-rights documentation</a
+      >.
+    </p>
+  </main>
+</BaseLayout>

@@ -2,24 +2,23 @@
 
 > **The world, measured through human events.**
 
-An autonomous global human events intelligence platform that continuously discovers, verifies, structures, analyzes, and publishes significant human events happening around the world.
+A developing, source-linked public record of selected events affecting people. HUMANITY is designed to make provenance and uncertainty visible; it is not a complete or continuously current account of world events.
 
 ## 🎯 Vision
 
-Not a traditional news aggregator. A **structured global event intelligence platform** whose purpose is:
+The project explores whether a structured public record can help readers:
 
-> Understand what is happening to people around the world right now, show it geographically and chronologically, and make every important claim traceable to its sources.
+> follow selected reporting geographically and chronologically, and inspect the sources behind reported claims.
 
 ## ✨ Features
 
-- **Live Global Map** - Interactive MapLibre globe showing protests, conflicts, attacks, casualties, displacement, disasters, repression, and humanitarian events
-- **Event Database** - Every event has a permanent URL with full source transparency
-- **Human Cost Pages** - Source-linked event-level reported ranges, with no additive global casualty scoreboard
-- **Country & Conflict Pages** - Published-record counts and context without implying complete real-world coverage
-- **Daily Briefings** - Automated "What changed in the last 24 hours?" summaries
-- **Overlooked Events** - Significant events receiving little international coverage
-- **Share Cards** - Auto-generated social media cards for every event
-- **Full Methodology Transparency** - Every number traced to its source
+- **Published-record map and browse pages** - Show only records included in the generated public dataset; an empty feed is possible.
+- **Searchable event index** - Search and filter public records; filters can be shared by URL.
+- **Source-linked event pages** - Inspect source metadata and attributed claim excerpts where available.
+- **Transparency pages** - Read the methodology, configured source list, rights status, privacy draft, and use terms draft.
+- **Evidence safeguards** - Suspected syndication does not count as independent corroboration, and held or rejected events do not enter public artifacts.
+
+This is an early-stage research prototype. It does not provide complete global coverage, guaranteed live ingestion, user accounts, alerts, or a paid research service.
 
 ## 🏗️ Architecture
 
@@ -38,11 +37,13 @@ humanity/
 │   └── public/data/        # Generated JSON for maps, timelines, stats
 ├── data/                   # Local JSON datastore (MVP)
 ├── config/                 # YAML configuration
-│   ├── sources.yaml        # Source registry
+│   ├── sources.yaml        # Connector/source configuration
+│   ├── source_rights.yaml  # Per-source rights review register
 │   ├── topics.yaml         # Event taxonomy
 │   ├── countries.yaml      # Country metadata
 │   └── scoring.yaml        # Scoring weights
 └── .github/workflows/      # Autonomous pipeline
+docs/                       # Product, architecture, rights, privacy, terms
 ```
 
 ## 🚀 Quick Start
@@ -65,12 +66,12 @@ pip install -e ".[dev]"
 
 # Frontend setup
 cd web
-npm install
+npm ci
 cd ..
 
 # Copy environment template
 cp .env.example .env
-# Edit .env with your API keys
+# Edit .env only if you will run a provider-backed local pipeline
 ```
 
 ### Required API Keys
@@ -81,10 +82,9 @@ cp .env.example .env
 
 Add to `.env`:
 ```env
-GEMINI_API_KEYS="key-from-project-one
-key-from-project-two"
+# Store real credentials locally and never commit .env
+GEMINI_API_KEYS="one-key-per-line"
 GEMINI_MODEL=gemini-flash-latest
-TAVILY_API_KEY=your_tavily_key  # optional
 ```
 
 For GitHub Actions, store the pool as the repository Actions secret
@@ -96,6 +96,9 @@ variables, source files, issues, pull requests, or logs. Runtime rotation state
 stores hashed slot identifiers, cooldowns, sanitized error categories, and the
 last-used slot only; adding keys appends slots, while removed keys' state is
 ignored.
+
+Live ingestion and production publication remain gated; do not treat a local
+build or successful extraction as evidence that a public event qualifies.
 
 ### Run Locally
 
@@ -112,7 +115,8 @@ Visit `http://localhost:4321` to see the site.
 ## 📊 Pipeline Commands
 
 ```bash
-# Full autonomous pipeline (discover → extract → cluster → score → publish)
+# Pipeline command (may contact configured external sources/providers; production
+# release and publication remain gated by application settings)
 python -m app.cli run
 
 # Individual stages
@@ -149,62 +153,51 @@ Core entities:
 
 ## 🤖 AI Usage
 
-- **Gemini 1.5 Flash** (free tier): Classification, extraction, clustering assistance, scoring
-- **Structured JSON output only** - Validated with Pydantic schemas
-- **Two-model strategy**: Cheap model for high-volume, strong model for synthesis
-- **Never**: Invent facts, fill missing numbers, create fake citations
+- Gemini is used for schema-validated candidate extraction when configured and available.
+- Model output is not an independent source and does not by itself verify a claim or qualify an event for publication.
+- Provider errors, quota limits, or unavailable credentials can defer extraction.
+- The application must not invent facts, fill missing numbers, or create citations.
 
 ## 🌍 Deployment
 
-### Free Tier (MVP)
-```bash
-# GitHub Actions runs the ingestion pipeline every 5 minutes (best-effort schedule)
-# Generates the Astro site in web/dist/
-# Deploys the refreshed site to GitHub Pages
-```
-
-The site refreshes its published feeds in the browser every minute. This only
-fetches the most recently deployed data; it does not guarantee new reporting
-every minute. Scheduled GitHub Actions runs are also best-effort.
-
-### Production (Phase 2+)
-- Cloudflare D1 for database
-- Cloudflare Workers for API
-- Custom domain
+The Astro frontend is a static site. Browser refreshes can reload the latest
+deployed feeds, but do not run source ingestion. Workflow schedules are
+best-effort and production ingestion, recurring execution, deployment, and
+automatic publication are gated. See [PROJECT_STATUS.md](PROJECT_STATUS.md)
+before assuming any live capability is active.
 
 ## 📝 Event Page Structure
 
-Every event gets a permanent URL: `/event/2026/10/08/event-slug`
+Eligible published event records can have a static URL such as
+`/event/2026/10/08/event-slug`. URLs are generated only for records included in
+the public event index.
 
 ```
-Title | Event Type | Location | Date | Severity | Status | Confidence
-Summary
-Map
-Key Facts (deaths, injuries, arrests, displaced, participants)
-What Is Known (corroborated claims)
-What Is Uncertain (reported/disputed claims)
-Sources (with links, dates, types)
-Claims/Evidence (structured with quotes)
-Related Events / Conflict / Country
-Last Updated | Confidence Score
+Title | Event Type | Location | Date | Confidence
+Summary and reported impact, where available
+Map location, where available
+Source links and attributed claims, where available
+Uncertainty and publication status
 ```
 
 ## 🔬 Methodology Highlights
 
-- **No false precision**: Ranges (23–31) not points (27)
-- **Source transparency**: Every claim → source quote → source URL
-- **Uncertainty taxonomy**: reported / corroborated / disputed / estimated / unknown
-- **Revision history**: Changing figures stored, never overwritten
-- **Contradiction engine**: Conflicting reports flagged explicitly
+- Preserve attribution and avoid treating extraction as verification.
+- Detect suspected copied or syndicated reporting before counting independent sources.
+- Hold candidates when evidence or source independence is insufficient.
+- Keep reported figures and conflicts contextualized; do not create unsupported aggregate totals.
+- Review the current [methodology](web/src/pages/methodology.astro) and [source-rights status](docs/SOURCE_RIGHTS.md).
 
-## 🛣️ Roadmap
+## Current limitations and next work
 
-- [x] Phase 1: MVP - Astro site, GDELT discovery, Gemini extraction, clustering, publishing
-- [ ] Phase 2: Multi-source ingestion, country/conflict pages, timelines
-- [ ] Phase 3: Casualty series, displacement series, human-cost pages, revision history
-- [ ] Phase 4: Daily brief, overlooked engine, share cards, social content
-- [ ] Phase 5: ACLED/UCDP integration, more local sources, language-aware ingestion
-- [ ] Phase 6: D1 database, dynamic API, user accounts, alerts, public API
+- Real-provider reliability and persistent live ingestion need continued verification.
+- The CLI does not yet route every extracted candidate through the complete event-resolution handoff.
+- Source-specific storage, display, commercial-use, and redistribution rights remain under review; commercial reuse is not cleared.
+- Coverage completeness is not measured, and a blank public feed must not be read as evidence that no events occurred.
+- Potential research-team services and pricing are unvalidated hypotheses only; there are no paid plans or checkout.
+- Accounts, alerts, paid APIs, and dynamic database services are not currently offered.
+
+See [the product hypotheses](docs/PRODUCT_STRATEGY.md), [architecture](docs/ARCHITECTURE.md), [privacy draft](docs/PRIVACY.md), and [terms draft](docs/TERMS.md).
 
 ## 🤝 Contributing
 

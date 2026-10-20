@@ -1,34 +1,83 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
+import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<BaseLayout title="Live Events | HUMANITY" description="Browse all detected human events worldwide. Filter by type, country, date, and severity.">
+<BaseLayout
+  title="Live Events | HUMANITY"
+  description="Browse all detected human events worldwide. Filter by type, country, date, and severity."
+>
   <div class="min-h-screen">
-    <header class="border-b border-humanity-border bg-humanity-darker/80 backdrop-blur-sm sticky top-0 z-50">
+    <header
+      class="border-b border-humanity-border bg-humanity-darker/80 backdrop-blur-sm sticky top-0 z-50"
+    >
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
           <div class="flex items-center gap-3">
             <a href="/" class="flex items-center gap-3">
-              <svg class="w-8 h-8 text-humanity-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M2 12h20" />
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              <svg
+                class="w-8 h-8 text-humanity-accent"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M2 12h20"></path>
+                <path
+                  d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+                ></path>
               </svg>
-              <span class="text-2xl font-bold tracking-tight text-humanity-text">HUMANITY</span>
+              <span class="text-2xl font-bold tracking-tight text-humanity-text"
+                >HUMANITY</span
+              >
             </a>
             <span class="text-humanity-textMuted">/</span>
-            <span class="text-humanity-text">Live Events</span>
+            <span class="text-humanity-text">Published reports</span>
           </div>
           <nav class="hidden md:flex items-center gap-6">
-            <a href="/" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Home</a>
-            <a href="/map" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Map</a>
-            <a href="/events" class="text-humanity-accent font-medium text-sm">Live Events</a>
-            <a href="/protests" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Protests</a>
-            <a href="/conflicts" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Conflicts</a>
-            <a href="/human-cost" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Human Cost</a>
-            <a href="/countries" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Countries</a>
-            <a href="/timelines" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Timelines</a>
-            <a href="/methodology" class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium">Methodology</a>
+            <a
+              href="/"
+              class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium"
+              >Home</a
+            >
+            <a
+              href="/map"
+              class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium"
+              >Map</a
+            >
+            <a href="/events" class="text-humanity-accent font-medium text-sm"
+              >Published reports</a
+            >
+            <a
+              href="/protests"
+              class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium"
+              >Protests</a
+            >
+            <a
+              href="/conflicts"
+              class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium"
+              >Conflicts</a
+            >
+            <a
+              href="/human-cost"
+              class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium"
+              >Human Cost</a
+            >
+            <a
+              href="/countries"
+              class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium"
+              >Countries</a
+            >
+            <a
+              href="/timelines"
+              class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium"
+              >Timelines</a
+            >
+            <a
+              href="/methodology"
+              class="text-humanity-textMuted hover:text-humanity-text transition-colors text-sm font-medium"
+              >Methodology</a
+            >
           </nav>
         </div>
       </div>
@@ -37,22 +86,49 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="mb-8">
         <div class="flex flex-wrap items-center gap-3">
-          <span class="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]" aria-hidden="true"></span>
-          <h1 class="text-3xl font-bold text-humanity-text mb-2">Live Events</h1>
+          <span
+            class="h-2.5 w-2.5 rounded-full bg-humanity-textMuted"
+            aria-hidden="true"></span>
+          <h1 class="text-3xl font-bold text-humanity-text mb-2">
+            Published reports
+          </h1>
         </div>
-        <p class="text-humanity-textMuted">All detected human events worldwide. Data updated automatically.</p>
-        <p id="events-refresh-status" class="mt-2 text-xs text-humanity-textMuted" aria-live="polite">Checking for new reports…</p>
+        <p class="text-humanity-textMuted">
+          Published records from monitored sources. Coverage is not
+          comprehensive; an empty feed does not mean no events occurred.
+        </p>
+        <p
+          id="events-refresh-status"
+          class="mt-2 text-xs text-humanity-textMuted"
+          aria-live="polite"
+        >
+          Checking for new reports…
+        </p>
       </div>
 
       <!-- Filters -->
       <div class="card mb-8">
         <div class="flex flex-wrap items-center gap-4">
           <div class="flex-1 min-w-[200px]">
-            <label class="block text-sm text-humanity-textMuted mb-1">Search events</label>
-            <input type="text" id="search-input" placeholder="Search by title, location, country..." class="input" />
+            <label
+              for="search-input"
+              class="block text-sm text-humanity-textMuted mb-1"
+              >Search reports</label
+            >
+            <input
+              type="search"
+              id="search-input"
+              placeholder="Search titles, summaries, places…"
+              class="input"
+              autocomplete="off"
+            />
           </div>
           <div>
-            <label class="block text-sm text-humanity-textMuted mb-1">Event Type</label>
+            <label
+              for="type-filter"
+              class="block text-sm text-humanity-textMuted mb-1"
+              >Event type</label
+            >
             <select id="type-filter" class="input">
               <option value="">All Types</option>
               <option value="PROTEST">Protest</option>
@@ -68,13 +144,20 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             </select>
           </div>
           <div>
-            <label class="block text-sm text-humanity-textMuted mb-1">Country</label>
+            <label
+              for="country-filter"
+              class="block text-sm text-humanity-textMuted mb-1">Country</label
+            >
             <select id="country-filter" class="input">
               <option value="">All Countries</option>
             </select>
           </div>
           <div>
-            <label class="block text-sm text-humanity-textMuted mb-1">Severity</label>
+            <label
+              for="severity-filter"
+              class="block text-sm text-humanity-textMuted mb-1"
+              >Minimum severity</label
+            >
             <select id="severity-filter" class="input">
               <option value="">All Severities</option>
               <option value="10">10 - Unprecedented</option>
@@ -90,7 +173,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             </select>
           </div>
           <div>
-            <label class="block text-sm text-humanity-textMuted mb-1">Date Range</label>
+            <label
+              for="date-filter"
+              class="block text-sm text-humanity-textMuted mb-1"
+              >Date range</label
+            >
             <select id="date-filter" class="input">
               <option value="">All Time</option>
               <option value="1">Last 24 hours</option>
@@ -99,146 +186,272 @@ import BaseLayout from '../layouts/BaseLayout.astro';
               <option value="90">Last 90 days</option>
             </select>
           </div>
+          <div
+            class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-humanity-border pt-4"
+          >
+            <p
+              id="events-count"
+              class="text-sm text-humanity-textMuted"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              Loading published reports…
+            </p>
+            <div class="flex items-center gap-3">
+              <button id="clear-filters" type="button" class="link text-sm"
+                >Clear filters</button
+              >
+              <button
+                id="copy-search-link"
+                type="button"
+                class="btn-secondary text-sm">Copy search link</button
+              >
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Results -->
       <div id="events-container" class="space-y-4">
         <div class="card text-center py-12">
-          <div class="animate-pulse-soft text-humanity-textMuted">Loading events...</div>
+          <div class="animate-pulse-soft text-humanity-textMuted">
+            Loading events...
+          </div>
         </div>
       </div>
 
       <!-- Pagination -->
-      <div id="pagination" class="flex items-center justify-center gap-2 mt-8"></div>
+      <div id="pagination" class="flex items-center justify-center gap-2 mt-8">
+      </div>
     </main>
   </div>
 
-<script>
-  import { escapeHtml, eventPath, parsePublishedEvents, requireElement, sitePath, type PublishedEvent } from '../lib/client-utils';
+  <script>
+    import {
+      escapeHtml,
+      eventPath,
+      parsePublishedEvents,
+      requireElement,
+      sitePath,
+      type PublishedEvent,
+    } from "../lib/client-utils";
+    import {
+      filterPublishedEvents,
+      parseEventFilters,
+      serializeEventFilters,
+      type EventFilters,
+    } from "../lib/event-filters.mjs";
 
-  let allEvents: PublishedEvent[] = [];
-  let currentPage = 1;
-  const pageSize = 20;
+    let allEvents: PublishedEvent[] = [];
+    let currentPage = 1;
+    const pageSize = 20;
+    const filterIds = [
+      "search-input",
+      "type-filter",
+      "country-filter",
+      "severity-filter",
+      "date-filter",
+    ] as const;
 
-  document.addEventListener('DOMContentLoaded', async () => {
-    const requestedType = new URLSearchParams(window.location.search).get('type');
-    const typeFilter = requireElement('type-filter', 'select');
-    if (requestedType && [...typeFilter.options].some(option => option.value === requestedType)) {
-      typeFilter.value = requestedType;
-    }
-    await loadEvents();
-    setupFilters();
-    window.setInterval(loadEvents, 60_000);
-  });
-
-  async function loadEvents() {
-    const container = requireElement('events-container', 'div');
-    try {
-      const response = await fetch(`${sitePath('data/events/all.json')}?updated=${Date.now()}`, { cache: 'no-store' });
-      if (!response.ok) throw new Error(`Events feed request failed (${response.status})`);
-      const events = parsePublishedEvents(await response.json());
-      allEvents = events;
-      populateCountryFilter();
+    document.addEventListener("DOMContentLoaded", async () => {
+      setupFilters();
+      await loadEvents();
+      applyFiltersFromUrl();
       renderEvents();
-      requireElement('events-refresh-status', 'p').textContent =
-        `Checked ${new Date().toLocaleTimeString()} · refreshes every minute`;
-    } catch (error) {
-      console.error('Could not refresh published events:', error);
-      requireElement('events-refresh-status', 'p').textContent =
-        allEvents.length ? 'Could not refresh; showing the latest available reports.' : 'Live reports are temporarily unavailable.';
-      if (!allEvents.length) {
-        container.innerHTML = '<div class="card p-8 text-center text-humanity-textMuted">The live events feed is temporarily unavailable. Please try again shortly.</div>';
+      window.setInterval(loadEvents, 60_000);
+    });
+
+    async function loadEvents() {
+      const container = requireElement("events-container", "div");
+      try {
+        const response = await fetch(
+          `${sitePath("data/events/all.json")}?updated=${Date.now()}`,
+          { cache: "no-store" },
+        );
+        if (!response.ok)
+          throw new Error(`Events feed request failed (${response.status})`);
+        const events = parsePublishedEvents(await response.json());
+        allEvents = events;
+        populateCountryFilter();
+        renderEvents();
+        requireElement("events-refresh-status", "p").textContent =
+          `Checked ${new Date().toLocaleTimeString()} · refreshes every minute`;
+      } catch (error) {
+        console.error("Could not refresh published events:", error);
+        requireElement("events-refresh-status", "p").textContent =
+          allEvents.length
+            ? "Could not refresh; showing the latest available reports."
+            : "Live reports are temporarily unavailable.";
+        if (!allEvents.length) {
+          container.innerHTML =
+            '<div class="card p-8 text-center text-humanity-textMuted">The live events feed is temporarily unavailable. Please try again shortly.</div>';
+        }
       }
     }
-  }
 
-  function populateCountryFilter() {
-    const select = requireElement('country-filter', 'select');
-    const selectedCountry = select.value;
-    select.length = 1;
-    const countries = [...new Set(allEvents.map(e => e.country_name).filter((country): country is string => Boolean(country)))].sort();
-    countries.forEach(country => {
-      const option = document.createElement('option');
-      option.value = country;
-      option.textContent = country;
-      select.appendChild(option);
-    });
-    select.value = selectedCountry;
-  }
+    function populateCountryFilter() {
+      const select = requireElement("country-filter", "select");
+      const selectedCountry = select.value;
+      select.length = 1;
+      const countries = [
+        ...new Set(
+          allEvents
+            .map((e) => e.country_name)
+            .filter((country): country is string => Boolean(country)),
+        ),
+      ].sort();
+      countries.forEach((country) => {
+        const option = document.createElement("option");
+        option.value = country;
+        option.textContent = country;
+        select.appendChild(option);
+      });
+      select.value = selectedCountry;
+    }
 
-  function setupFilters() {
-    const filters = ['search-input', 'type-filter', 'country-filter', 'severity-filter', 'date-filter'];
-    filters.forEach(id => {
-      requireElement(id, id === 'search-input' ? 'input' : 'select').addEventListener('input', () => {
-        currentPage = 1;
+    function setupFilters() {
+      filterIds.forEach((id) => {
+        requireElement(
+          id,
+          id === "search-input" ? "input" : "select",
+        ).addEventListener("input", () => {
+          currentPage = 1;
+          updateSearchUrl();
+          renderEvents();
+        });
+      });
+      requireElement("clear-filters", "button").addEventListener(
+        "click",
+        () => {
+          filterIds.forEach((id) => {
+            requireElement(
+              id,
+              id === "search-input" ? "input" : "select",
+            ).value = "";
+          });
+          currentPage = 1;
+          updateSearchUrl();
+          renderEvents();
+        },
+      );
+      requireElement("copy-search-link", "button").addEventListener(
+        "click",
+        async () => {
+          const button = requireElement("copy-search-link", "button");
+          try {
+            await navigator.clipboard.writeText(window.location.href);
+            button.textContent = "Link copied";
+          } catch (error) {
+            console.error("Could not copy the search link:", error);
+            button.textContent = "Copy unavailable — use the address bar";
+          }
+          window.setTimeout(() => {
+            button.textContent = "Copy search link";
+          }, 3000);
+        },
+      );
+      window.addEventListener("popstate", () => {
+        applyFiltersFromUrl();
         renderEvents();
       });
-    });
-    requireElement('pagination', 'div').addEventListener('click', (event) => {
-      if (!(event.target instanceof Element)) return;
-      const button = event.target.closest<HTMLButtonElement>('button[data-page]');
-      if (!button || button.disabled) return;
-      changePage(Number(button.dataset.page));
-    });
-  }
-
-  function getFilteredEvents() {
-    const search = requireElement('search-input', 'input').value.toLowerCase();
-    const type = requireElement('type-filter', 'select').value;
-    const country = requireElement('country-filter', 'select').value;
-    const severity = requireElement('severity-filter', 'select').value;
-    const dateRange = requireElement('date-filter', 'select').value;
-
-    return allEvents.filter(event => {
-      if (search && !String(event.title || '').toLowerCase().includes(search) &&
-          !String(event.city || '').toLowerCase().includes(search) &&
-          !String(event.country_name || '').toLowerCase().includes(search)) {
-        return false;
-      }
-      if (type && event.event_type !== type) return false;
-      if (country && event.country_name !== country) return false;
-      if (severity && (event.severity ?? 0) < parseInt(severity)) return false;
-      if (dateRange) {
-        const eventDate = new Date(event.start_time);
-        const cutoff = new Date();
-        cutoff.setDate(cutoff.getDate() - parseInt(dateRange));
-        if (eventDate < cutoff) return false;
-      }
-      return true;
-    }).sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
-  }
-
-  function renderEvents() {
-    const container = requireElement('events-container', 'div');
-    const pagination = requireElement('pagination', 'div');
-    const filtered = getFilteredEvents();
-    
-    const totalPages = Math.ceil(filtered.length / pageSize);
-    currentPage = totalPages ? Math.min(currentPage, totalPages) : 1;
-    const start = (currentPage - 1) * pageSize;
-    const pageEvents = filtered.slice(start, start + pageSize);
-
-    if (pageEvents.length === 0) {
-      container.innerHTML = `
-        <div class="card text-center py-12">
-          <h3 class="text-lg font-medium text-humanity-text mb-2">No events found</h3>
-          <p class="text-humanity-textMuted">Try adjusting your filters or search terms.</p>
-        </div>
-      `;
-      pagination.innerHTML = '';
-      return;
+      requireElement("pagination", "div").addEventListener("click", (event) => {
+        if (!(event.target instanceof Element)) return;
+        const button =
+          event.target.closest<HTMLButtonElement>("button[data-page]");
+        if (!button || button.disabled) return;
+        changePage(Number(button.dataset.page));
+      });
     }
 
-    container.innerHTML = pageEvents.map(event => {
-      const href = eventPath(event.slug);
-      const eventTitle = href
-        ? `<a href="${href}" class="hover:text-humanity-accent">${escapeHtml(event.title)}</a>`
-        : escapeHtml(event.title);
-      const eventType = String(event.event_type || 'EVENT');
-      const eventTypeLabel = escapeHtml(getEventTypeLabel(eventType));
-      const confidence = String(event.confidence || 'LOW');
-      return `
+    function readFilters(): EventFilters {
+      return {
+        q: requireElement("search-input", "input").value.trim(),
+        type: requireElement("type-filter", "select").value,
+        country: requireElement("country-filter", "select").value,
+        severity: requireElement("severity-filter", "select").value,
+        days: requireElement("date-filter", "select").value,
+      };
+    }
+
+    function applyFiltersFromUrl() {
+      const types = new Set(
+        [...requireElement("type-filter", "select").options].map(
+          (option) => option.value,
+        ),
+      );
+      const countries = new Set(
+        [...requireElement("country-filter", "select").options].map(
+          (option) => option.value,
+        ),
+      );
+      const filters = parseEventFilters(
+        new URLSearchParams(window.location.search),
+        types,
+        countries,
+      );
+      requireElement("search-input", "input").value = filters.q;
+      requireElement("type-filter", "select").value = filters.type;
+      requireElement("country-filter", "select").value = filters.country;
+      requireElement("severity-filter", "select").value = filters.severity;
+      requireElement("date-filter", "select").value = filters.days;
+    }
+
+    function updateSearchUrl() {
+      const params = serializeEventFilters(
+        readFilters(),
+        new URLSearchParams(window.location.search),
+      );
+      const query = params.toString();
+      const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
+      window.history.replaceState(null, "", nextUrl);
+    }
+
+    function renderEvents() {
+      const container = requireElement("events-container", "div");
+      const pagination = requireElement("pagination", "div");
+      const filtered = filterPublishedEvents(allEvents, readFilters());
+      requireElement("events-count", "p").textContent =
+        allEvents.length === filtered.length
+          ? `${filtered.length} published ${filtered.length === 1 ? "report" : "reports"}`
+          : `${filtered.length} of ${allEvents.length} published reports`;
+
+      const totalPages = Math.ceil(filtered.length / pageSize);
+      currentPage = totalPages ? Math.min(currentPage, totalPages) : 1;
+      const start = (currentPage - 1) * pageSize;
+      const pageEvents = filtered.slice(start, start + pageSize);
+
+      if (pageEvents.length === 0) {
+        const noPublishedReports = allEvents.length === 0;
+        container.innerHTML = `
+        <div class="card text-center py-12">
+          <h3 class="text-lg font-medium text-humanity-text mb-2">${noPublishedReports ? "No reports are currently published" : "No reports match these filters"}</h3>
+          <p class="mx-auto max-w-2xl text-humanity-textMuted">${
+            noPublishedReports
+              ? "The public feed contains no evidence-qualified reports right now. This does not mean no events occurred; source monitoring is incomplete and publication thresholds are not lowered to fill the page."
+              : "Try a broader search or clear one or more filters."
+          }</p>
+          ${!noPublishedReports ? '<button id="empty-clear-filters" type="button" class="btn-secondary mt-4">Clear filters</button>' : ""}
+        </div>
+      `;
+        pagination.innerHTML = "";
+        container
+          .querySelector("#empty-clear-filters")
+          ?.addEventListener("click", () => {
+            requireElement("clear-filters", "button").click();
+          });
+        return;
+      }
+
+      container.innerHTML = pageEvents
+        .map((event) => {
+          const href = eventPath(event.slug);
+          const eventTitle = href
+            ? `<a href="${href}" class="hover:text-humanity-accent">${escapeHtml(event.title)}</a>`
+            : escapeHtml(event.title);
+          const eventType = String(event.event_type || "EVENT");
+          const eventTypeLabel = escapeHtml(getEventTypeLabel(eventType));
+          const confidence = String(event.confidence || "LOW");
+          return `
         <article class="overflow-hidden rounded-2xl border border-humanity-border bg-humanity-card transition-colors hover:border-humanity-accent/40">
           <div class="grid md:grid-cols-[minmax(12rem,0.85fr)_1.5fr]">
             <div class="relative flex min-h-52 items-end overflow-hidden bg-gradient-to-br from-humanity-accent/20 via-humanity-darker to-humanity-card p-5">
@@ -248,13 +461,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             <div class="min-w-0 p-5 sm:p-6">
               <div class="mb-3 flex flex-wrap items-center gap-2">
                 <span class="badge-${escapeHtml(eventType.toLowerCase())}">${eventTypeLabel}</span>
-                <span class="badge-confidence-${escapeHtml(confidence.toLowerCase())}">${escapeHtml(event.confidence || 'Reported')}</span>
-                <span class="text-xs text-humanity-textMuted">Severity ${Number.isFinite(event.severity) ? event.severity : '—'}/10</span>
+                <span class="badge-confidence-${escapeHtml(confidence.toLowerCase())}">${escapeHtml(event.confidence || "Reported")}</span>
+                <span class="text-xs text-humanity-textMuted">Severity ${Number.isFinite(event.severity) ? event.severity : "—"}/10</span>
               </div>
               <h2 class="text-xl font-semibold leading-snug text-humanity-text">${eventTitle}</h2>
-              <p class="mt-2 text-sm leading-relaxed text-humanity-textMuted line-clamp-3">${escapeHtml(event.summary || 'Details are still emerging.')}</p>
+              <p class="mt-2 text-sm leading-relaxed text-humanity-textMuted line-clamp-3">${escapeHtml(event.summary || "Details are still emerging.")}</p>
               <div class="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-humanity-textMuted">
-                <span>${escapeHtml([event.city, event.country_name].filter(Boolean).join(', ') || 'Location unconfirmed')}</span>
+                <span>${escapeHtml([event.city, event.country_name].filter(Boolean).join(", ") || "Location unconfirmed")}</span>
                 <span>${escapeHtml(formatDate(event.start_time))}</span>
                 <span>${Number.isSafeInteger(event.sources?.length) ? event.sources?.length : 0} sources</span>
               </div>
@@ -263,47 +476,77 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           </div>
         </article>
       `;
-    }).join('');
+        })
+        .join("");
 
-    // Pagination
-    if (totalPages > 1) {
-      pagination.innerHTML = `
-        <button data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''} class="btn-secondary">Previous</button>
+      // Pagination
+      if (totalPages > 1) {
+        pagination.innerHTML = `
+        <button data-page="${currentPage - 1}" ${currentPage === 1 ? "disabled" : ""} class="btn-secondary">Previous</button>
         <span class="px-4 text-humanity-textMuted">Page ${currentPage} of ${totalPages}</span>
-        <button data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''} class="btn-secondary">Next</button>
+        <button data-page="${currentPage + 1}" ${currentPage === totalPages ? "disabled" : ""} class="btn-secondary">Next</button>
       `;
-    } else {
-      pagination.innerHTML = '';
+      } else {
+        pagination.innerHTML = "";
+      }
     }
-  }
 
-  function changePage(page: number) {
-    currentPage = page;
-    renderEvents();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
+    function changePage(page: number) {
+      currentPage = page;
+      renderEvents();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
 
-  function renderHumanImpact(event: PublishedEvent) {
-    const impacts = event.human_impact || {};
-    const parts = [];
-    if (impacts.deaths) parts.push(`<span class="text-red-400">☠ ${escapeHtml(impacts.deaths)}</span>`);
-    if (impacts.injuries) parts.push(`<span class="text-orange-400">🤕 ${escapeHtml(impacts.injuries)}</span>`);
-    if (impacts.arrests) parts.push(`<span class="text-violet-400">🚔 ${escapeHtml(impacts.arrests)}</span>`);
-    if (impacts.displaced) parts.push(`<span class="text-amber-400">🏃 ${escapeHtml(impacts.displaced)}</span>`);
-    if (impacts.participants) parts.push(`<span class="text-blue-400">✊ ${escapeHtml(impacts.participants)}</span>`);
-    if (parts.length === 0) return '';
-    return `<div class="flex flex-wrap gap-3 mt-2">${parts.join('')}</div>`;
-  }
+    function renderHumanImpact(event: PublishedEvent) {
+      const impacts = event.human_impact || {};
+      const parts = [];
+      if (impacts.deaths)
+        parts.push(
+          `<span class="text-red-400">☠ ${escapeHtml(impacts.deaths)}</span>`,
+        );
+      if (impacts.injuries)
+        parts.push(
+          `<span class="text-orange-400">🤕 ${escapeHtml(impacts.injuries)}</span>`,
+        );
+      if (impacts.arrests)
+        parts.push(
+          `<span class="text-violet-400">🚔 ${escapeHtml(impacts.arrests)}</span>`,
+        );
+      if (impacts.displaced)
+        parts.push(
+          `<span class="text-amber-400">🏃 ${escapeHtml(impacts.displaced)}</span>`,
+        );
+      if (impacts.participants)
+        parts.push(
+          `<span class="text-blue-400">✊ ${escapeHtml(impacts.participants)}</span>`,
+        );
+      if (parts.length === 0) return "";
+      return `<div class="flex flex-wrap gap-3 mt-2">${parts.join("")}</div>`;
+    }
 
-  function getEventTypeLabel(type: string) {
-    const labels: Record<string, string> = { PROTEST: 'Protest', CONFLICT: 'Conflict', ATTACK: 'Attack', CASUALTY: 'Casualty', DISPLACEMENT: 'Displacement', DISASTER: 'Disaster', REPRESSION: 'Repression', HUMANITARIAN: 'Humanitarian', DIPLOMACY: 'Diplomacy', PEACE_PROCESS: 'Peace process' };
-    return labels[type] || String(type || 'Event');
-  }
+    function getEventTypeLabel(type: string) {
+      const labels: Record<string, string> = {
+        PROTEST: "Protest",
+        CONFLICT: "Conflict",
+        ATTACK: "Attack",
+        CASUALTY: "Casualty",
+        DISPLACEMENT: "Displacement",
+        DISASTER: "Disaster",
+        REPRESSION: "Repression",
+        HUMANITARIAN: "Humanitarian",
+        DIPLOMACY: "Diplomacy",
+        PEACE_PROCESS: "Peace process",
+      };
+      return labels[type] || String(type || "Event");
+    }
 
-  function formatDate(dateStr: string | undefined) {
-    if (!dateStr) return 'Unknown';
-    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  }
-
-</script>
+    function formatDate(dateStr: string | undefined) {
+      if (!dateStr) return "Unknown";
+      return new Date(dateStr).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    }
+  </script>
 </BaseLayout>
