@@ -3,11 +3,15 @@
 policy:
   rights_review: pending
   provenance: source URL and configured connector type are recorded in sources.yaml
-  storage: fetched source records and text can be persisted for processing; permission is not assessed
-  public_display: source metadata, links, and short attributed excerpts may be shown; permission is not cleared
-  commercial_reuse: not_cleared
+  terms_url: null
+  access_method: not_reviewed
+  attribution_requirements: not_reviewed
+  storage_retention_constraints: not_reviewed
+  display_rights: not_cleared
+  commercial_use: not_cleared
   redistribution: not_cleared
-  attribution: link to the originating publisher and article where available
+  review_date: null
+  evidence_reference: null
 sources:
   Reuters: { group: global_news, type: news, rights_review: pending }
   Associated Press: { group: global_news, type: news, rights_review: pending }
@@ -22,10 +26,46 @@ sources:
   UNHCR Data: { group: government, type: un, rights_review: pending }
   WHO Emergencies: { group: government, type: un, rights_review: pending }
   ACLED: { group: ngo, type: ngo, rights_review: pending }
-  UCDP: { group: ngo, type: academic, rights_review: pending }
+  UCDP:
+    group: ngo
+    type: academic
+    rights_review: reviewed
+    terms_url: https://ucdp.uu.se/downloads/
+    access_method: Public dataset downloads are available; versioned API access requires a token requested from the API maintainer (https://ucdp.uu.se/apidocs/); no HUMANITY adapter or token is configured.
+    attribution_requirements: Attribute the UCDP GED dataset and cite the relevant UCDP publication; link the CC BY 4.0 license and identify changes.
+    storage_retention_constraints: CC BY 4.0 permits copying and adaptation; API access is token-gated and requires a separate access request.
+    display_rights: UCDP GED dataset records may be displayed with attribution; underlying source articles are not included in this clearance.
+    commercial_use: allowed_with_attribution
+    redistribution: allowed_with_attribution
+    review_date: "2026-10-20"
+    evidence_reference: https://ucdp.uu.se/downloads/
   ICRC: { group: ngo, type: ngo, rights_review: pending }
-  GDELT GKG: { group: data_provider, type: data_provider, rights_review: pending }
-  GDELT Events: { group: data_provider, type: data_provider, rights_review: pending }
+  GDELT GKG:
+    group: data_provider
+    type: data_provider
+    rights_review: reviewed
+    terms_url: https://www.gdeltproject.org/about.html#termsofuse
+    access_method: Public GDELT datasets and APIs; this review covers GDELT data only, not linked article text or media.
+    attribution_requirements: Cite the GDELT Project and link to https://www.gdeltproject.org/.
+    storage_retention_constraints: GDELT terms permit unlimited use and redistribution of GDELT datasets.
+    display_rights: GDELT dataset fields may be displayed; linked publisher article text and media are excluded.
+    commercial_use: allowed
+    redistribution: allowed_with_attribution
+    review_date: "2026-10-20"
+    evidence_reference: https://www.gdeltproject.org/about.html#termsofuse
+  GDELT Events:
+    group: data_provider
+    type: data_provider
+    rights_review: reviewed
+    terms_url: https://www.gdeltproject.org/about.html#termsofuse
+    access_method: Public GDELT event datasets; this review covers GDELT data only, not linked article text or media.
+    attribution_requirements: Cite the GDELT Project and link to https://www.gdeltproject.org/.
+    storage_retention_constraints: GDELT terms permit unlimited use and redistribution of GDELT datasets.
+    display_rights: GDELT dataset fields may be displayed; linked publisher article text and media are excluded.
+    commercial_use: allowed
+    redistribution: allowed_with_attribution
+    review_date: "2026-10-20"
+    evidence_reference: https://www.gdeltproject.org/about.html#termsofuse
   ReliefWeb API: { group: data_provider, type: api, rights_review: pending }
   Reuters World RSS: { group: rss_feeds, type: rss, rights_review: pending }
   AP News World RSS: { group: rss_feeds, type: rss, rights_review: pending }

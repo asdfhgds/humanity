@@ -5,7 +5,7 @@ import io
 import tempfile
 from collections import Counter
 from contextlib import redirect_stderr, redirect_stdout
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import typer
@@ -56,6 +56,10 @@ _EXTRACTION_RETRY_DELAYS = {
     "network_failure": timedelta(minutes=30),
     "provider_server_error": timedelta(minutes=30),
     "invalid_model_output": timedelta(hours=6),
+    "invalid_request": timedelta(hours=6),
+    "unsupported_model": timedelta(hours=6),
+    "provider_configuration_error": timedelta(hours=6),
+    "client_configuration_error": timedelta(hours=6),
     "provider_error": timedelta(hours=6),
 }
 
@@ -921,19 +925,43 @@ def stats():
 
 @app.command()
 def health():
-    """Run source health checks."""
-    console.print("[bold blue]Running health checks...[/bold blue]")
-    
-    source_store = get_source_store()
-    sources = source_store.get_all()
-    
-    console.print(f"Checking {len(sources)} sources...")
-    
-    # In a real implementation, this would check each source's availability
-    for source in sources[:5]:  # Limit for demo
-        console.print(f"  {source.publisher}: OK (mock)")
-    
-    console.print("[green]Health check complete[/green]")
+    """Report persisted ingestion outcomes and their freshness; do not probe sources."""
+    runs = get_ingestion_run_store().get_latest(10)
+    if not runs:
+        console.print("[yellow]No persisted ingestion runs are available.[/yellow]")
+        return
+
+    latest = runs[0]
+    finished = latest.finished_at or latest.started_at
+    finished_utc = (
+        finished.replace(tzinfo=UTC)
+        if finished.tzinfo is None
+        else finished.astimezone(UTC)
+    )
+    age = max(0.0, (datetime.now(UTC) - finished_utc).total_seconds() / 3600)
+    console.print("[bold blue]Persisted ingestion health[/bold blue]")
+    console.print(
+        f"  Latest run: {latest.id[:8]} · status={latest.status} · "
+        f"finished={finished.isoformat()} · age={age:.1f} hours"
+    )
+    console.print(
+        f"  Sources attempted={latest.sources_attempted}; "
+        f"source records accepted={latest.sources_succeeded}; "
+        f"articles recorded={latest.articles_seen}; "
+        f"events created={latest.events_created}; held={latest.events_held}; "
+        f"published={latest.events_published}; Gemini calls={latest.llm_calls}"
+    )
+    if latest.source_health:
+        for source, status in sorted(latest.source_health.items()):
+            console.print(f"  {source}: {status}")
+    else:
+        console.print("  Per-source health was not recorded for this run.")
+    if latest.errors:
+        console.print(f"  Recorded errors: {len(latest.errors)}")
+        for error in latest.errors:
+            console.print(f"    {error.split(':', 1)[0][:80]}")
+    else:
+        console.print("  Recorded errors: none")
 
 
 @app.command(name="legacy-run", hidden=True)

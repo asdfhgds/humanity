@@ -18,8 +18,12 @@ These are hypotheses for interviews, not validated customer segments:
   treating reported figures as settled facts.
 
 The current public site supports browsing published records, event search and
-filters, source links, a map, and methodology/transparency pages. The empty
-published feed and uneven source coverage are material product limitations.
+filters, source links, a map, and methodology/transparency pages. The event
+index now also supports browser-local saved searches, comparisons against a
+review snapshot, and a source-linked citation brief. This is device-local only;
+it is not an account, synchronized workspace, alerting service, or ingestion
+trigger. The empty published feed and uneven source coverage are material
+product limitations.
 
 ## Commercial packaging hypotheses
 
@@ -38,6 +42,41 @@ revenue forecasts, or a commitment to build these services. No customer demand,
 conversion, or willingness-to-pay has been demonstrated. Do not add a paid
 feature until interviews, source-rights review, operational cost modeling, and
 support obligations justify it.
+
+## First pilot proposition to validate
+
+**Customer problem hypothesis:** analysts spend time reconciling fragmented
+human-impact reporting and need a traceable way to revisit relevant records,
+sources, and changes.
+
+**Smallest credible pilot:** a HUMANITY analyst prepares a periodic,
+source-linked monitoring brief for one mutually agreed topic/geography and
+review interval. The current product supplies searchable published records,
+source/evidence inspection, device-local saved filters, and citation export;
+it does not yet deliver a team workspace, alerts, private feeds, or a guaranteed
+ingestion cadence. A human would have to review each brief before delivery.
+
+**Source and service boundaries:** do not redistribute article text, images, or
+claims beyond the rights granted by each source. GDELT dataset terms allow
+commercial use with attribution but do not cover linked articles. UCDP GED is
+CC BY 4.0 with attribution, but API access still requires a token request and
+the adapter is not implemented. Other listed sources remain not cleared for
+commercial reuse/redistribution. Never describe coverage as comprehensive or
+records as verified solely because extraction succeeded.
+
+**Delivery cost and success:** no measured per-brief labor, provider-call cost,
+or infrastructure cost is available, so the pilot has no defensible price yet.
+Before offering it, measure preparation/review time and variable provider cost.
+Evaluate source-attribution completeness, evidence holds/corrections, update
+freshness, analyst task completion, and delivery effort. There is no validated
+customer interest or willingness-to-pay.
+
+**Enquiry integration blocker:** no contact form is shown because no approved
+private submission destination or responsible response owner is configured.
+Before accepting prospective-customer information, configure a secure,
+access-controlled destination, disclosure/consent wording, retention/deletion
+rules, and a monitored response path; do not collect enquiries in a public
+repository or generated site artifacts.
 
 ## Success measures
 

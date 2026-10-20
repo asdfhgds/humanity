@@ -126,6 +126,42 @@ def test_run_validates_extraction_and_preserves_discovery_result(
         assert "Extraction not persisted" in output
 
 
+def test_health_reports_persisted_run_without_exposing_stored_error_details(
+    monkeypatch, capsys
+):
+    finished = datetime(2026, 10, 20, 12, 0, 0)
+    run = SimpleNamespace(
+        id="health-run-1234",
+        finished_at=finished,
+        started_at=finished - timedelta(minutes=1),
+        status="completed",
+        sources_attempted=3,
+        sources_succeeded=2,
+        articles_seen=4,
+        events_created=1,
+        events_held=1,
+        events_published=0,
+        llm_calls=2,
+        source_health={"Example News": "healthy"},
+        errors=["APIError: private endpoint?key=private-secret"],
+    )
+    monkeypatch.setattr(
+        cli_main,
+        "get_ingestion_run_store",
+        lambda: SimpleNamespace(get_latest=lambda limit: [run]),
+    )
+
+    cli_main.health()
+
+    output = capsys.readouterr().out
+    assert "status=completed" in output
+    assert "Example News: healthy" in output
+    assert "attempted=3" in output
+    assert "APIError" in output
+    assert "private endpoint" not in output
+    assert "private-secret" not in output
+
+
 def test_extraction_identity_attaches_reports_and_preserves_claim_sources():
     class EventStore:
         def __init__(self):

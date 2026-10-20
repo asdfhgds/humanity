@@ -348,6 +348,18 @@ def _classify_api_error(error: Exception) -> _ErrorPolicy:
     name = type(error).__name__.lower()
     retry_after = _retry_after_seconds(error)
 
+    model_not_available = any(
+        term in message
+        for term in ("model not found", "model is not found", "unsupported model")
+    )
+    if model_not_available and (code == 400 or code == 404):
+        return _ErrorPolicy("unsupported_model", stop_batch=True)
+    if status in {"INVALID_ARGUMENT", "BAD_REQUEST"} or code in {400, 422}:
+        return _ErrorPolicy("invalid_request", stop_batch=True)
+    if code == 404 or status in {"NOT_FOUND", "MODEL_NOT_FOUND"}:
+        if any(term in message for term in ("model", "publisher")):
+            return _ErrorPolicy("unsupported_model", stop_batch=True)
+        return _ErrorPolicy("provider_configuration_error", stop_batch=True)
     if code == 401 or status in {"UNAUTHENTICATED", "AUTHENTICATION"}:
         return _ErrorPolicy("authentication_failure", stop_batch=True)
     if code == 403 or status in {"PERMISSION_DENIED", "PERMISSION"}:
@@ -391,7 +403,12 @@ def _classify_api_error(error: Exception) -> _ErrorPolicy:
             retry_after_seconds=retry_after,
         )
 
-    if code is not None and code >= 500:
+    if (code is not None and code >= 500) or status in {
+        "UNAVAILABLE",
+        "DEADLINE_EXCEEDED",
+        "INTERNAL",
+        "ABORTED",
+    }:
         return _ErrorPolicy(
             "provider_server_error",
             retryable=True,
@@ -404,6 +421,8 @@ def _classify_api_error(error: Exception) -> _ErrorPolicy:
         for term in ("timeout", "connecterror", "networkerror", "transporterror")
     ):
         return _ErrorPolicy("network_failure", retryable=True)
+    if isinstance(error, (TypeError, ValueError)):
+        return _ErrorPolicy("client_configuration_error", stop_batch=True)
     return _ErrorPolicy("provider_error", stop_batch=True)
 
 
