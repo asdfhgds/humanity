@@ -429,7 +429,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   });
   jsonButton.addEventListener('click', () => {
     if (!feed) return;
-    download(`ucdp-ged-${feed.dataset_version || 'data'}-filtered.json`, toUcdpJson(feed, filteredRecords), 'application/json;charset=utf-8');
+    download(`ucdp-ged-${feed.dataset_version || 'data'}-filtered.json`, toUcdpJson(feed, filteredRecords, index || feed), 'application/json;charset=utf-8');
   });
 
   initializeMap();
@@ -455,7 +455,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       const loadedFeed = parseUcdpFeed(await response.json());
       if (loadedFeed.year !== selectedYear) throw new Error('Research year feed does not match the selected year');
       if (generation !== loadGeneration) return;
-      feed = loadedFeed;
+      feed = {
+        ...loadedFeed,
+        status: index.status,
+        retrieved_at: index.retrieved_at,
+      };
       const selectedCountry = countrySelect.value || params.get('country') || '';
       const countries = [...new Set(
         loadedFeed.records

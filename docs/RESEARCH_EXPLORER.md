@@ -42,10 +42,12 @@ The small index is `web/public/data/research/ucdp-ged.json`. It reports the
 release version, coverage, retrieval time, attempt/success state, record
 quality counts, and record counts by year. Individual
 `web/public/data/research/ucdp-ged/years/<year>.json` partitions hold that
-year's records and the same attribution/license metadata. The browser requests
-the index and one selected year at a time; changing the year replaces the
-loaded partition. The explorer defaults to the latest available year and never
-downloads all historical rows at once.
+year's records and stable release attribution/license/source metadata. The
+small index is authoritative for current retrieval time and stale/failure
+status; it is intentionally not duplicated into every large year partition.
+The browser requests the index and one selected year at a time; changing the
+year replaces the loaded partition. The explorer defaults to the latest
+available year and never downloads all historical rows at once.
 
 Internal record IDs are based on UCDP's source-native `relid`, not the dataset
 release version. A new release therefore updates the matching record in place
@@ -74,9 +76,30 @@ measured 275 MB, so the public representation was changed to a small year index
 and per-year partitions. A subsequent isolated partition-generation check
 measured a 2,517-byte index and 275,192,599 total partition bytes; the largest
 year partition was 20,150,769 bytes (2024), with a median of 4,913,230 bytes.
-These are uncompressed sizes. Browser loading of a real populated partition
-has not been independently measured.
+The later Phase 3.1 production snapshot measured 278,579,190 bytes across the
+index and 37 year partitions (uncompressed). In a local populated-browser
+check, the smallest partition (1989, 1,735,599 bytes) loaded in 296 ms total
+(26 ms request); the largest (2024, 20,414,564 bytes) loaded in 918 ms total
+(487 ms request). These timings are local development-server measurements and
+are not a guarantee of public-network performance.
 
 This dataset is historical and versioned, not a live alert stream. A UCDP row is
 not an independent source corroborating a HUMANITY news event and is never
 automatically promoted to the event feed.
+
+## Public snapshot operations
+
+The Phase 3.1 public snapshot was imported with a unique temporary `DATA_DIR`.
+After validating the result, only the public index and year partitions were
+retained for the static-site release; operational record partitions and import
+state were not committed. The one-time import state is therefore not available
+to the next run. For future refreshes, use an ignored persistent `DATA_DIR`
+outside the published static feed, run the bounded importer, and publish the
+generated public files only after a successful complete import and count/rights
+validation. Never replace a known-good public snapshot with partial output.
+
+Year partition files contain source data and stable release metadata, not the
+per-run retrieval timestamp, so identical re-imports do not rewrite all large
+files merely because the index retrieval time advances. Operational and public
+partition writers also leave byte-identical partition files untouched. The
+index alone reflects refreshed retrieval/failure status.

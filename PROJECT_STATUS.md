@@ -1,5 +1,45 @@
 # HUMANITY Project Status
 
+## Phase 3.1 UCDP public snapshot and deployment (2026-10-20)
+
+- Confirmed PR #24 merged at `baa6c4a55d23f6d349aeea31898e52cf4d29759a`;
+  its required Python and frontend checks passed on commit
+  `59a276229c8767f1b4016a11c7805c0e48805a63`.
+- Created a clean `phase3.1-ucdp-publication` worktree from that exact master
+  commit. Ran the bounded `python -m app.cli import-ucdp` using an isolated
+  temporary `DATA_DIR`; the real UCDP GED 26.1 request succeeded with 417,968
+  records and coverage 1989-01-01 through 2025-12-31. The index and 37 year
+  partitions agree on all per-year and total counts.
+- Real public payload measured 278,579,190 bytes uncompressed; the generated
+  static build measured 282,457,732 bytes across 100 files. The smallest
+  partition was 1989 (2,659 records; 1,735,599 bytes); the largest was 2024
+  (30,066 records; 20,414,564 bytes). Data remained within the static build;
+  no records were truncated.
+- Confirmed stable record IDs are derived from UCDP `relid`; all public records
+  omit article headlines, article body, publisher URLs, and publisher metadata.
+  Missing/invalid dates and coordinates remain missing. The index and chunks
+  retain CC BY 4.0, UCDP attribution, GED download, codebook, and license links.
+  The isolated import created no events, claims, or source/news state.
+- The one-time temporary import's operational records and health state are not
+  committed. Added ignore rules for these operational files and documented
+  durable ignored storage for future updates. Year partitions now omit volatile
+  retrieval metadata and identical operational/public partitions are not
+  rewritten; the small index remains authoritative for retrieval/failure state.
+- Populated browser check on local dev server: 1989 (2,659 records; 1.74 MB)
+  loaded in 296 ms total / 26 ms request; 2024, the largest partition (30,066
+  records; 20.41 MB), loaded in 918 ms total / 487 ms request. These are local
+  browser/server measurements, not public-network latency. Both showed up to
+  250 chronology cards and correct valid-coordinate counts; Ukraine search and
+  country/date/fatality filters worked, and filtered CSV/JSON each exported all
+  23 matching records with attribution and current index status/time.
+- Full local Python suite passed (139 tests); frontend tests passed (17); Astro
+  check passed with zero diagnostics; the populated static build generated 18
+  pages and the static-site audit passed. Four workflow YAML files parsed.
+  Public deployment and network verification remain pending.
+- Gemini/news ingestion, automatic publishing, production release, recurring
+  ingestion, and publication gates remain unchanged. This dataset-only release
+  does not establish that the news pipeline is operational.
+
 ## Phase 3 structured-data slice (2026-10-20)
 
 - PR #23 was merged to `master` at `dbd16b1cc58f8c712bdef64147bc03b62eb3ebdf`;

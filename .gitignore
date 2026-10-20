@@ -67,6 +67,8 @@ data/events/*.json
 data/sources/*.json
 data/locations/*.json
 data/generated/*.json
+data/dataset_records/*.json
+data/dataset_import_state.json
 !data/events/.gitkeep
 !data/sources/.gitkeep
 !data/locations/.gitkeep

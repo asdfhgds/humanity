@@ -109,11 +109,16 @@ def test_repeat_import_is_idempotent_and_source_changes_update_same_record(tmp_p
         first_state = importer.import_latest(client=client)
     assert first_state.records_added == 1
     assert first_state.records_updated == 0
+    partition = importer.record_store.partition_dir / "2020.json"
+    initial_partition = partition.read_bytes()
+    initial_mtime = partition.stat().st_mtime_ns
 
     with _client(lambda request: httpx.Response(200, content=first)) as client:
         repeated_state = importer.import_latest(client=client)
     assert repeated_state.records_added == 0
     assert repeated_state.records_updated == 0
+    assert partition.read_bytes() == initial_partition
+    assert partition.stat().st_mtime_ns == initial_mtime
 
     changed = _archive(_row(best="9"))
     with _client(lambda request: httpx.Response(200, content=changed)) as client:
@@ -368,6 +373,26 @@ def test_public_feed_is_attributed_stable_and_excludes_article_text(tmp_path):
     assert "PRIVATE" not in year_file.read_text(encoding="utf-8")
     assert "historical source-native" in document["notice"].lower()
     assert document["dataset_url"] == ucdp.UCDP_GED_URL
+
+
+def test_rebuilding_unchanged_public_partitions_does_not_rewrite_year_file(tmp_path):
+    importer = _importer(tmp_path)
+    with _client(lambda request: httpx.Response(200, content=_archive(_row()))) as client:
+        importer.import_latest(client=client, now=datetime(2026, 10, 20, tzinfo=UTC))
+    feed = tmp_path / "public" / "ucdp.json"
+    write_research_feed(feed, importer.record_store, importer.state_store)
+    year_file = tmp_path / "public" / "ucdp-ged" / "years" / "2020.json"
+    first_content = year_file.read_bytes()
+    first_mtime = year_file.stat().st_mtime_ns
+
+    with _client(lambda request: httpx.Response(200, content=_archive(_row()))) as client:
+        importer.import_latest(client=client, now=datetime(2026, 10, 21, tzinfo=UTC))
+    write_research_feed(feed, importer.record_store, importer.state_store)
+
+    assert year_file.read_bytes() == first_content
+    assert year_file.stat().st_mtime_ns == first_mtime
+    index = json.loads(feed.read_text(encoding="utf-8"))
+    assert index["retrieved_at"].startswith("2026-10-21")
 
 
 def test_year_partition_orders_dated_records_before_undated_records(tmp_path):

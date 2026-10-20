@@ -441,15 +441,15 @@ class DatasetRecordStore:
         self.partition_dir.mkdir(parents=True, exist_ok=True)
         for year, year_records in grouped.items():
             path = self.partition_dir / f"{year}.json"
-            temporary_path = path.with_suffix(".json.tmp")
-            temporary_path.write_text(
-                json.dumps(
-                    [record.model_dump(mode="json") for record in year_records],
-                    ensure_ascii=False,
-                    separators=(",", ":"),
-                ),
-                encoding="utf-8",
+            payload = json.dumps(
+                [record.model_dump(mode="json") for record in year_records],
+                ensure_ascii=False,
+                separators=(",", ":"),
             )
+            if path.exists() and path.read_text(encoding="utf-8") == payload:
+                continue
+            temporary_path = path.with_suffix(".json.tmp")
+            temporary_path.write_text(payload, encoding="utf-8")
             temporary_path.replace(path)
         for existing_path in self.partition_dir.glob("*.json"):
             if existing_path.stem.isdigit() and int(existing_path.stem) not in grouped:

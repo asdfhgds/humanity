@@ -320,12 +320,7 @@ def write_research_feed(
         ),
     }
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    temporary_path = output_path.with_suffix(output_path.suffix + ".tmp")
-    temporary_path.write_text(
-        json.dumps(metadata, ensure_ascii=False, separators=(",", ":")),
-        encoding="utf-8",
-    )
-    temporary_path.replace(output_path)
+    _write_json_if_changed(output_path, metadata)
 
     years_path = output_path.parent / "ucdp-ged" / "years"
     years_path.mkdir(parents=True, exist_ok=True)
@@ -334,21 +329,37 @@ def write_research_feed(
         year_path = years_path / f"{year}.json"
         expected_files.add(year_path)
         year_document = {
-            **metadata,
+            "schema_version": metadata["schema_version"],
+            "dataset": metadata["dataset"],
+            "dataset_version": version,
+            "status": "available",
             "year": year,
             "dataset_total_count": len(records),
             "record_count": len(year_records),
+            "coverage_start": metadata["coverage_start"],
+            "coverage_end": metadata["coverage_end"],
+            "source_url": metadata["source_url"],
+            "dataset_url": metadata["dataset_url"],
+            "codebook_url": metadata["codebook_url"],
+            "license": metadata["license"],
+            "license_url": metadata["license_url"],
+            "attribution": metadata["attribution"],
+            "notice": metadata["notice"],
             "records": [record.model_dump(mode="json") for record in year_records],
         }
-        year_temporary = year_path.with_suffix(".json.tmp")
-        year_temporary.write_text(
-            json.dumps(year_document, ensure_ascii=False, separators=(",", ":")),
-            encoding="utf-8",
-        )
-        year_temporary.replace(year_path)
+        _write_json_if_changed(year_path, year_document)
     for existing_path in years_path.glob("*.json"):
         if existing_path not in expected_files:
             existing_path.unlink()
+
+
+def _write_json_if_changed(path: Path, document: dict) -> None:
+    payload = json.dumps(document, ensure_ascii=False, separators=(",", ":"))
+    if path.exists() and path.read_text(encoding="utf-8") == payload:
+        return
+    temporary_path = path.with_suffix(path.suffix + ".tmp")
+    temporary_path.write_text(payload, encoding="utf-8")
+    temporary_path.replace(path)
 
 
 def _parse_record(row: dict[str, str | None]) -> tuple[DatasetRecord, dict[str, int]]:
