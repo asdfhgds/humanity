@@ -1,5 +1,61 @@
 # HUMANITY Project Status
 
+## Phase 3.2 research-summary delivery (2026-10-20)
+
+- The summary improvements are implemented locally on `phase3-2-research-summary`,
+  based on verified `master` commit `31e23314dd12a77545bfff0be07dcfe51501236f`.
+  The existing local edits in `app/publishing/publisher.py` remain unstaged and
+  are excluded from this change.
+- The Research Explorer overview summarizes the active filter selection:
+  observation count, count of records with a best-estimate fatality value,
+  most frequent country, and most frequent UCDP violence type. Fatality values
+  are not summed. Country and violence-type summary links apply that filter
+  and point to the resulting records.
+- Year-over-year is a descriptive comparison of source-record counts in
+  adjacent calendar years of the same GED release. It is not a fatality,
+  severity, rate, or live-change comparison. If the immediately preceding year
+  is absent from the release index, no comparison is shown. Year links open the
+  corresponding complete partition.
+- Before this update, the live UCDP GED 26.1 index returned HTTP 200 and
+  reported 417,968 observations covering 1989-01-01 through 2025-12-31.
+  Browser fetches returned 30,066 matching records for 2024 (20,412,806
+  decoded bytes; 2,291,641-byte response `Content-Length`; 3,251 ms) and 2,659
+  for 1989 (1,733,841 decoded bytes; 181,406-byte response
+  `Content-Length`; 433 ms). The year index reports 25,770 records for 2025
+  and 30,066 for 2024, a descriptive change of -4,296 records (-14.3%).
+  The sampled real partitions matched their declared record counts and retained
+  fatality ranges and date/location/event-clarity uncertainty fields.
+- Local verification: Python suite passed (140 tests); frontend suite passed
+  (18 tests); Astro check reported zero errors, warnings, or hints; the static
+  build generated 18 pages and the static link/asset audit passed; all four
+  workflow YAML files parsed; formatting and `git diff --check` passed. The
+  build retains the existing large MapLibre chunk advisory.
+- Local browser verification against the generated UI and live public partitions
+  loaded 2025 and 2024: 2025 showed 25,770 records, 25,770 with best-estimate
+  values, Ukraine as the most frequent country (7,504), and state-based
+  violence as the most frequent type (17,786). Its adjacent-year comparison
+  displayed 2024 to 2025: -4,296 records (-14.3%). Clicking the country summary
+  changed the shareable URL to `?year=2025&country=Ukraine` and narrowed results
+  to 7,504. Clicking the year link loaded the complete 2024 partition (30,066
+  rows), with its adjacent 2023 comparison (+2,644; +9.6%). Export controls and
+  source attribution remained available. Browser-triggered CSV and JSON
+  exports each contained all 30,066 2024 records; JSON included attribution
+  and both export files had the stable expected release filename/columns.
+  This is local browser verification, not deployed feature verification.
+- Commits `d0c5d86578acb1a0fae5b1cd657143b65bf6f159`,
+  `c84c1a453b3aa585a4746ba3c181962d0b89e86d`, and
+  `75be06afaff1f13b2d769970cfa09bc02fe666c4` are pushed to
+  `phase3-2-research-summary` (latest branch head `75be06a`). PR creation was
+  attempted again after confirming the branch push, but the project GitHub
+  integration still reports that its linked account is unavailable. There is
+  no PR CI run or deployment for this branch. The public site remains on the
+  previous UI; post-deployment summary/link/export behavior has not been
+  verified.
+- These changes are not yet merged or deployed. No news-ingestion,
+  Gemini, automatic-publishing, or production-release settings were changed.
+  The GitHub project account must be re-linked before PR creation and normal
+  review/CI can proceed.
+
 ## Phase 3.1 UCDP public snapshot and deployment (2026-10-20)
 
 - Confirmed PR #24 merged at `baa6c4a55d23f6d349aeea31898e52cf4d29759a`;

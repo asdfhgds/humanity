@@ -1,5 +1,5 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
+import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
 <BaseLayout
@@ -27,9 +27,23 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         Loading dataset metadata…
       </p>
       <div class="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm">
-        <a id="dataset-download" class="link" href="https://ucdp.uu.se/downloads/ged/ged261-csv.zip" rel="noopener noreferrer">UCDP GED download</a>
-        <a id="dataset-codebook" class="link" href="https://ucdp.uu.se/downloads/ged/ged261.pdf" rel="noopener noreferrer">Codebook</a>
-        <a class="link" href="https://creativecommons.org/licenses/by/4.0/" rel="noopener noreferrer">CC BY 4.0</a>
+        <a
+          id="dataset-download"
+          class="link"
+          href="https://ucdp.uu.se/downloads/ged/ged261-csv.zip"
+          rel="noopener noreferrer">UCDP GED download</a
+        >
+        <a
+          id="dataset-codebook"
+          class="link"
+          href="https://ucdp.uu.se/downloads/ged/ged261.pdf"
+          rel="noopener noreferrer">Codebook</a
+        >
+        <a
+          class="link"
+          href="https://creativecommons.org/licenses/by/4.0/"
+          rel="noopener noreferrer">CC BY 4.0</a
+        >
       </div>
     </header>
 
@@ -37,9 +51,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p class="eyebrow">Explore observations</p>
-          <h2 id="filter-heading" class="mt-1 text-xl font-semibold">Filter the dataset</h2>
+          <h2 id="filter-heading" class="mt-1 text-xl font-semibold">
+            Filter the dataset
+          </h2>
         </div>
-        <p id="result-count" class="text-sm text-humanity-textMuted" aria-live="polite">
+        <p
+          id="result-count"
+          class="text-sm text-humanity-textMuted"
+          aria-live="polite"
+        >
           Waiting for records…
         </p>
       </div>
@@ -52,7 +72,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         </label>
         <label class="text-sm text-humanity-textMuted" for="research-query">
           Search place, country, conflict, or UCDP record ID
-          <input id="research-query" class="input mt-1 w-full" type="search" autocomplete="off" />
+          <input
+            id="research-query"
+            class="input mt-1 w-full"
+            type="search"
+            autocomplete="off"
+          />
         </label>
         <label class="text-sm text-humanity-textMuted" for="research-country">
           Country
@@ -79,24 +104,117 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         </label>
         <label class="text-sm text-humanity-textMuted" for="research-deaths">
           Minimum best-estimate fatalities
-          <input id="research-deaths" class="input mt-1 w-full" type="number" min="0" step="1" />
+          <input
+            id="research-deaths"
+            class="input mt-1 w-full"
+            type="number"
+            min="0"
+            step="1"
+          />
         </label>
       </div>
       <div class="mt-5 flex flex-wrap gap-3">
-        <button id="research-clear" class="btn-secondary" type="button">Clear filters</button>
-        <button id="research-export-csv" class="btn-primary" type="button" disabled>Export filtered CSV</button>
-        <button id="research-export-json" class="btn-secondary" type="button" disabled>Export filtered JSON</button>
+        <button id="research-clear" class="btn-secondary" type="button"
+          >Clear filters</button
+        >
+        <button
+          id="research-export-csv"
+          class="btn-primary"
+          type="button"
+          disabled>Export filtered CSV</button
+        >
+        <button
+          id="research-export-json"
+          class="btn-secondary"
+          type="button"
+          disabled>Export filtered JSON</button
+        >
       </div>
     </section>
 
-    <section class="grid gap-7 lg:grid-cols-[1.15fr_.85fr]" aria-label="Map and dataset observations">
+    <section
+      class="mb-7 grid gap-7 rounded-xl border border-humanity-border bg-humanity-card p-5 lg:grid-cols-3"
+      aria-label="Research overview"
+    >
+      <div>
+        <p class="eyebrow">Current selection</p>
+        <h2 class="mt-2 text-xl font-semibold">Dataset overview</h2>
+      </div>
+      <div>
+        <p class="text-xs uppercase tracking-[0.2em] text-humanity-textMuted">
+          Records
+        </p>
+        <a
+          id="summary-records"
+          class="link mt-2 inline-block text-2xl font-semibold"
+          href="#research-results">—</a
+        >
+      </div>
+      <div>
+        <p class="text-xs uppercase tracking-[0.2em] text-humanity-textMuted">
+          Records with best-estimate fatality value
+        </p>
+        <a
+          id="summary-fatalities"
+          class="link mt-2 inline-block text-2xl font-semibold"
+          href="#research-results">—</a
+        >
+      </div>
+      <div>
+        <p class="text-xs uppercase tracking-[0.2em] text-humanity-textMuted">
+          Most frequent country
+        </p>
+        <a
+          id="summary-country"
+          class="link mt-2 inline-block text-lg font-medium"
+          href="#research-results">—</a
+        >
+      </div>
+      <div>
+        <p class="text-xs uppercase tracking-[0.2em] text-humanity-textMuted">
+          Most frequent violence type
+        </p>
+        <a
+          id="summary-violence"
+          class="link mt-2 inline-block text-lg font-medium"
+          href="#research-results">—</a
+        >
+      </div>
+      <div>
+        <p class="text-xs uppercase tracking-[0.2em] text-humanity-textMuted">
+          Year-over-year GED record counts
+        </p>
+        <p
+          id="summary-year-over-year"
+          class="mt-2 text-sm font-medium text-humanity-text"
+        >
+          —
+        </p>
+      </div>
+    </section>
+
+    <section
+      class="grid gap-7 lg:grid-cols-[1.15fr_.85fr]"
+      aria-label="Map and dataset observations"
+    >
       <div class="card">
         <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
           <h2 class="text-lg font-semibold">Geographic view</h2>
-          <span class="text-xs text-humanity-textMuted">Only source-provided valid coordinates are mapped.</span>
+          <span class="text-xs text-humanity-textMuted"
+            >Only source-provided valid coordinates are mapped.</span
+          >
         </div>
-        <div id="research-map" class="map-container-sm" aria-label="Map of filtered UCDP observations"></div>
-        <p id="map-status" class="mt-3 text-xs text-humanity-textMuted" aria-live="polite">
+        <div
+          id="research-map"
+          class="map-container-sm"
+          aria-label="Map of filtered UCDP observations"
+        >
+        </div>
+        <p
+          id="map-status"
+          class="mt-3 text-xs text-humanity-textMuted"
+          aria-live="polite"
+        >
           Map points appear when the dataset has been imported.
         </p>
       </div>
@@ -104,16 +222,28 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <div class="card">
         <div class="mb-3 flex items-baseline justify-between gap-2">
           <h2 class="text-lg font-semibold">Chronology</h2>
-          <span class="text-xs text-humanity-textMuted">Newest dated records first</span>
+          <span class="text-xs text-humanity-textMuted"
+            >Newest dated records first</span
+          >
         </div>
-        <div id="research-results" class="max-h-[35rem] space-y-3 overflow-auto" aria-live="polite">
-          <p class="text-sm text-humanity-textMuted">Loading source-native observations…</p>
+        <div
+          id="research-results"
+          class="max-h-[35rem] space-y-3 overflow-auto"
+          aria-live="polite"
+        >
+          <p class="text-sm text-humanity-textMuted">
+            Loading source-native observations…
+          </p>
         </div>
       </div>
     </section>
 
-    <aside class="mt-7 border-l-2 border-humanity-accent bg-humanity-card p-5 text-sm leading-relaxed text-humanity-textMuted">
-      <h2 class="font-semibold text-humanity-text">Attribution and interpretation</h2>
+    <aside
+      class="mt-7 border-l-2 border-humanity-accent bg-humanity-card p-5 text-sm leading-relaxed text-humanity-textMuted"
+    >
+      <h2 class="font-semibold text-humanity-text">
+        Attribution and interpretation
+      </h2>
       <p class="mt-2">
         Uppsala Conflict Data Program (UCDP), Georeferenced Event Dataset (GED).
         Cite the relevant UCDP publication and the release shown above. HUMANITY
@@ -122,42 +252,60 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         event-clarity, and fatality ranges retain the dataset's uncertainty
         fields. A dataset observation is not independent news corroboration.
       </p>
-      <p class="mt-2">CSV exports use a stable documented field order and include the source record ID and dataset version. Results load one year partition at a time instead of downloading the full multi-year archive into each visitor's browser. Filtering is performed in this browser; it does not start an import or refresh the underlying data.</p>
+      <p class="mt-2">
+        The overview is calculated from the current filtered selection. It
+        reports record counts and how many rows have a best-estimate fatality
+        value; it does not add fatality estimates together. Year-over-year
+        compares the complete GED record counts for adjacent calendar years in
+        this release, not casualties, rates, or live changes. Summary links open
+        the corresponding filtered records or year partition. CSV exports use a
+        stable documented field order and include the source record ID and
+        dataset version. Results load one year partition at a time; filtering is
+        performed in this browser and does not start an import or refresh the
+        underlying data.
+      </p>
     </aside>
   </main>
 </BaseLayout>
 
 <script>
-  import * as maplibregl from 'maplibre-gl';
-  import type { GeoJSONSource } from 'maplibre-gl';
-  import 'maplibre-gl/dist/maplibre-gl.css';
+  import * as maplibregl from "maplibre-gl";
+  import type { GeoJSONSource } from "maplibre-gl";
+  import "maplibre-gl/dist/maplibre-gl.css";
   import {
+    compareYearOverYear,
     filterUcdpRecords,
     hasValidCoordinates,
     parseUcdpFeed,
     parseUcdpIndex,
+    summarizeUcdpRecords,
     toUcdpCsv,
     toUcdpJson,
     type UcdpFeed,
     type UcdpIndex,
     type UcdpRecord,
-  } from '../lib/research-data.mjs';
-  import { requireElement, sitePath } from '../lib/client-utils';
+  } from "../lib/research-data.mjs";
+  import { requireElement, sitePath } from "../lib/client-utils";
 
-  const status = requireElement('dataset-status', 'p');
-  const resultCount = requireElement('result-count', 'p');
-  const mapStatus = requireElement('map-status', 'p');
-  const resultContainer = requireElement('research-results', 'div');
-  const queryInput = requireElement('research-query', 'input');
-  const yearSelect = requireElement('research-year', 'select');
-  const countrySelect = requireElement('research-country', 'select');
-  const typeSelect = requireElement('research-type', 'select');
-  const fromInput = requireElement('research-from', 'input');
-  const toInput = requireElement('research-to', 'input');
-  const deathsInput = requireElement('research-deaths', 'input');
-  const csvButton = requireElement('research-export-csv', 'button');
-  const jsonButton = requireElement('research-export-json', 'button');
-  const mapContainer = requireElement('research-map', 'div');
+  const status = requireElement("dataset-status", "p");
+  const resultCount = requireElement("result-count", "p");
+  const summaryRecords = requireElement("summary-records", "a");
+  const summaryFatalities = requireElement("summary-fatalities", "a");
+  const summaryCountry = requireElement("summary-country", "a");
+  const summaryViolence = requireElement("summary-violence", "a");
+  const summaryYearOverYear = requireElement("summary-year-over-year", "p");
+  const mapStatus = requireElement("map-status", "p");
+  const resultContainer = requireElement("research-results", "div");
+  const queryInput = requireElement("research-query", "input");
+  const yearSelect = requireElement("research-year", "select");
+  const countrySelect = requireElement("research-country", "select");
+  const typeSelect = requireElement("research-type", "select");
+  const fromInput = requireElement("research-from", "input");
+  const toInput = requireElement("research-to", "input");
+  const deathsInput = requireElement("research-deaths", "input");
+  const csvButton = requireElement("research-export-csv", "button");
+  const jsonButton = requireElement("research-export-json", "button");
+  const mapContainer = requireElement("research-map", "div");
 
   let feed: UcdpFeed | null = null;
   let index: UcdpIndex | null = null;
@@ -167,13 +315,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   let loadGeneration = 0;
 
   const params = new URLSearchParams(window.location.search);
-  queryInput.value = params.get('q') || '';
-  yearSelect.value = params.get('year') || '';
-  countrySelect.value = params.get('country') || '';
-  typeSelect.value = params.get('type') || '';
-  fromInput.value = params.get('from') || '';
-  toInput.value = params.get('to') || '';
-  deathsInput.value = params.get('minimumDeaths') || '';
+  queryInput.value = params.get("q") || "";
+  yearSelect.value = params.get("year") || "";
+  countrySelect.value = params.get("country") || "";
+  typeSelect.value = params.get("type") || "";
+  fromInput.value = params.get("from") || "";
+  toInput.value = params.get("to") || "";
+  deathsInput.value = params.get("minimumDeaths") || "";
 
   function currentFilters() {
     return {
@@ -201,12 +349,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       if (value) next.searchParams.set(key, value);
       else next.searchParams.delete(key);
     }
-    window.history.replaceState({}, '', next);
+    window.history.replaceState({}, "", next);
   }
 
   function element<K extends keyof HTMLElementTagNameMap>(
     tag: K,
-    className = '',
+    className = "",
     text?: unknown,
   ): HTMLElementTagNameMap[K] {
     const node = document.createElement(tag);
@@ -215,47 +363,159 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     return node;
   }
 
+  function updateSummary() {
+    const summary = feed
+      ? summarizeUcdpRecords(filteredRecords)
+      : summarizeUcdpRecords([]);
+    summaryRecords.textContent = feed
+      ? `${summary.totalRecords.toLocaleString()}`
+      : "—";
+    summaryFatalities.textContent = feed
+      ? `${summary.recordsWithBestEstimate.toLocaleString()} of ${summary.totalRecords.toLocaleString()}`
+      : "—";
+    summaryCountry.textContent =
+      feed && summary.topCountry
+        ? `${summary.topCountry.country} (${summary.topCountry.count.toLocaleString()})`
+        : "—";
+    summaryViolence.textContent =
+      feed && summary.byViolenceType.length > 0
+        ? `${summary.byViolenceType[0].label} (${summary.byViolenceType[0].count.toLocaleString()})`
+        : "—";
+    const comparison =
+      feed && index ? compareYearOverYear(index.years, feed.year) : null;
+    summaryRecords.href = "#research-results";
+    summaryFatalities.href = "#research-results";
+    summaryCountry.href = "#research-results";
+    summaryViolence.href = "#research-results";
+    if (comparison) {
+      const previousLink = element(
+        "a",
+        "link",
+        `${comparison.previousYear} (${comparison.previousCount.toLocaleString()})`,
+      );
+      const currentLink = element(
+        "a",
+        "link",
+        `${comparison.selectedYear} (${comparison.currentCount.toLocaleString()})`,
+      );
+      for (const [link, year] of [
+        [previousLink, comparison.previousYear],
+        [currentLink, comparison.selectedYear],
+      ] as const) {
+        const url = new URL(window.location.href);
+        url.search = "";
+        url.searchParams.set("year", String(year));
+        url.hash = "research-results";
+        link.href = url.href;
+      }
+      summaryYearOverYear.replaceChildren(
+        previousLink,
+        document.createTextNode(" → "),
+        currentLink,
+        document.createTextNode(
+          ` · ${comparison.delta >= 0 ? "+" : ""}${comparison.delta.toLocaleString()} records (${comparison.changePercent === null ? "n/a" : `${comparison.changePercent > 0 ? "+" : ""}${comparison.changePercent}%`})`,
+        ),
+      );
+    } else if (feed) {
+      summaryYearOverYear.textContent = `No ${feed.year - 1} partition in this release; no adjacent-year comparison.`;
+    } else {
+      summaryYearOverYear.textContent = "—";
+    }
+  }
+
   function renderRecords() {
-    filteredRecords = feed ? filterUcdpRecords(feed.records, currentFilters()) : [];
+    filteredRecords = feed
+      ? filterUcdpRecords(feed.records, currentFilters())
+      : [];
     resultCount.textContent = feed
       ? `${filteredRecords.length.toLocaleString()} of ${feed.records.length.toLocaleString()} observations in ${feed.year}`
       : index
-        ? 'Choose a dataset year to load its records'
-        : 'Waiting for records';
+        ? "Choose a dataset year to load its records"
+        : "Waiting for records";
     csvButton.disabled = !feed || filteredRecords.length === 0;
     jsonButton.disabled = !feed || filteredRecords.length === 0;
+    updateSummary();
     resultContainer.replaceChildren();
 
-    if (!index || index.status === 'not_imported') {
-      resultContainer.append(element('p', 'text-sm text-humanity-textMuted', 'The public data feed has not recorded an import yet. No observations are shown.'));
+    if (!index || index.status === "not_imported") {
+      resultContainer.append(
+        element(
+          "p",
+          "text-sm text-humanity-textMuted",
+          "The public data feed has not recorded an import yet. No observations are shown.",
+        ),
+      );
     } else if (!feed) {
-      resultContainer.append(element('p', 'text-sm text-humanity-textMuted', 'Choose a dataset year to load its partition.'));
+      resultContainer.append(
+        element(
+          "p",
+          "text-sm text-humanity-textMuted",
+          "Choose a dataset year to load its partition.",
+        ),
+      );
     } else if (filteredRecords.length === 0) {
-      resultContainer.append(element('p', 'text-sm text-humanity-textMuted', feed.records.length ? 'No observations match these filters.' : 'This verified release currently has no imported observations.'));
+      resultContainer.append(
+        element(
+          "p",
+          "text-sm text-humanity-textMuted",
+          feed.records.length
+            ? "No observations match these filters."
+            : "This verified release currently has no imported observations.",
+        ),
+      );
     } else {
       for (const record of filteredRecords.slice(0, 250)) {
-        const card = element('article', 'border-b border-humanity-border pb-3');
-        const heading = element('h3', 'font-medium', record.conflict_name || 'UCDP GED observation');
-        const place = [record.location, record.admin1, record.country].filter(Boolean).join(', ');
+        const card = element("article", "border-b border-humanity-border pb-3");
+        const heading = element(
+          "h3",
+          "font-medium",
+          record.conflict_name || "UCDP GED observation",
+        );
+        const place = [record.location, record.admin1, record.country]
+          .filter(Boolean)
+          .join(", ");
         const date = record.date_start
           ? record.date_end && record.date_end !== record.date_start
             ? `${record.date_start} to ${record.date_end}`
             : record.date_start
           : `Date not specified · year ${record.event_year}`;
-        const estimate = record.deaths_best === null || record.deaths_best === undefined
-          ? 'Fatality estimate not specified'
-          : `Fatalities: ${record.deaths_best} best estimate (${record.deaths_low ?? '—'}–${record.deaths_high ?? '—'} range)`;
+        const estimate =
+          record.deaths_best === null || record.deaths_best === undefined
+            ? "Fatality estimate not specified"
+            : `Fatalities: ${record.deaths_best} best estimate (${record.deaths_low ?? "—"}–${record.deaths_high ?? "—"} range)`;
         card.append(
           heading,
-          element('p', 'mt-1 text-sm text-humanity-textMuted', place || 'Location not specified'),
-          element('p', 'mt-1 text-xs text-humanity-textMuted', `${date} · Type ${record.violence_type} · ${estimate}`),
-          element('p', 'mt-1 text-xs text-humanity-textMuted', `UCDP precision/clarity codes: date ${record.date_precision ?? 'not specified'} · location ${record.location_precision ?? 'not specified'} · event clarity ${record.event_clarity ?? 'not specified'} · source count ${record.number_of_sources ?? 'not specified'}`),
-          element('p', 'mt-1 font-mono text-xs text-humanity-textMuted', `UCDP GED ${record.dataset_version} · ${record.source_record_id}`),
+          element(
+            "p",
+            "mt-1 text-sm text-humanity-textMuted",
+            place || "Location not specified",
+          ),
+          element(
+            "p",
+            "mt-1 text-xs text-humanity-textMuted",
+            `${date} · Type ${record.violence_type} · ${estimate}`,
+          ),
+          element(
+            "p",
+            "mt-1 text-xs text-humanity-textMuted",
+            `UCDP precision/clarity codes: date ${record.date_precision ?? "not specified"} · location ${record.location_precision ?? "not specified"} · event clarity ${record.event_clarity ?? "not specified"} · source count ${record.number_of_sources ?? "not specified"}`,
+          ),
+          element(
+            "p",
+            "mt-1 font-mono text-xs text-humanity-textMuted",
+            `UCDP GED ${record.dataset_version} · ${record.source_record_id}`,
+          ),
         );
         resultContainer.append(card);
       }
       if (filteredRecords.length > 250) {
-        resultContainer.append(element('p', 'pt-2 text-xs text-humanity-textMuted', `Showing the first 250 chronology entries; export includes all ${filteredRecords.length.toLocaleString()} matching records.`));
+        resultContainer.append(
+          element(
+            "p",
+            "pt-2 text-xs text-humanity-textMuted",
+            `Showing the first 250 chronology entries; export includes all ${filteredRecords.length.toLocaleString()} matching records.`,
+          ),
+        );
       }
     }
     updateMap();
@@ -264,16 +524,19 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
   function geojsonForCurrentResults(): GeoJSON.FeatureCollection<GeoJSON.Point> {
     return {
-      type: 'FeatureCollection',
+      type: "FeatureCollection",
       features: filteredRecords.filter(hasValidCoordinates).map((record) => ({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [record.longitude, record.latitude] },
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [record.longitude, record.latitude],
+        },
         properties: {
           recordId: record.source_record_id,
-          country: record.country || 'Country not specified',
+          country: record.country || "Country not specified",
           date: record.date_start || `Year ${record.event_year}`,
-          conflict: record.conflict_name || 'UCDP GED observation',
-          deaths: record.deaths_best ?? 'Not specified',
+          conflict: record.conflict_name || "UCDP GED observation",
+          deaths: record.deaths_best ?? "Not specified",
         },
       })),
     };
@@ -292,105 +555,128 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         version: 8,
         sources: {
           osm: {
-            type: 'raster',
+            type: "raster",
             tiles: [
-              'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
-              'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
-              'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
+              "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
+              "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png",
             ],
             tileSize: 256,
-            attribution: '© OpenStreetMap contributors',
+            attribution: "© OpenStreetMap contributors",
             maxzoom: 19,
           },
         },
         layers: [
-          { id: 'background', type: 'background', paint: { 'background-color': '#f5f2eb' } },
-          { id: 'osm', type: 'raster', source: 'osm', minzoom: 0, maxzoom: 19 },
+          {
+            id: "background",
+            type: "background",
+            paint: { "background-color": "#f5f2eb" },
+          },
+          { id: "osm", type: "raster", source: "osm", minzoom: 0, maxzoom: 19 },
         ],
       },
       center: [0, 20],
       zoom: 1.2,
       renderWorldCopies: false,
     });
-    activeMap.addControl(new maplibregl.NavigationControl(), 'top-right');
-    activeMap.on('load', () => {
-      activeMap.addSource('ucdp-records', {
-        type: 'geojson',
+    activeMap.addControl(new maplibregl.NavigationControl(), "top-right");
+    activeMap.on("load", () => {
+      activeMap.addSource("ucdp-records", {
+        type: "geojson",
         data: geojsonForCurrentResults(),
         cluster: true,
         clusterMaxZoom: 12,
         clusterRadius: 45,
       });
-      const source = activeMap.getSource('ucdp-records');
-      if (!source || source.type !== 'geojson') return;
+      const source = activeMap.getSource("ucdp-records");
+      if (!source || source.type !== "geojson") return;
       mapSource = source as GeoJSONSource;
       activeMap.addLayer({
-        id: 'ucdp-clusters',
-        type: 'circle',
-        source: 'ucdp-records',
-        filter: ['has', 'point_count'],
+        id: "ucdp-clusters",
+        type: "circle",
+        source: "ucdp-records",
+        filter: ["has", "point_count"],
         paint: {
-          'circle-color': '#9d4935',
-          'circle-radius': ['step', ['get', 'point_count'], 14, 100, 20, 1000, 28],
-          'circle-opacity': 0.82,
+          "circle-color": "#9d4935",
+          "circle-radius": [
+            "step",
+            ["get", "point_count"],
+            14,
+            100,
+            20,
+            1000,
+            28,
+          ],
+          "circle-opacity": 0.82,
         },
       });
       activeMap.addLayer({
-        id: 'ucdp-cluster-count',
-        type: 'symbol',
-        source: 'ucdp-records',
-        filter: ['has', 'point_count'],
+        id: "ucdp-cluster-count",
+        type: "symbol",
+        source: "ucdp-records",
+        filter: ["has", "point_count"],
         layout: {
-          'text-field': ['get', 'point_count_abbreviated'],
-          'text-size': 12,
+          "text-field": ["get", "point_count_abbreviated"],
+          "text-size": 12,
         },
-        paint: { 'text-color': '#ffffff' },
+        paint: { "text-color": "#ffffff" },
       });
       activeMap.addLayer({
-        id: 'ucdp-points',
-        type: 'circle',
-        source: 'ucdp-records',
-        filter: ['!', ['has', 'point_count']],
+        id: "ucdp-points",
+        type: "circle",
+        source: "ucdp-records",
+        filter: ["!", ["has", "point_count"]],
         paint: {
-          'circle-color': '#bf654a',
-          'circle-radius': 5,
-          'circle-stroke-color': '#ffffff',
-          'circle-stroke-width': 1,
+          "circle-color": "#bf654a",
+          "circle-radius": 5,
+          "circle-stroke-color": "#ffffff",
+          "circle-stroke-width": 1,
         },
       });
-      activeMap.on('click', 'ucdp-clusters', (event) => {
-        const features = activeMap.queryRenderedFeatures(event.point, { layers: ['ucdp-clusters'] });
+      activeMap.on("click", "ucdp-clusters", (event) => {
+        const features = activeMap.queryRenderedFeatures(event.point, {
+          layers: ["ucdp-clusters"],
+        });
         const clusterId = features[0]?.properties?.cluster_id;
-        if (typeof clusterId !== 'number') return;
-        const clusterSource = activeMap.getSource('ucdp-records');
-        if (!clusterSource || clusterSource.type !== 'geojson') return;
-        void (clusterSource as GeoJSONSource).getClusterExpansionZoom(clusterId)
+        if (typeof clusterId !== "number") return;
+        const clusterSource = activeMap.getSource("ucdp-records");
+        if (!clusterSource || clusterSource.type !== "geojson") return;
+        void (clusterSource as GeoJSONSource)
+          .getClusterExpansionZoom(clusterId)
           .then((zoom) => activeMap.easeTo({ center: event.lngLat, zoom }))
           .catch((error: unknown) => {
-            console.error('Could not expand the UCDP map cluster:', error);
-            mapStatus.textContent = 'Could not expand this map cluster.';
+            console.error("Could not expand the UCDP map cluster:", error);
+            mapStatus.textContent = "Could not expand this map cluster.";
           });
       });
-      activeMap.on('click', 'ucdp-points', (event) => {
+      activeMap.on("click", "ucdp-points", (event) => {
         const feature = event.features?.[0];
         if (!feature) return;
         const props = feature.properties || {};
-        const content = document.createElement('div');
+        const content = document.createElement("div");
         content.append(
-          element('strong', '', props.conflict),
-          element('p', '', `${props.date} · ${props.country}`),
-          element('p', '', `Fatalities: ${props.deaths}`),
-          element('p', 'font-mono', String(props.recordId)),
+          element("strong", "", props.conflict),
+          element("p", "", `${props.date} · ${props.country}`),
+          element("p", "", `Fatalities: ${props.deaths}`),
+          element("p", "font-mono", String(props.recordId)),
         );
         new maplibregl.Popup({ closeButton: true })
           .setLngLat(event.lngLat)
           .setDOMContent(content)
           .addTo(activeMap);
       });
-      activeMap.on('mouseenter', 'ucdp-clusters', () => { activeMap.getCanvas().style.cursor = 'pointer'; });
-      activeMap.on('mouseleave', 'ucdp-clusters', () => { activeMap.getCanvas().style.cursor = ''; });
-      activeMap.on('mouseenter', 'ucdp-points', () => { activeMap.getCanvas().style.cursor = 'pointer'; });
-      activeMap.on('mouseleave', 'ucdp-points', () => { activeMap.getCanvas().style.cursor = ''; });
+      activeMap.on("mouseenter", "ucdp-clusters", () => {
+        activeMap.getCanvas().style.cursor = "pointer";
+      });
+      activeMap.on("mouseleave", "ucdp-clusters", () => {
+        activeMap.getCanvas().style.cursor = "";
+      });
+      activeMap.on("mouseenter", "ucdp-points", () => {
+        activeMap.getCanvas().style.cursor = "pointer";
+      });
+      activeMap.on("mouseleave", "ucdp-points", () => {
+        activeMap.getCanvas().style.cursor = "";
+      });
       updateMap();
     });
   }
@@ -398,44 +684,86 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   function download(name: string, content: string, type: string) {
     const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
-    const anchor = element('a');
+    const anchor = element("a");
     anchor.href = url;
     anchor.download = name;
     anchor.click();
     URL.revokeObjectURL(url);
   }
 
-  for (const control of [queryInput, countrySelect, typeSelect, fromInput, toInput, deathsInput]) {
-    control.addEventListener('input', () => {
+  for (const control of [
+    queryInput,
+    countrySelect,
+    typeSelect,
+    fromInput,
+    toInput,
+    deathsInput,
+  ]) {
+    control.addEventListener("input", () => {
       window.clearTimeout(renderTimer);
       renderTimer = window.setTimeout(renderRecords, 150);
     });
-    control.addEventListener('change', renderRecords);
+    control.addEventListener("change", renderRecords);
   }
-  yearSelect.addEventListener('change', () => {
-    void loadYear(yearSelect.value);
-  });
-  requireElement('research-clear', 'button').addEventListener('click', () => {
-    queryInput.value = '';
-    countrySelect.value = '';
-    typeSelect.value = '';
-    fromInput.value = '';
-    toInput.value = '';
-    deathsInput.value = '';
+  summaryCountry.addEventListener("click", (event) => {
+    if (!feed) return;
+    event.preventDefault();
+    const summary = summarizeUcdpRecords(filteredRecords);
+    if (!summary.topCountry) return;
+    countrySelect.value = summary.topCountry.country;
     renderRecords();
   });
-  csvButton.addEventListener('click', () => {
-    download(`ucdp-ged-${feed?.dataset_version || 'data'}-filtered.csv`, toUcdpCsv(filteredRecords), 'text/csv;charset=utf-8');
-  });
-  jsonButton.addEventListener('click', () => {
+  summaryFatalities.addEventListener("click", (event) => {
     if (!feed) return;
-    download(`ucdp-ged-${feed.dataset_version || 'data'}-filtered.json`, toUcdpJson(feed, filteredRecords, index || feed), 'application/json;charset=utf-8');
+    event.preventDefault();
+    deathsInput.value = "0";
+    renderRecords();
+  });
+  summaryViolence.addEventListener("click", (event) => {
+    if (!feed) return;
+    event.preventDefault();
+    const summary = summarizeUcdpRecords(filteredRecords);
+    const mostCommonType = summary.byViolenceType[0];
+    if (!mostCommonType || !Number.isInteger(mostCommonType.value)) return;
+    typeSelect.value = String(mostCommonType.value);
+    renderRecords();
+  });
+  yearSelect.addEventListener("change", () => {
+    void loadYear(yearSelect.value);
+  });
+  requireElement("research-clear", "button").addEventListener("click", () => {
+    queryInput.value = "";
+    countrySelect.value = "";
+    typeSelect.value = "";
+    fromInput.value = "";
+    toInput.value = "";
+    deathsInput.value = "";
+    renderRecords();
+  });
+  csvButton.addEventListener("click", () => {
+    download(
+      `ucdp-ged-${feed?.dataset_version || "data"}-filtered.csv`,
+      toUcdpCsv(filteredRecords),
+      "text/csv;charset=utf-8",
+    );
+  });
+  jsonButton.addEventListener("click", () => {
+    if (!feed) return;
+    download(
+      `ucdp-ged-${feed.dataset_version || "data"}-filtered.json`,
+      toUcdpJson(feed, filteredRecords, index || feed),
+      "application/json;charset=utf-8",
+    );
   });
 
   initializeMap();
   async function loadYear(year: string) {
     const selectedYear = Number(year);
-    if (!index || !Number.isInteger(selectedYear) || !index.years.some((item) => item.year === selectedYear)) {
+    if (
+      !index ||
+      !Number.isInteger(selectedYear) ||
+      !index.years.some((item) => item.year === selectedYear)
+    ) {
       feed = null;
       renderRecords();
       return;
@@ -446,60 +774,89 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     csvButton.disabled = true;
     jsonButton.disabled = true;
     updateMap();
-    resultContainer.replaceChildren(element('p', 'text-sm text-humanity-textMuted', `Loading UCDP GED ${selectedYear}…`));
+    resultContainer.replaceChildren(
+      element(
+        "p",
+        "text-sm text-humanity-textMuted",
+        `Loading UCDP GED ${selectedYear}…`,
+      ),
+    );
     resultCount.textContent = `Loading ${selectedYear}`;
     updateShareableUrl();
     try {
-      const response = await fetch(sitePath(`data/research/ucdp-ged/years/${selectedYear}.json`), { cache: 'no-store' });
-      if (!response.ok) throw new Error(`Research year request failed (${response.status})`);
+      const response = await fetch(
+        sitePath(`data/research/ucdp-ged/years/${selectedYear}.json`),
+        { cache: "no-store" },
+      );
+      if (!response.ok)
+        throw new Error(`Research year request failed (${response.status})`);
       const loadedFeed = parseUcdpFeed(await response.json());
-      if (loadedFeed.year !== selectedYear) throw new Error('Research year feed does not match the selected year');
+      if (loadedFeed.year !== selectedYear)
+        throw new Error("Research year feed does not match the selected year");
       if (generation !== loadGeneration) return;
       feed = {
         ...loadedFeed,
         status: index.status,
         retrieved_at: index.retrieved_at,
       };
-      const selectedCountry = countrySelect.value || params.get('country') || '';
-      const countries = [...new Set(
-        loadedFeed.records
-          .map((record) => record.country)
-          .filter((country): country is string => Boolean(country)),
-      )].sort((a, b) => a.localeCompare(b));
-      countrySelect.replaceChildren(new Option('All countries', ''));
-      for (const country of countries) countrySelect.append(new Option(country, country));
-      countrySelect.value = countries.includes(selectedCountry) ? selectedCountry : '';
+      const selectedCountry =
+        countrySelect.value || params.get("country") || "";
+      const countries = [
+        ...new Set(
+          loadedFeed.records
+            .map((record) => record.country)
+            .filter((country): country is string => Boolean(country)),
+        ),
+      ].sort((a, b) => a.localeCompare(b));
+      updateSummary();
+      countrySelect.replaceChildren(new Option("All countries", ""));
+      for (const country of countries)
+        countrySelect.append(new Option(country, country));
+      countrySelect.value = countries.includes(selectedCountry)
+        ? selectedCountry
+        : "";
       renderRecords();
     } catch (error) {
       if (generation !== loadGeneration) return;
       console.error(`Could not load UCDP GED ${selectedYear}:`, error);
       resultCount.textContent = `${selectedYear} unavailable`;
-      resultContainer.replaceChildren(element('p', 'text-sm text-humanity-textMuted', 'This year partition is temporarily unavailable.'));
+      resultContainer.replaceChildren(
+        element(
+          "p",
+          "text-sm text-humanity-textMuted",
+          "This year partition is temporarily unavailable.",
+        ),
+      );
     }
   }
 
   try {
-    const response = await fetch(sitePath('data/research/ucdp-ged.json'), { cache: 'no-store' });
-    if (!response.ok) throw new Error(`Research feed request failed (${response.status})`);
+    const response = await fetch(sitePath("data/research/ucdp-ged.json"), {
+      cache: "no-store",
+    });
+    if (!response.ok)
+      throw new Error(`Research feed request failed (${response.status})`);
     index = parseUcdpIndex(await response.json());
-    if (index.status === 'stale') {
-      status.textContent = `Showing last successful UCDP GED ${index.dataset_version} import from ${index.retrieved_at || 'an unknown time'}; the most recent import failed (${index.last_error_category || 'unknown category'}).`;
-    } else if (index.status === 'not_imported') {
-      status.textContent = `UCDP GED ${index.dataset_version || '26.1'} · no dataset import has been recorded in this site build.`;
+    if (index.status === "stale") {
+      status.textContent = `Showing last successful UCDP GED ${index.dataset_version} import from ${index.retrieved_at || "an unknown time"}; the most recent import failed (${index.last_error_category || "unknown category"}).`;
+    } else if (index.status === "not_imported") {
+      status.textContent = `UCDP GED ${index.dataset_version || "26.1"} · no dataset import has been recorded in this site build.`;
     } else {
-      status.textContent = `UCDP GED ${index.dataset_version} · ${index.record_count.toLocaleString()} observations · coverage ${index.coverage_start || 'unknown'} to ${index.coverage_end || 'unknown'} · retrieved ${index.retrieved_at || 'unknown'}. Select a year to load its partition. ${index.observations_missing_source_counts.toLocaleString()} records have no usable source-count value.`;
+      status.textContent = `UCDP GED ${index.dataset_version} · ${index.record_count.toLocaleString()} observations · coverage ${index.coverage_start || "unknown"} to ${index.coverage_end || "unknown"} · retrieved ${index.retrieved_at || "unknown"}. Select a year to load its partition. ${index.observations_missing_source_counts.toLocaleString()} records have no usable source-count value.`;
     }
     for (const item of index.years) {
-      const option = document.createElement('option');
+      const option = document.createElement("option");
       option.value = String(item.year);
       option.textContent = `${item.year} (${item.record_count.toLocaleString()})`;
       yearSelect.append(option);
     }
     yearSelect.disabled = index.years.length === 0;
     if (index.years.length > 0) {
-      const requestedYear = params.get('year');
-      const initialYear = index.years.some((item) => String(item.year) === requestedYear)
-        ? requestedYear || ''
+      const requestedYear = params.get("year");
+      const initialYear = index.years.some(
+        (item) => String(item.year) === requestedYear,
+      )
+        ? requestedYear || ""
         : String(index.years[0].year);
       yearSelect.value = initialYear;
       await loadYear(initialYear);
@@ -507,10 +864,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       renderRecords();
     }
   } catch (error) {
-    console.error('Could not load the UCDP research feed:', error);
-    status.textContent = 'The research dataset feed is temporarily unavailable; its source rights and import status cannot be verified.';
-    resultCount.textContent = 'Dataset unavailable';
-    resultContainer.replaceChildren(element('p', 'text-sm text-humanity-textMuted', 'Try again when the site feed is available.'));
-    mapStatus.textContent = 'Dataset unavailable; no observations are mapped.';
+    console.error("Could not load the UCDP research feed:", error);
+    status.textContent =
+      "The research dataset feed is temporarily unavailable; its source rights and import status cannot be verified.";
+    resultCount.textContent = "Dataset unavailable";
+    resultContainer.replaceChildren(
+      element(
+        "p",
+        "text-sm text-humanity-textMuted",
+        "Try again when the site feed is available.",
+      ),
+    );
+    mapStatus.textContent = "Dataset unavailable; no observations are mapped.";
   }
 </script>
