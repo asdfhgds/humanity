@@ -2,9 +2,9 @@
 
 ## Current Status
 
-Phase 2 product work is in progress on `phase2-real-product`. The latest merged
-baseline is `23df5fc`; this feature branch has not been committed or deployed.
-Live Gemini extraction remains blocked by repeated provider-server failures.
+Phase 2 product work is in review on `phase2-real-product`, based on merged
+baseline `23df5fc`. Live Gemini extraction remains blocked by repeated
+provider-server failures.
 Production ingestion, recurring execution, publication, and deployment remain
 gated.
 
@@ -60,8 +60,12 @@ gated.
   (including an undefined symbol and unused variable elsewhere in that
   module), and Black's check reports pre-existing formatting differences in
   those legacy files; these were not mass-reformatted. The existing MapLibre
-  chunk-size advisory remains. No provider calls, production writes, PR, or
-  deployment were made during this implementation.
+  chunk-size advisory remains. No provider calls, production writes,
+  publication, or deployment were made. Implementation commit `5b832ea` is in
+  PR [#23](https://github.com/asdfhgds/humanity/pull/23); fresh required CI run
+  [39374308202](https://github.com/asdfhgds/humanity/actions/runs/39374308202)
+  passed both Python tests and frontend check/build/link audit. The PR remains
+  open and has not been merged.
 
 ## Status
 
