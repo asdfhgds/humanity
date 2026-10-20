@@ -67,8 +67,10 @@ browser and do not trigger ingestion.
 
 The overview summarizes only the currently filtered records. It counts records
 and reports how many include a best-estimate fatality value; it does not sum
-fatality estimates across events. Country and violence-type summary links apply
-that filter and point to the resulting underlying records. The year-over-year
+fatality estimates across events. The fatality-coverage link filters out
+observations with missing best-estimate values. Country and violence-type
+summary links apply their respective filters and point to the resulting
+underlying records. The year-over-year
 view compares record counts for the selected calendar year and the immediately
 preceding calendar year, using the same GED release index. It is a descriptive
 comparison of source-record counts, not a casualty comparison, rate, current

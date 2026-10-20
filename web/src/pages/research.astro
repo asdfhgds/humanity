@@ -713,6 +713,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     countrySelect.value = summary.topCountry.country;
     renderRecords();
   });
+  summaryFatalities.addEventListener("click", (event) => {
+    if (!feed) return;
+    event.preventDefault();
+    deathsInput.value = "0";
+    renderRecords();
+  });
   summaryViolence.addEventListener("click", (event) => {
     if (!feed) return;
     event.preventDefault();

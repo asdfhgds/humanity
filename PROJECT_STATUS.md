@@ -30,6 +30,17 @@
   build generated 18 pages and the static link/asset audit passed; all four
   workflow YAML files parsed; formatting and `git diff --check` passed. The
   build retains the existing large MapLibre chunk advisory.
+- Local browser verification against the generated UI and live public partitions
+  loaded 2025 and 2024: 2025 showed 25,770 records, 25,770 with best-estimate
+  values, Ukraine as the most frequent country (7,504), and state-based
+  violence as the most frequent type (17,786). Its adjacent-year comparison
+  displayed 2024 to 2025: -4,296 records (-14.3%). Clicking the country summary
+  changed the shareable URL to `?year=2025&country=Ukraine` and narrowed results
+  to 7,504. Clicking the year link loaded the complete 2024 partition (30,066
+  rows), with its adjacent 2023 comparison (+2,644; +9.6%). Export controls and
+  source attribution remained available in the UI; stable CSV/JSON export
+  behavior is covered by frontend tests. This is local browser verification,
+  not a deployed feature verification.
 - Feature commit `d0c5d86578acb1a0fae5b1cd657143b65bf6f159` was pushed to
   `phase3-2-research-summary`. PR creation was attempted but the GitHub project
   integration reported that its linked account is unavailable. Consequently,

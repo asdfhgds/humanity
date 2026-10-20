@@ -102,6 +102,13 @@ test("filters by date, country, category, fatality estimate, and query", () => {
     ["ucdp-ged-26.1-101"],
   );
   assert.deepEqual(
+    filterUcdpRecords(
+      [rows[0], record({ id: "without-best-estimate", deaths_best: null })],
+      { minimumDeaths: 0 },
+    ).map((r) => r.id),
+    ["ucdp-ged-26.1-101"],
+  );
+  assert.deepEqual(
     filterUcdpRecords(rows, { query: "example province" }).map((r) => r.id),
     ["ucdp-ged-26.1-101"],
   );
