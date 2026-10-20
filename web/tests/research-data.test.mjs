@@ -1,32 +1,34 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
+import test from "node:test";
+import assert from "node:assert/strict";
 import {
+  compareYearOverYear,
   filterUcdpRecords,
   hasValidCoordinates,
   parseUcdpFeed,
   parseUcdpIndex,
+  summarizeUcdpRecords,
   toUcdpCsv,
   toUcdpJson,
-} from '../src/lib/research-data.mjs';
+} from "../src/lib/research-data.mjs";
 
 const record = (overrides = {}) => ({
-  id: 'ucdp-ged-26.1-101',
-  source_dataset: 'UCDP GED',
-  dataset_version: '26.1',
-  source_record_id: 'TST-2020-1-1-1',
-  record_number: '101',
+  id: "ucdp-ged-26.1-101",
+  source_dataset: "UCDP GED",
+  dataset_version: "26.1",
+  source_record_id: "TST-2020-1-1-1",
+  record_number: "101",
   event_year: 2020,
-  date_start: '2020-01-02',
-  date_end: '2020-01-02',
-  country: 'Exampleland',
-  region: 'Africa',
-  location: 'Example town',
-  admin1: 'Example province',
+  date_start: "2020-01-02",
+  date_end: "2020-01-02",
+  country: "Exampleland",
+  region: "Africa",
+  location: "Example town",
+  admin1: "Example province",
   admin2: null,
   latitude: 12.5,
   longitude: 23.5,
   violence_type: 1,
-  conflict_name: 'Example conflict',
+  conflict_name: "Example conflict",
   deaths_a: 2,
   deaths_b: 1,
   deaths_civilians: 3,
@@ -43,8 +45,8 @@ const record = (overrides = {}) => ({
 
 const feed = (records = [record()]) => ({
   schema_version: 1,
-  status: 'available',
-  dataset_version: '26.1',
+  status: "available",
+  dataset_version: "26.1",
   year: 2020,
   record_count: records.length,
   dataset_total_count: records.length,
@@ -52,91 +54,161 @@ const feed = (records = [record()]) => ({
   records,
 });
 
-test('validates the dedicated UCDP feed and rejects malformed observations', () => {
+test("validates the dedicated UCDP feed and rejects malformed observations", () => {
   assert.equal(parseUcdpFeed(feed()).records.length, 1);
   assert.throws(() => parseUcdpFeed({ ...feed(), schema_version: 2 }));
-  assert.throws(() => parseUcdpFeed(feed([{ id: 'missing native identity' }])));
+  assert.throws(() => parseUcdpFeed(feed([{ id: "missing native identity" }])));
   assert.throws(() => parseUcdpFeed({ ...feed(), record_count: 5 }));
 });
 
-test('validates lightweight year index and rejects malformed chunk metadata', () => {
+test("validates lightweight year index and rejects malformed chunk metadata", () => {
   const metadata = { ...feed(), years: [{ year: 2020, record_count: 1 }] };
   delete metadata.records;
   assert.equal(parseUcdpIndex(metadata).years[0].year, 2020);
-  assert.throws(() => parseUcdpIndex({ ...metadata, years: [{ year: '2020' }] }));
+  assert.throws(() =>
+    parseUcdpIndex({ ...metadata, years: [{ year: "2020" }] }),
+  );
   assert.throws(() => parseUcdpIndex({ ...metadata, record_count: 2 }));
 });
 
-test('filters by date, country, category, fatality estimate, and query', () => {
+test("filters by date, country, category, fatality estimate, and query", () => {
   const rows = [
     record(),
     record({
-      id: 'ucdp-ged-26.1-102',
-      source_record_id: 'TST-2021-1-1-1',
-      date_start: '2021-03-04',
-      date_end: '2021-03-04',
-      country: 'Otherland',
-      admin1: 'Other province',
+      id: "ucdp-ged-26.1-102",
+      source_record_id: "TST-2021-1-1-1",
+      date_start: "2021-03-04",
+      date_end: "2021-03-04",
+      country: "Otherland",
+      admin1: "Other province",
       violence_type: 2,
       deaths_best: 2,
     }),
   ];
-  assert.deepEqual(filterUcdpRecords(rows, { from: '2021-01-01' }).map((r) => r.id), [
-    'ucdp-ged-26.1-102',
-  ]);
-  assert.deepEqual(filterUcdpRecords(rows, { country: 'Exampleland' }).map((r) => r.id), [
-    'ucdp-ged-26.1-101',
-  ]);
-  assert.deepEqual(filterUcdpRecords(rows, { violenceType: '2' }).map((r) => r.id), [
-    'ucdp-ged-26.1-102',
-  ]);
-  assert.deepEqual(filterUcdpRecords(rows, { minimumDeaths: 5 }).map((r) => r.id), [
-    'ucdp-ged-26.1-101',
-  ]);
-  assert.deepEqual(filterUcdpRecords(rows, { query: 'example province' }).map((r) => r.id), [
-    'ucdp-ged-26.1-101',
-  ]);
+  assert.deepEqual(
+    filterUcdpRecords(rows, { from: "2021-01-01" }).map((r) => r.id),
+    ["ucdp-ged-26.1-102"],
+  );
+  assert.deepEqual(
+    filterUcdpRecords(rows, { country: "Exampleland" }).map((r) => r.id),
+    ["ucdp-ged-26.1-101"],
+  );
+  assert.deepEqual(
+    filterUcdpRecords(rows, { violenceType: "2" }).map((r) => r.id),
+    ["ucdp-ged-26.1-102"],
+  );
+  assert.deepEqual(
+    filterUcdpRecords(rows, { minimumDeaths: 5 }).map((r) => r.id),
+    ["ucdp-ged-26.1-101"],
+  );
+  assert.deepEqual(
+    filterUcdpRecords(rows, { query: "example province" }).map((r) => r.id),
+    ["ucdp-ged-26.1-101"],
+  );
 });
 
-test('date filters do not invent chronology for observations with missing dates', () => {
+test("date filters do not invent chronology for observations with missing dates", () => {
   const undated = record({ date_start: null, date_end: null });
   assert.deepEqual(filterUcdpRecords([undated], {}), [undated]);
-  assert.deepEqual(filterUcdpRecords([undated], { from: '2020-01-01' }), []);
+  assert.deepEqual(filterUcdpRecords([undated], { from: "2020-01-01" }), []);
 });
 
-test('map eligibility requires finite, geographically valid coordinate pairs', () => {
+test("map eligibility requires finite, geographically valid coordinate pairs", () => {
   assert.equal(hasValidCoordinates(record()), true);
   assert.equal(hasValidCoordinates(record({ latitude: null })), false);
   assert.equal(hasValidCoordinates(record({ longitude: 181 })), false);
   assert.equal(hasValidCoordinates(record({ latitude: Number.NaN })), false);
 });
 
-test('CSV exports have stable columns, escaped values, and omit non-selected fields', () => {
+test("CSV exports have stable columns, escaped values, and omit non-selected fields", () => {
   const row = record({ conflict_name: 'Conflict, "quoted"' });
   const first = toUcdpCsv([row]);
   assert.equal(first, toUcdpCsv([row]));
   assert.match(first, /"Conflict, ""quoted"""/);
-  assert.match(first.split('\r\n')[0], /^source_record_id,dataset_version,event_year/);
-  assert.equal(first.includes('source_article'), false);
+  assert.match(
+    first.split("\r\n")[0],
+    /^source_record_id,dataset_version,event_year/,
+  );
+  assert.equal(first.includes("source_article"), false);
 });
 
-test('JSON exports preserve attribution and are deterministic for a filtered selection', () => {
+test("JSON exports preserve attribution and are deterministic for a filtered selection", () => {
   const source = feed([record()]);
-  source.attribution = 'UCDP GED 26.1; changes: source text omitted';
+  source.attribution = "UCDP GED 26.1; changes: source text omitted";
   const first = toUcdpJson(source, source.records);
   assert.equal(first, toUcdpJson(source, source.records));
   const exported = JSON.parse(first);
   assert.equal(exported.attribution, source.attribution);
-  assert.equal(exported.dataset_version, '26.1');
+  assert.equal(exported.dataset_version, "26.1");
   assert.equal(exported.year, source.year);
   assert.deepEqual(exported.records, source.records);
 
   const latestIndex = {
     ...source,
-    status: 'stale',
-    retrieved_at: '2026-10-20T10:00:00Z',
+    status: "stale",
+    retrieved_at: "2026-10-20T10:00:00Z",
   };
-  const updatedExport = JSON.parse(toUcdpJson(source, source.records, latestIndex));
-  assert.equal(updatedExport.status, 'stale');
+  const updatedExport = JSON.parse(
+    toUcdpJson(source, source.records, latestIndex),
+  );
+  assert.equal(updatedExport.status, "stale");
   assert.equal(updatedExport.retrieved_at, latestIndex.retrieved_at);
+});
+
+test("research summaries and year-over-year comparison stay faithful to the source data", () => {
+  const rows = [
+    record({ country: "Exampleland", violence_type: 1, deaths_best: 5 }),
+    record({
+      id: "ucdp-ged-26.1-102",
+      source_record_id: "TST-2021-1-1-1",
+      event_year: 2021,
+      date_start: "2021-03-04",
+      date_end: "2021-03-04",
+      country: "Exampleland",
+      deaths_best: 7,
+      violence_type: 2,
+    }),
+    record({
+      id: "ucdp-ged-26.1-103",
+      source_record_id: "TST-2021-1-1-2",
+      event_year: 2021,
+      date_start: "2021-06-07",
+      date_end: "2021-06-07",
+      country: "Otherland",
+      deaths_best: null,
+      violence_type: 3,
+    }),
+  ];
+
+  const summary = summarizeUcdpRecords(rows);
+  assert.equal(summary.totalRecords, 3);
+  assert.equal(summary.recordsWithBestEstimate, 2);
+  assert.equal(summary.topCountry.country, "Exampleland");
+  assert.equal(summary.byViolenceType[0].label, "Non-state conflict");
+
+  const comparison = compareYearOverYear(
+    [
+      { year: 2020, record_count: 1 },
+      { year: 2021, record_count: 2 },
+    ],
+    2021,
+  );
+  assert.deepEqual(comparison, {
+    selectedYear: 2021,
+    previousYear: 2020,
+    currentCount: 2,
+    previousCount: 1,
+    delta: 1,
+    changePercent: 100,
+  });
+  assert.equal(
+    compareYearOverYear(
+      [
+        { year: 2020, record_count: 1 },
+        { year: 2022, record_count: 3 },
+      ],
+      2022,
+    ),
+    null,
+  );
 });

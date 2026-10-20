@@ -65,6 +65,17 @@ record identifier and dataset version; neither includes article text or
 publisher source metadata. Filtering, map display, and downloads happen in the
 browser and do not trigger ingestion.
 
+The overview summarizes only the currently filtered records. It counts records
+and reports how many include a best-estimate fatality value; it does not sum
+fatality estimates across events. Country and violence-type summary links apply
+that filter and point to the resulting underlying records. The year-over-year
+view compares record counts for the selected calendar year and the immediately
+preceding calendar year, using the same GED release index. It is a descriptive
+comparison of source-record counts, not a casualty comparison, rate, current
+alert, or measure of conflict severity. If the adjacent prior-year partition
+is absent, the comparison is not shown. Year links open the corresponding
+complete year partition.
+
 ## Isolated retrieval verification
 
 One isolated public retrieval of UCDP GED 26.1 succeeded on 2026-10-20 in

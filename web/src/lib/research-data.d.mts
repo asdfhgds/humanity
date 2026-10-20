@@ -34,7 +34,7 @@ export interface UcdpFeed {
   schema_version: 1;
   dataset: string;
   dataset_version: string | null;
-  status: 'not_imported' | 'available' | 'stale';
+  status: "not_imported" | "available" | "stale";
   last_attempt_at: string | null;
   last_attempt_status: string;
   last_error_category: string | null;
@@ -53,7 +53,7 @@ export interface UcdpFeed {
 
 export interface UcdpIndex extends Omit<
   UcdpFeed,
-  'records' | 'year' | 'dataset_total_count'
+  "records" | "year" | "dataset_total_count"
 > {
   years: { year: number; record_count: number }[];
 }
@@ -74,6 +74,24 @@ export function isUcdpRecord(record: unknown): record is UcdpRecord;
 export function hasValidCoordinates(
   record: UcdpRecord,
 ): record is UcdpRecord & { latitude: number; longitude: number };
+export function summarizeUcdpRecords(records: UcdpRecord[]): {
+  totalRecords: number;
+  recordsWithBestEstimate: number;
+  topCountry: { country: string; count: number } | null;
+  byCountry: { country: string; count: number }[];
+  byViolenceType: { value: number; label: string; count: number }[];
+};
+export function compareYearOverYear(
+  years: { year: number; record_count: number }[],
+  selectedYear: number,
+): {
+  selectedYear: number;
+  previousYear: number | null;
+  currentCount: number;
+  previousCount: number;
+  delta: number;
+  changePercent: number | null;
+} | null;
 export function filterUcdpRecords(
   records: UcdpRecord[],
   filters?: UcdpFilters,

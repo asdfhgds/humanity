@@ -1,5 +1,40 @@
 # HUMANITY Project Status
 
+## Phase 3.2 research-summary delivery (2026-10-20)
+
+- The summary improvements are implemented locally on `phase3-2-research-summary`,
+  based on verified `master` commit `31e23314dd12a77545bfff0be07dcfe51501236f`.
+  The existing local edits in `app/publishing/publisher.py` remain unstaged and
+  are excluded from this change.
+- The Research Explorer overview summarizes the active filter selection:
+  observation count, count of records with a best-estimate fatality value,
+  most frequent country, and most frequent UCDP violence type. Fatality values
+  are not summed. Country and violence-type summary links apply that filter
+  and point to the resulting records.
+- Year-over-year is a descriptive comparison of source-record counts in
+  adjacent calendar years of the same GED release. It is not a fatality,
+  severity, rate, or live-change comparison. If the immediately preceding year
+  is absent from the release index, no comparison is shown. Year links open the
+  corresponding complete partition.
+- Before this update, the live UCDP GED 26.1 index returned HTTP 200 and
+  reported 417,968 observations covering 1989-01-01 through 2025-12-31.
+  Browser fetches returned 30,066 matching records for 2024 (20,412,806
+  decoded bytes; 2,291,641-byte response `Content-Length`; 3,251 ms) and 2,659
+  for 1989 (1,733,841 decoded bytes; 181,406-byte response
+  `Content-Length`; 433 ms). The year index reports 25,770 records for 2025
+  and 30,066 for 2024, a descriptive change of -4,296 records (-14.3%).
+  The sampled real partitions matched their declared record counts and retained
+  fatality ranges and date/location/event-clarity uncertainty fields.
+- Local verification: Python suite passed (140 tests); frontend suite passed
+  (18 tests); Astro check reported zero errors, warnings, or hints; the static
+  build generated 18 pages and the static link/asset audit passed; all four
+  workflow YAML files parsed; formatting and `git diff --check` passed. The
+  build retains the existing large MapLibre chunk advisory.
+- These local changes are not yet merged or deployed. No news-ingestion,
+  Gemini, automatic-publishing, or production-release settings were changed.
+  PR, CI, deployment, and live post-deployment behavior will be recorded here
+  only after each is actually verified.
+
 ## Phase 3.1 UCDP public snapshot and deployment (2026-10-20)
 
 - Confirmed PR #24 merged at `baa6c4a55d23f6d349aeea31898e52cf4d29759a`;
