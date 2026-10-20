@@ -30,10 +30,16 @@
   build generated 18 pages and the static link/asset audit passed; all four
   workflow YAML files parsed; formatting and `git diff --check` passed. The
   build retains the existing large MapLibre chunk advisory.
-- These local changes are not yet merged or deployed. No news-ingestion,
+- Feature commit `d0c5d86578acb1a0fae5b1cd657143b65bf6f159` was pushed to
+  `phase3-2-research-summary`. PR creation was attempted but the GitHub project
+  integration reported that its linked account is unavailable. Consequently,
+  no PR CI run or deployment exists for this commit. The live site remains on
+  the prior UI; post-deployment summary/link/export behavior has not been
+  verified.
+- These changes are not yet merged or deployed. No news-ingestion,
   Gemini, automatic-publishing, or production-release settings were changed.
-  PR, CI, deployment, and live post-deployment behavior will be recorded here
-  only after each is actually verified.
+  The user must re-link the GitHub project account before PR creation and
+  normal review/CI can proceed.
 
 ## Phase 3.1 UCDP public snapshot and deployment (2026-10-20)
 
