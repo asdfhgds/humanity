@@ -128,5 +128,15 @@ test('JSON exports preserve attribution and are deterministic for a filtered sel
   const exported = JSON.parse(first);
   assert.equal(exported.attribution, source.attribution);
   assert.equal(exported.dataset_version, '26.1');
+  assert.equal(exported.year, source.year);
   assert.deepEqual(exported.records, source.records);
+
+  const latestIndex = {
+    ...source,
+    status: 'stale',
+    retrieved_at: '2026-10-20T10:00:00Z',
+  };
+  const updatedExport = JSON.parse(toUcdpJson(source, source.records, latestIndex));
+  assert.equal(updatedExport.status, 'stale');
+  assert.equal(updatedExport.retrieved_at, latestIndex.retrieved_at);
 });

@@ -133,14 +133,16 @@ export function toUcdpCsv(records) {
   ].join('\r\n');
 }
 
-export function toUcdpJson(feed, records) {
+export function toUcdpJson(feed, records, currentIndex = feed) {
   return JSON.stringify({
-    dataset: feed.dataset,
-    dataset_version: feed.dataset_version,
-    retrieved_at: feed.retrieved_at,
-    license: feed.license,
-    license_url: feed.license_url,
-    attribution: feed.attribution,
+    dataset: currentIndex.dataset || feed.dataset,
+    dataset_version: currentIndex.dataset_version || feed.dataset_version,
+    status: currentIndex.status || feed.status,
+    retrieved_at: currentIndex.retrieved_at || feed.retrieved_at,
+    license: currentIndex.license || feed.license,
+    license_url: currentIndex.license_url || feed.license_url,
+    attribution: currentIndex.attribution || feed.attribution,
+    year: feed.year,
     fields: UCDP_EXPORT_FIELDS,
     records,
   }, null, 2);

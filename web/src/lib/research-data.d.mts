@@ -79,4 +79,8 @@ export function filterUcdpRecords(
   filters?: UcdpFilters,
 ): UcdpRecord[];
 export function toUcdpCsv(records: UcdpRecord[]): string;
-export function toUcdpJson(feed: UcdpFeed, records: UcdpRecord[]): string;
+export function toUcdpJson(
+  feed: UcdpFeed,
+  records: UcdpRecord[],
+  currentIndex?: UcdpFeed | UcdpIndex,
+): string;
