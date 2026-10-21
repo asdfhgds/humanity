@@ -17,10 +17,11 @@ The project explores whether a structured public record can help readers:
 - **Device-local monitoring** - Save searches, compare record and source-evidence changes on later visits, and download a source-linked citation brief. This data stays in the current browser and is not synced.
 - **Source-linked event pages** - Inspect source metadata and attributed claim excerpts where available.
 - **Structured-data Research Explorer** - Filter source-native UCDP GED historical observations by year, place, date, violence category, and fatality estimate; inspect source uncertainty, map valid coordinates, and export attributed CSV/JSON. This is a separate dataset view, not the published-event feed. See the [feed and export contract](docs/RESEARCH_EXPLORER.md).
+- **HUMANITY Research reports** - Read a small set of source-linked, reproducible analyses computed from the real UCDP GED 26.1 1989, 2024, and 2025 partitions. Counts describe dataset records, not casualty totals or current alerts; see [editorial report boundaries](docs/EDITORIAL_REPORTS.md).
 - **Transparency pages** - Read the methodology, configured source list, rights status, privacy draft, and use terms draft.
 - **Evidence safeguards** - Suspected syndication does not count as independent corroboration, and held or rejected events do not enter public artifacts.
 
-This is an early-stage research prototype. It does not provide complete global coverage, guaranteed live ingestion, synchronized accounts, notifications, or a paid research service. A browser refresh reloads published data; it does not run ingestion.
+This is an early-stage research prototype. The historical research reports are generated deterministically from the included UCDP release during the static build; no generative AI is used for their calculations or prose. They are not current-event reporting. Current-event pages continue to use the existing extraction, provenance, evidence, and publication safeguards; the public current-event feed may be empty. The product does not provide complete global coverage, guaranteed live ingestion, synchronized accounts, notifications, or a paid research service. A browser refresh reloads published data; it does not run ingestion.
 
 ## 🏗️ Architecture
 
@@ -51,6 +52,7 @@ docs/                       # Product, architecture, rights, privacy, terms
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Python 3.11+
 - Node.js 20+
 - Git
@@ -83,6 +85,7 @@ cp .env.example .env
 3. **Cloudflare** (optional): For deployment
 
 For local provider-backed extraction, add to `.env`:
+
 ```env
 # Store real credentials locally and never commit .env
 GEMINI_API_KEYS="one-key-per-line"
@@ -152,6 +155,7 @@ All configuration is in `config/`:
 ## 📈 Data Model
 
 Core entities:
+
 - **Event** - Central object with type, location, time, severity, claims
 - **Source** - Publisher, URL, metadata, reliability
 - **Claim** - Extracted fact: subject, predicate, value, source quote, confidence

@@ -1,0 +1,171 @@
+---
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { loadResearchReports } from "../../lib/reports-data.mjs";
+
+const reports = await loadResearchReports(resolve(process.cwd(), "public"));
+let currentReportCount: number | null = null;
+try {
+  const currentReports = JSON.parse(
+    await readFile(
+      resolve(process.cwd(), "public", "data", "events", "all.json"),
+      "utf8",
+    ),
+  );
+  if (!Array.isArray(currentReports)) {
+    throw new Error("Published current-report feed must be an array");
+  }
+  currentReportCount = currentReports.length;
+} catch (error) {
+  if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) {
+    throw error;
+  }
+}
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+const canonicalUrl = new URL(`${basePath}/reports/`, Astro.site).href;
+
+function cardDetail(report: (typeof reports)[number]) {
+  if (report.kind === "year-comparison") {
+    const earlier = report.data[2024];
+    const later = report.data[2025];
+    return `${earlier.recordCount.toLocaleString()} records in 2024; ${later.recordCount.toLocaleString()} in 2025.`;
+  }
+  if (report.kind === "country-distribution") {
+    const top = report.data[2024].countries[0];
+    return top
+      ? `${report.data[2024].recordCount.toLocaleString()} total records in 2024; ${top.country} has the largest recorded count (${top.count.toLocaleString()}).`
+      : `${report.data[2024].recordCount.toLocaleString()} records in 2024.`;
+  }
+  return `${report.data[1989].recordCount.toLocaleString()} records in 1989 and ${report.data[2024].recordCount.toLocaleString()} in 2024.`;
+}
+---
+
+<BaseLayout
+  title="HUMANITY Reports"
+  description="Original, source-linked research reports based on licensed historical datasets, distinct from current-event reporting."
+  canonicalUrl={canonicalUrl}
+>
+  <main class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+    <header class="mb-9 border-b border-humanity-border pb-8">
+      <nav aria-label="Breadcrumb" class="mb-5 text-sm text-humanity-textMuted">
+        <a class="link" href="/">HUMANITY</a>
+        <span aria-hidden="true"> / </span>
+        <span>Reports</span>
+      </nav>
+      <p class="eyebrow">Original analysis · Transparent sources</p>
+      <h1 class="editorial-title mt-3 text-4xl font-semibold sm:text-6xl">
+        HUMANITY Reports
+      </h1>
+      <p class="mt-4 max-w-3xl text-lg leading-relaxed text-humanity-textMuted">
+        Read source-linked analysis of what historical datasets record and where
+        their limits matter. These reports are not live alerts or independently
+        corroborated current-event coverage.
+      </p>
+    </header>
+
+    <section
+      class="mb-10 border-l-2 border-humanity-accent bg-humanity-card px-5 py-5"
+      aria-labelledby="current-reports-heading"
+    >
+      <p class="eyebrow">HUMANITY Reports · Current events</p>
+      <h2
+        id="current-reports-heading"
+        class="editorial-title mt-2 text-2xl font-semibold"
+      >
+        Current-event reporting
+      </h2>
+      {
+        currentReportCount === null ? (
+          <p class="mt-2 text-humanity-textMuted">
+            The published current-report feed is unavailable in this site build.
+            Check the current reports index for its status.
+          </p>
+        ) : currentReportCount === 0 ? (
+          <p class="mt-2 max-w-3xl leading-relaxed text-humanity-textMuted">
+            No current-event report is approved for publication in the latest
+            published feed. This does not mean that no significant events
+            occurred; reporting coverage is incomplete, and evidence must pass
+            the existing publication safeguards.
+          </p>
+        ) : (
+          <p class="mt-2 leading-relaxed text-humanity-textMuted">
+            {currentReportCount.toLocaleString()} approved report
+            {currentReportCount === 1 ? "" : "s"} in the published feed. Current
+            reports remain separate from historical research analysis.
+          </p>
+        )
+      }
+      <a class="link mt-4 inline-block" href="/events">
+        Browse current-event reports →
+      </a>
+    </section>
+
+    <section aria-labelledby="research-reports-heading">
+      <div class="mb-5 border-b border-humanity-border pb-4">
+        <p class="eyebrow">HUMANITY Research · UCDP GED 26.1</p>
+        <h2
+          id="research-reports-heading"
+          class="editorial-title mt-2 text-3xl font-semibold"
+        >
+          Historical analysis
+        </h2>
+        <p class="mt-2 max-w-3xl leading-relaxed text-humanity-textMuted">
+          A small set of reproducible reports calculated from real UCDP GED
+          release partitions. Figures count dataset records; they are not
+          casualty totals, measures of conflict severity, or a complete account
+          of events.
+        </p>
+      </div>
+      <div class="divide-y divide-humanity-border">
+        {
+          reports.map((report) => (
+            <article class="grid gap-3 py-6 sm:grid-cols-[1fr_auto] sm:items-start sm:gap-8">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-humanity-accent">
+                  Research report · GED {report.datasetVersion}
+                </p>
+                <h3 class="editorial-title mt-2 text-2xl font-semibold">
+                  <a
+                    class="hover:text-humanity-accent"
+                    href={`/reports/${report.slug}/`}
+                  >
+                    {report.title}
+                  </a>
+                </h3>
+                <p class="mt-2 leading-relaxed text-humanity-textMuted">
+                  {report.description}
+                </p>
+                <p class="mt-3 text-sm text-humanity-textMuted">
+                  {cardDetail(report)}
+                </p>
+              </div>
+              <a
+                class="link whitespace-nowrap sm:mt-5"
+                href={`/reports/${report.slug}/`}
+              >
+                Read analysis →
+              </a>
+            </article>
+          ))
+        }
+      </div>
+    </section>
+
+    <aside
+      class="mt-8 border-t border-humanity-border pt-6 text-sm leading-relaxed text-humanity-textMuted"
+    >
+      <p>
+        Dataset attribution: Uppsala Conflict Data Program (UCDP), Georeferenced
+        Event Dataset, version 26.1. Read the
+        <a class="link" href="/research">Research Explorer</a>,
+        <a
+          class="link"
+          href="https://ucdp.uu.se/downloads/ged/ged261.pdf"
+          rel="noopener noreferrer">codebook</a
+        >, and <a class="link" href="/methodology">HUMANITY methodology</a>.
+      </p>
+    </aside>
+  </main>
+</BaseLayout>

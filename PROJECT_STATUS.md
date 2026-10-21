@@ -1,5 +1,62 @@
 # HUMANITY Project Status
 
+## Phase 4 editorial research reports (2026-10-21; implementation pending review)
+
+- Verified remote `master` at `f9ef892999d16abbf7a3302bf9bfa9f49786d5e0`,
+  including merged PR #26 research summaries and PR #27 delivery-status
+  correction. Implemented on isolated branch `phase4-editorial-engine`; the
+  unrelated unstaged publisher edit in the original worktree was not changed
+  or staged.
+- Added a separate `/reports/` index that distinguishes current-event reports
+  from historical HUMANITY Research. Its current-event section reads the
+  actual built public event feed (zero records at this baseline) and says that
+  an empty feed does not establish that no events occurred. The Daily page
+  does not fill missing current-event editions with old data.
+- Added three fixed, substantive reports calculated deterministically from
+  committed UCDP GED 26.1 records: 2024-to-2025 category-count comparison,
+  2024 country distribution, and selected 1989/2024 endpoint comparison.
+  Source counts, shares, and deltas are generated in code, not authored by an
+  LLM. Reports preserve GED categories and dataset record definitions; no
+  fatality estimates are summed. They state coverage, retrieval date, best-
+  estimate availability, release attribution and CC BY 4.0, uncertainty and
+  interpretation limits, and link to the codebook, download, Research Explorer,
+  and filtered underlying partitions. The compiled articles are visibly
+  identified as automated data analysis and do not claim individual human
+  editorial review.
+- Validated actual partitions before generating content: index version 26.1,
+  417,968 records; 1989 has 2,659 rows, 2024 has 30,066, and 2025 has 25,770.
+  The computed 2024 country distribution ranks Ukraine first with 11,102
+  records. The 2024-to-2025 difference is -4,296 records (-14.3%); this is a
+  change in dataset row counts, not a casualty, severity, risk, or live-news
+  metric. Build generation fails closed on unavailable/malformed data,
+  index/partition mismatches, duplicate IDs, records assigned to the wrong
+  year, or missing attribution/source links.
+- Production-mode build (`GITHUB_ACTIONS=true`) generated 22 pages, including
+  all three report articles. Built site size: 282,456,468 bytes. Static
+  link/fragment/asset audit passed. Browser inspection of the built artifact
+  through a Pages-style `/humanity/` path confirmed the index, article
+  statistics, country table, metadata, attribution, and filtered links. Local
+  checks passed: 140 Python tests; 21 frontend tests including real GED
+  partition calculations and malformed/stale/mismatched-data cases; Astro
+  check (45 files, zero diagnostics); all four workflow YAML files parsed;
+  targeted Prettier and `git diff --check`.
+- This release adds no current-event article generator, provider-neutral
+  Gemini adapter, source connector, generated live-news content, or AI-assisted
+  article prose. Existing extraction, source independence, provenance,
+  evidence, and publication gates remain unchanged. No Gemini requests were
+  made; the known Gemini provider availability issue remains an operational
+  blocker for new AI-assisted event extraction. The current published feed is
+  still empty. No recurring ingestion, automatic publication, production
+  release gate, or news schedule was changed.
+- No images were added: this dataset-only analysis does not need imagery, and
+  no publisher-image rights were presumed. The product pilot remains a
+  discovery hypothesis. The next low-risk validation is an observed usability
+  session of these public tasks; there is no enquiry form, paid account, or
+  payment flow.
+- PR, fresh CI, merge, and deployment are not yet completed. Only reviewed
+  static historical analyses may be included in this release; current-event
+  publishing remains held behind the existing policy.
+
 ## Phase 3.2 research-summary delivery (2026-10-20; deployed)
 
 - The summary improvements are implemented locally on `phase3-2-research-summary`,

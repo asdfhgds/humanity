@@ -38,6 +38,25 @@ from a failed refresh. The importer excludes source article text and publisher
 metadata, reports missing/invalid dates and coordinates without inventing
 values, and applies a hard archive/CSV/row bound.
 
+The `/reports/` index and its fixed historical-analysis article pages are a
+separate, build-time editorial path over the public GED index and selected
+1989, 2024, and 2025 year partitions. Deterministic JavaScript calculations
+produce year/category record counts, country distributions, and explicit
+comparison deltas; the build rejects unavailable, malformed, or index-mismatched
+partitions instead of publishing success-shaped empty articles. The pages link
+back to matching Research Explorer filters and the dataset, codebook, and
+license. They do not use article text, the Gemini provider, the event model, or
+the news publication path. Their selected record counts are not casualty
+totals, complete incident counts, or live indicators.
+
+Current-event reports remain the existing event publishing surface. Source
+acquisition, extraction, clustering, claim provenance, evidence assessment,
+and publication policy are unchanged by the historical report generator.
+Provider outages or unvalidated claims do not become public articles; the
+existing publication gate remains authoritative. The Daily page summarizes
+only an available published current-event brief and links historical analyses
+in a clearly separate section.
+
 ## Operational boundaries
 
 GitHub Actions provides workflow execution and repository-backed state for the

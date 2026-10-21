@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import StoryImage from '../components/StoryImage.astro';
 import { eventPath } from '../lib/client-utils';
+import { REPORT_CATALOG } from '../lib/reports-data.mjs';
 
 interface BriefItem {
   slug?: string;
@@ -77,10 +78,18 @@ const items = Array.isArray(brief?.items) ? brief.items : [];
       </section>
     ) : (
       <section class="border-y border-humanity-border py-12">
-        <h2 class="editorial-title text-2xl font-semibold">The daily brief is temporarily unavailable.</h2>
-        <p class="mt-2 text-humanity-textMuted">A recent published brief could not be found. Please try again after the next data publication.</p>
+        <h2 class="editorial-title text-2xl font-semibold">No HUMANITY Daily edition is published here yet.</h2>
+        <p class="mt-2 text-humanity-textMuted">The Daily summarizes eligible published current-event reports and meaningful changes in that feed. It does not turn historical dataset observations into breaking news, and no edition is fabricated when there is no published brief.</p>
       </section>
     )}
-    <nav class="mt-8 flex gap-5 text-sm" aria-label="Brief navigation"><a class="link" href="/events">Browse all events</a><a class="link" href="/methodology">How evidence is assessed</a></nav>
+    <section class="mt-10 border-t border-humanity-border pt-7" aria-labelledby="research-reading-heading">
+      <p class="eyebrow">HUMANITY Research · Historical, not breaking news</p>
+      <h2 id="research-reading-heading" class="editorial-title mt-2 text-2xl font-semibold">Source-linked research reports</h2>
+      <p class="mt-2 max-w-3xl leading-relaxed text-humanity-textMuted">These analyses use the historical UCDP GED 26.1 dataset. They are separate from the current-event briefing and do not indicate new incidents.</p>
+      <ul class="mt-4 grid gap-3 sm:grid-cols-2">
+        {REPORT_CATALOG.map((report) => <li><a class="link" href={`/reports/${report.slug}/`}>{report.title} →</a></li>)}
+      </ul>
+    </section>
+    <nav class="mt-8 flex gap-5 text-sm" aria-label="Brief navigation"><a class="link" href="/events">Browse current-event reports</a><a class="link" href="/reports">All research reports</a><a class="link" href="/methodology">How evidence is assessed</a></nav>
   </main>
 </BaseLayout>
