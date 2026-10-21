@@ -41,9 +41,13 @@
   link/asset audit passed; all four workflow YAML files parsed; targeted Ruff,
   Python compilation, and `git diff --check` passed. The existing large
   MapLibre bundle advisory and legacy datetime deprecation warnings remain.
-  CI/PR completion remains pending; the checks do not authorize or establish
-  a current-event draft. No deployment is needed for this diagnostics-only
-  backend/documentation change.
+  Commit `833f763942984e503a6e3aa80a768826938b505f` was pushed to branch
+  `phase5-current-events` and opened as PR #31. Both PR checks passed on that
+  exact head in [run 39625852391](https://github.com/asdfhgds/humanity/actions/runs/39625852391);
+  GitHub reports the PR clean and open, pending review. No deployment was
+  requested: this diagnostics-only backend/documentation change does not alter
+  the public site, and no real current-event draft was produced. Passing CI
+  does not authorize or establish a current-event draft.
 
 ## Phase 4 editorial research reports (2026-10-21; deployed)
 
