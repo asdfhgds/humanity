@@ -1,0 +1,446 @@
+---
+import { resolve } from "node:path";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { loadResearchReports } from "../../lib/reports-data.mjs";
+
+export async function getStaticPaths() {
+  const reports = await loadResearchReports(resolve(process.cwd(), "public"));
+  return reports.map((report) => ({
+    params: { slug: report.slug },
+    props: { report },
+  }));
+}
+
+const { report } = Astro.props;
+const { index, data } = report;
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+const site = Astro.site || new URL("https://humanity.example");
+const canonicalUrl = new URL(`${basePath}${Astro.url.pathname}`, site).href;
+const publishedAt = `${report.publishedAt}T00:00:00Z`;
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: report.title,
+  description: report.description,
+  datePublished: publishedAt,
+  dateModified: publishedAt,
+  mainEntityOfPage: canonicalUrl,
+  author: { "@type": "Organization", name: "HUMANITY Research" },
+  publisher: { "@type": "Organization", name: "HUMANITY" },
+  isAccessibleForFree: true,
+  about: {
+    "@type": "Dataset",
+    name: index.dataset,
+    version: report.datasetVersion,
+    url: index.dataset_url,
+    license: index.license_url,
+  },
+};
+
+const formatDate = (value: string) => {
+  const date = new Date(value);
+  return Number.isNaN(date.valueOf())
+    ? value
+    : date.toLocaleDateString("en", {
+        dateStyle: "long",
+        timeZone: "UTC",
+      });
+};
+const signed = (value: number) =>
+  `${value > 0 ? "+" : ""}${value.toLocaleString()}`;
+const relatedReports = (
+  await loadResearchReports(resolve(process.cwd(), "public"))
+).filter((item) => item.slug !== report.slug);
+---
+
+<BaseLayout
+  title={report.title}
+  description={report.description}
+  canonicalUrl={canonicalUrl}
+  ogType="article"
+>
+  <meta slot="head" property="article:published_time" content={publishedAt} />
+  <meta slot="head" property="article:modified_time" content={publishedAt} />
+  <script
+    slot="head"
+    type="application/ld+json"
+    set:html={JSON.stringify(jsonLd)}
+  />
+  <main class="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
+    <nav aria-label="Breadcrumb" class="mb-7 text-sm text-humanity-textMuted">
+      <a class="link" href="/">HUMANITY</a>
+      <span aria-hidden="true"> / </span>
+      <a class="link" href="/reports">Reports</a>
+      <span aria-hidden="true"> / </span>
+      <span>Research</span>
+    </nav>
+
+    <article>
+      <header class="border-b border-humanity-border pb-7">
+        <p class="eyebrow">HUMANITY Research · Historical analysis</p>
+        <h1
+          class="editorial-title mt-3 text-4xl font-semibold leading-tight sm:text-5xl"
+        >
+          {report.title}
+        </h1>
+        <p class="mt-4 text-lg leading-relaxed text-humanity-textMuted">
+          {report.description}
+        </p>
+        <div
+          class="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm text-humanity-textMuted"
+        >
+          <span>HUMANITY · Automated data analysis</span>
+          <span>
+            Published <time datetime={report.publishedAt}
+              >{formatDate(report.publishedAt)}</time
+            >
+          </span>
+          <span
+            >Last updated <time datetime={report.publishedAt}
+              >{formatDate(report.publishedAt)}</time
+            ></span
+          >
+        </div>
+        <p class="mt-3 text-xs text-humanity-textMuted">
+          Dataset last retrieved {
+            formatDate(index.retrieved_at || "date unavailable")
+          } · UCDP GED {report.datasetVersion}
+        </p>
+      </header>
+
+      <div class="article-copy py-8">
+        {
+          report.kind === "year-comparison" && (
+            <>
+              <p>
+                UCDP GED 26.1 contains {data[2024].recordCount.toLocaleString()}{" "}
+                source-native event records for 2024 and{" "}
+                {data[2025].recordCount.toLocaleString()} for 2025. That is a
+                difference of {signed(data.totalChange || 0)} records (
+                {data.totalChangePercent === null ||
+                data.totalChangePercent === undefined
+                  ? "percentage not available"
+                  : `${data.totalChangePercent > 0 ? "+" : ""}${data.totalChangePercent}%`}
+                ). This compares the number of rows in adjacent annual release
+                partitions; it is not a measure of deaths, conflict severity,
+                risk, or a live alert.
+              </p>
+              <h2>Counts by UCDP violence category</h2>
+              <p>
+                The table counts GED records classified in each category. Select
+                a year and category to inspect the underlying records in the
+                Research Explorer.
+              </p>
+              <div class="overflow-x-auto">
+                <table>
+                  <caption>
+                    UCDP GED 26.1 event-record counts, 2024 and 2025
+                  </caption>
+                  <thead>
+                    <tr>
+                      <>
+                        <th scope="col">Violence category</th>
+                        <th scope="col">2024</th>
+                        <th scope="col">2025</th>
+                        <th scope="col">Difference</th>
+                      </>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.comparison?.map((row) => (
+                      <tr>
+                        <th scope="row">{row.label}</th>
+                        <td>
+                          <a
+                            class="link"
+                            href={`/research/?year=2024&type=${row.id}#research-results`}
+                          >
+                            {row.earlierCount.toLocaleString()}
+                          </a>
+                        </td>
+                        <td>
+                          <a
+                            class="link"
+                            href={`/research/?year=2025&type=${row.id}#research-results`}
+                          >
+                            {row.laterCount.toLocaleString()}
+                          </a>
+                        </td>
+                        <td>
+                          {signed(row.change)}
+                          {row.changePercent === null ||
+                          row.changePercent === undefined
+                            ? ""
+                            : ` (${row.changePercent > 0 ? "+" : ""}${row.changePercent}%)`}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p>
+                Changes in the table describe differences between dataset record
+                counts. The release may be revised, and counts should not be
+                read as a complete census of violence in either year.
+              </p>
+            </>
+          )
+        }
+
+        {
+          report.kind === "country-distribution" && (
+            <>
+              <p>
+                The GED 26.1 2024 partition contains{" "}
+                {data[2024].recordCount.toLocaleString()} records. The list
+                below ranks countries by the number of records assigned to them
+                in this release. It describes the dataset's recorded
+                distribution, not comparative danger, population-adjusted rates,
+                or the full distribution of conflict.
+              </p>
+              <h2>Countries with the most recorded events</h2>
+              <p>
+                Each share is the country's record count divided by all
+                {` ${data[2024].recordCount.toLocaleString()} `}records in the
+                2024 partition. Use the links to review the selected underlying
+                rows.
+              </p>
+              <div class="overflow-x-auto">
+                <table>
+                  <caption>
+                    Largest country record counts in UCDP GED 26.1, 2024
+                  </caption>
+                  <thead>
+                    <tr>
+                      <>
+                        <th scope="col">Country in dataset</th>
+                        <th scope="col">Records</th>
+                        <th scope="col">Share of partition</th>
+                      </>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data[2024].countries.slice(0, 10).map((row) => (
+                      <tr>
+                        <th scope="row">
+                          <a
+                            class="link"
+                            href={`/research/?year=2024&country=${encodeURIComponent(row.country)}#research-results`}
+                          >
+                            {row.country}
+                          </a>
+                        </th>
+                        <td>{row.count.toLocaleString()}</td>
+                        <td>{row.share?.toFixed(1) ?? "n/a"}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <h2>What the records can and cannot show</h2>
+              <p>
+                Country names and event inclusion follow the dataset's
+                documentation. Reporting coverage, event definitions, location
+                precision, and classification affect which records appear. A
+                higher record count is not evidence by itself of a higher
+                population-level risk or a complete country count.
+              </p>
+            </>
+          )
+        }
+
+        {
+          report.kind === "endpoint-comparison" && (
+            <>
+              <p>
+                This report compares two annual partitions {data.elapsedYears}{" "}
+                years apart:
+                {` ${data[1989].recordCount.toLocaleString()} `}GED 26.1 records
+                in 1989 and {` ${data[2024].recordCount.toLocaleString()} `}in
+                2024. These are endpoint snapshots, not a continuous trend
+                analysis. Definitions, source coverage, and recording practices
+                can change over time.
+              </p>
+              <h2>Recorded event counts by category</h2>
+              <p>
+                The counts below use the violence category recorded for each GED
+                row. Open either year to inspect the source-native observations.
+              </p>
+              <div class="overflow-x-auto">
+                <table>
+                  <caption>
+                    UCDP GED 26.1 event-record counts in selected years
+                  </caption>
+                  <thead>
+                    <tr>
+                      <>
+                        <th scope="col">Violence category</th>
+                        <th scope="col">1989</th>
+                        <th scope="col">2024</th>
+                        <th scope="col">Difference</th>
+                      </>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.comparison?.map((row) => (
+                      <tr>
+                        <th scope="row">{row.label}</th>
+                        <td>
+                          <a
+                            class="link"
+                            href={`/research/?year=1989&type=${row.id}#research-results`}
+                          >
+                            {row.earlierCount.toLocaleString()}
+                          </a>
+                        </td>
+                        <td>
+                          <a
+                            class="link"
+                            href={`/research/?year=2024&type=${row.id}#research-results`}
+                          >
+                            {row.laterCount.toLocaleString()}
+                          </a>
+                        </td>
+                        <td>{signed(row.change)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p>
+                The 2024 partition contains more recorded rows than 1989, but
+                this endpoint comparison cannot establish a cause or a smooth
+                increase over the intervening years. Counts are not casualty
+                totals or rates.
+              </p>
+            </>
+          )
+        }
+
+        <h2>Source, method, and uncertainty</h2>
+        <p>
+          Calculations are deterministic counts of records in UCDP Georeferenced
+          Event Dataset (GED) version {report.datasetVersion}, covering
+          {` ${index.coverage_start || "unknown"} `}through
+          {` ${index.coverage_end || "unknown"}`}. Dataset retrieval recorded at
+          {" "}{index.retrieved_at || "an unavailable time"}. No generative AI
+          was used to calculate or write this report; the tables and prose are
+          produced from fixed templates and dataset values. This report has not
+          been individually reviewed by a human editor.
+        </p>
+        <p>
+          Fatality best-estimates are not added or used for the comparisons. The
+          underlying rows retain uncertainty fields; records missing a
+          best-estimate remain missing. A dataset observation is not, by itself,
+          an independently corroborated news report or a HUMANITY current-event
+          publication.
+        </p>
+        <p>
+          Best-estimate coverage in the included partition{
+            report.years.length === 1 ? "" : "s"
+          }:
+          {" "}{
+            report.years.map((year, position) => (
+              <>
+                {position > 0 && "; "}
+                {year}, {data[year].recordsWithBestEstimate.toLocaleString()} of{" "}
+                {data[year].recordCount.toLocaleString()} records
+                {data[year].bestEstimateCoverage === null
+                  ? ""
+                  : ` (${data[year].bestEstimateCoverage}%)`}
+              </>
+            ))
+          }. This is a count of rows with a value, not a sum of those values.
+          The Research Explorer retains the release's date, location,
+          event-clarity, and fatality uncertainty fields for inspection.
+        </p>
+        <p>
+          {index.attribution} The dataset is available under
+          {" "}<a
+            class="link"
+            href={index.license_url}
+            rel="noopener noreferrer">{index.license}</a
+          >. Consult the
+          {" "}<a
+            class="link"
+            href={index.codebook_url}
+            rel="noopener noreferrer">UCDP codebook</a
+          >
+          {" "}for definitions and the
+          {" "}<a
+            class="link"
+            href={index.dataset_url}
+            rel="noopener noreferrer">dataset download</a
+          >. HUMANITY's import contains selected event-level fields and omits
+          source-article text and publisher metadata.
+        </p>
+        <p>
+          This analysis describes only this release. It is not legal advice,
+          causal research, a live monitoring product, or a complete count of
+          conflict.
+        </p>
+      </div>
+    </article>
+
+    <nav
+      class="border-t border-humanity-border py-7"
+      aria-label="Related research"
+    >
+      <h2 class="editorial-title text-2xl font-semibold">Related reports</h2>
+      <ul class="mt-3 grid gap-3 sm:grid-cols-2">
+        {
+          relatedReports.map((item) => (
+            <li>
+              <a class="link" href={`/reports/${item.slug}/`}>
+                {item.title} →
+              </a>
+            </li>
+          ))
+        }
+        <li>
+          <a class="link" href="/research">Explore the UCDP GED records →</a>
+        </li>
+      </ul>
+    </nav>
+  </main>
+</BaseLayout>
+
+<style>
+  .article-copy :global(p) {
+    margin: 1.1rem 0;
+    color: #66635d;
+    font-size: 1.05rem;
+    line-height: 1.8;
+  }
+  .article-copy :global(h2) {
+    margin-top: 2.6rem;
+    color: #202725;
+    font:
+      600 1.65rem/1.25 Georgia,
+      serif;
+    letter-spacing: -0.02em;
+  }
+  .article-copy :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+    text-align: left;
+  }
+  .article-copy :global(caption) {
+    padding: 0.8rem 0;
+    color: #66635d;
+    font-size: 0.78rem;
+    text-align: left;
+  }
+  .article-copy :global(th),
+  .article-copy :global(td) {
+    border-bottom: 1px solid #d7d0c5;
+    padding: 0.75rem 0.65rem;
+  }
+  .article-copy :global(thead th) {
+    color: #66635d;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+</style>

@@ -13,7 +13,8 @@ import LeadStory from '../components/LeadStory.astro';
       <div class="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-5 px-4 py-3 sm:px-6 lg:px-8">
         <a href="/" class="font-serif text-2xl font-bold tracking-tight text-humanity-text" aria-label="HUMANITY home">HUMANITY<span class="text-humanity-accent">.</span></a>
         <nav class="hidden flex-wrap items-center gap-x-6 gap-y-2 lg:flex" aria-label="Main navigation">
-          <a href="/events" class="masthead-link">Latest reports</a>
+          <a href="/events" class="masthead-link">Current reports</a>
+          <a href="/reports" class="masthead-link">Research reports</a>
           <a href="/map" class="masthead-link">Map</a>
           <a href="/protests" class="masthead-link">Civic action</a>
           <a href="/conflicts" class="masthead-link">Conflict</a>
@@ -33,7 +34,8 @@ import LeadStory from '../components/LeadStory.astro';
           <h1 id="homepage-heading" class="editorial-title mt-5 text-5xl font-semibold leading-[.99] sm:text-6xl lg:text-7xl">The world, seen through the lives it changes.</h1>
           <p class="mt-5 max-w-xl text-lg leading-relaxed text-humanity-textMuted">A source-led account of protests, conflict, displacement and disaster. Follow what is known, what is still contested, and where the reporting comes from.</p>
           <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
-            <a href="/events" class="btn-primary">Read the latest reports <span aria-hidden="true">→</span></a>
+            <a href="/events" class="btn-primary">Read current reports <span aria-hidden="true">→</span></a>
+            <a href="/reports" class="link text-sm">Read source-linked research</a>
             <a href="/map" class="link text-sm">Explore the global map</a>
           </div>
           <FeedFreshness />
@@ -89,6 +91,11 @@ import LeadStory from '../components/LeadStory.astro';
       <section class="grid gap-5 border-b border-humanity-border py-8 sm:py-10 md:grid-cols-[1fr_auto] md:items-center" aria-labelledby="research-heading">
         <div><p class="eyebrow">Structured historical data</p><h2 id="research-heading" class="editorial-title mt-2 text-2xl font-semibold sm:text-3xl">Explore source-native conflict observations.</h2><p class="mt-2 max-w-2xl leading-relaxed text-humanity-textMuted">The Research Explorer keeps UCDP GED observations distinct from live reporting and publication decisions. Filter by country, date and dataset category, inspect uncertainty fields, and export attributed records.</p></div>
         <a href="/research" class="btn-secondary justify-self-start">Open Research Explorer&nbsp; →</a>
+      </section>
+
+      <section class="grid gap-5 border-b border-humanity-border py-8 sm:py-10 md:grid-cols-[1fr_auto] md:items-center" aria-labelledby="reports-heading">
+        <div><p class="eyebrow">Original historical analysis</p><h2 id="reports-heading" class="editorial-title mt-2 text-2xl font-semibold sm:text-3xl">Read the records in context.</h2><p class="mt-2 max-w-2xl leading-relaxed text-humanity-textMuted">A small set of source-linked reports calculates event-record counts directly from UCDP GED 26.1. These are historical analyses, not breaking news or casualty totals.</p></div>
+        <a href="/reports" class="btn-secondary justify-self-start">Read HUMANITY Reports&nbsp; →</a>
       </section>
 
       <section class="grid gap-5 border-b border-humanity-border py-8 sm:py-10 md:grid-cols-[.7fr_1.3fr]" aria-labelledby="method-heading">
