@@ -561,7 +561,7 @@ def test_gdelt_http_error_category_includes_only_status_code():
 
     discovery._record_error("gkg", error)
 
-    assert discovery.diagnostics["gkg"]["error_categories"] == {"HTTPStatusError_403": 1}
+    assert discovery.diagnostics["gkg"]["error_categories"] == {"http_error_403": 1}
 
 
 def test_publisher_refuses_to_publish_when_auto_publication_is_disabled(

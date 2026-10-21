@@ -23,6 +23,17 @@ policy, and generated JSON/HTML. Local operational state is stored in JSON.
 6. The publisher writes public feeds, pages, and map data; Astro builds a
    static site from those generated files.
 
+Discovery diagnostics are separated by connector stage. RSS feed responses
+distinguish valid results, valid empty feeds, partial/malformed parses, HTTP
+errors, rate limits, robots denials, and transport categories such as DNS,
+connection, TLS, and timeout failures. GDELT records per-stage request errors,
+rows seen, accepted/rejected records, malformed rows, and filtered rows.
+Diagnostic output records safe error categories and HTTP statuses only; it
+does not include exception messages, response bodies, or credential-bearing
+URLs. Invalid source dates are rejected rather than replaced with the current
+time. GDELT requests use bounded retry with capped exponential delay and honor
+bounded `Retry-After` values.
+
 The UCDP GED importer is a distinct structured-dataset path. An explicit
 `python -m app.cli import-ucdp` command downloads a bounded, versioned public CSV
 archive, validates its schema and records, and stores selected source-native

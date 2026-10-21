@@ -556,10 +556,12 @@ def smoke_test(
         "rss_feeds_attempted": 0,
         "rss_feeds_completed": 0,
         "rss_feeds_with_errors": 0,
+        "rss_feeds_skipped_rights": 0,
         "rss_fetch_attempts": 0,
         "rss_fetch_successes": 0,
         "rss_fetch_failures": 0,
         "rss_discovery_errors": 0,
+        "rss_feed_diagnostics": {},
     }
     error_type: str | None = None
     event_diagnostics: list[tuple[str, int, int, int, int, int, str, list[str]]] = []
@@ -804,6 +806,25 @@ def smoke_test(
         f"discovery errors={discovery_counts['rss_discovery_errors']}"
     )
     console.print(
+        f"  RSS feeds skipped (rights not cleared): "
+        f"{discovery_counts['rss_feeds_skipped_rights']}"
+    )
+    rss_diagnostics = discovery_counts["rss_feed_diagnostics"]
+    feed_outcomes = ",".join(
+        f"{status}:{count}"
+        for status, count in sorted(rss_diagnostics.get("outcomes", {}).items())
+    ) or "none"
+    feed_errors = ",".join(
+        f"{category}:{count}"
+        for category, count in sorted(
+            rss_diagnostics.get("error_categories", {}).items()
+        )
+    ) or "none"
+    console.print(
+        f"  RSS feed outcomes: {feed_outcomes}; request errors={feed_errors}; "
+        f"records rejected={rss_diagnostics.get('records_rejected', 0)}"
+    )
+    console.print(
         f"  RSS fetch results: {discovery_counts['rss_fetch_successes']} succeeded, "
         f"{discovery_counts['rss_fetch_failures']} failed "
         f"of {discovery_counts['rss_fetch_attempts']} attempts"
@@ -901,6 +922,75 @@ def smoke_test(
         raise typer.Exit(code=1)
     console.print("  Auto-publication: disabled")
     console.print("  Storage: temporary directory (removed at completion)")
+
+
+@app.command("diagnose-discovery")
+def diagnose_discovery(
+    hours: int = typer.Option(6, min=1, max=72, help="Hours back for source discovery"),
+    max_records: int = typer.Option(
+        100, min=1, max=500, help="Maximum GDELT rows per dataset stage"
+    ),
+):
+    """Run bounded source diagnostics in temporary storage without calling Gemini."""
+    settings = get_settings()
+    original_settings = {
+        "data_dir": settings.data_dir,
+        "web_dir": settings.web_dir,
+        "max_articles_per_run": settings.max_articles_per_run,
+        "enable_autopublish": settings.enable_autopublish,
+        "production_mode": settings.production_mode,
+    }
+    try:
+        with tempfile.TemporaryDirectory(
+            prefix="humanity-discovery-diagnostics-"
+        ) as temp_dir:
+            temp_root = Path(temp_dir)
+            settings.data_dir = temp_root / "data"
+            settings.web_dir = temp_root / "web"
+            settings.max_articles_per_run = min(
+                max_records, original_settings["max_articles_per_run"]
+            )
+            settings.enable_autopublish = False
+            settings.production_mode = True
+            with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+                result = asyncio.run(run_discovery(hours))
+    finally:
+        for name, value in original_settings.items():
+            setattr(settings, name, value)
+
+    for label, stage in (("GDELT events", "events"), ("GDELT GKG", "gkg")):
+        diagnostics = result.get("gdelt_diagnostics", {}).get(stage, {})
+        errors = ",".join(
+            f"{category}:{count}"
+            for category, count in sorted(
+                diagnostics.get("error_categories", {}).items()
+            )
+        ) or "none"
+        console.print(
+            f"  {label}: status={diagnostics.get('status', 'not_reported')}; "
+            f"rows={diagnostics.get('rows_seen', 0)}; "
+            f"accepted={diagnostics.get('records_accepted', 0)}; "
+            f"rejected={diagnostics.get('records_rejected', 0)}; "
+            f"errors={errors}"
+        )
+    rss_diagnostics = result.get("rss_feed_diagnostics", {})
+    outcomes = ",".join(
+        f"{status}:{count}"
+        for status, count in sorted(rss_diagnostics.get("outcomes", {}).items())
+    ) or "none"
+    errors = ",".join(
+        f"{category}:{count}"
+        for category, count in sorted(
+            rss_diagnostics.get("error_categories", {}).items()
+        )
+    ) or "none"
+    console.print(
+        f"  RSS: attempted={result.get('rss_feeds_attempted', 0)}; "
+        f"skipped_rights={result.get('rss_feeds_skipped_rights', 0)}; "
+        f"outcomes={outcomes}; request_errors={errors}; "
+        f"records_rejected={rss_diagnostics.get('records_rejected', 0)}"
+    )
+    console.print("  Gemini: not called; publication: disabled; storage: temporary")
 
 
 @app.command()

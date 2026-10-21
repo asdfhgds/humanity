@@ -107,6 +107,14 @@ def load_sources() -> dict[str, list[SourceConfig]]:
 
 
 @lru_cache
+def load_source_rights() -> dict[str, dict[str, Any]]:
+    config_path = get_settings().config_dir / "source_rights.yaml"
+    with open(config_path, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+    return data.get("sources", {})
+
+
+@lru_cache
 def load_topics() -> TopicConfig:
     config_path = get_settings().config_dir / "topics.yaml"
     with open(config_path, "r", encoding="utf-8") as f:

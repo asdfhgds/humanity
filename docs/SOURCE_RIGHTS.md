@@ -60,6 +60,14 @@ The current source-status labels are deliberately conservative:
 - **Reviewed**: the listed terms support only the source-specific scope and
   conditions recorded in that entry; this is not a blanket legal clearance.
 
+Discovery skips configured RSS sources unless their registry entry is reviewed
+and explicitly records `current_event_processing`,
+`commercial_use`, `display_rights`, and `storage_retention_constraints` as
+`allowed` or `allowed_with_attribution`.
+Currently the publisher feeds and ReliefWeb remain pending/not cleared, so
+their live records must not be used to create or retain reporting drafts until
+the rights review is completed. This operational gate is not legal advice.
+
 News publishers, feeds, and ReliefWeb remain pending/not cleared. The UCDP
 dataset download is reviewed with attribution; API access remains token-gated.
 GDELT's dataset use is reviewed with attribution;

@@ -3,13 +3,14 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime
 from typing import List, Dict, Any, Optional
-from app.config import get_enabled_sources, get_settings
+from app.config import get_enabled_sources, get_settings, load_source_rights, load_sources
 from app.sources.adapter import RSSAdapter, ReliefWebAdapter
 from app.sources.fetcher import SourceFetcher, fetch_from_multiple_sources
 from app.discovery.gdelt import run_gdelt_discovery, GDELTDiscovery
 from app.utils import canonicalize_url, compute_article_hash
 from app.models.schemas import Source, SourceType, IngestionRun
 from app.datastore import get_source_store, get_ingestion_run_store
+from app.diagnostics import request_error_label
 
 
 class DiscoveryManager:
@@ -229,6 +230,12 @@ class DiscoveryManager:
         rss_fetch_successes = 0
         rss_fetch_failures = 0
         rss_discovery_errors = 0
+        rss_feeds_skipped_rights = 0
+        rss_feed_diagnostics = {
+            "outcomes": {},
+            "error_categories": {},
+            "records_rejected": 0,
+        }
         gdelt_diagnostics = {
             "events": {"status": "not_run", "errors": 0, "error_categories": {}},
             "gkg": {"status": "not_run", "errors": 0, "error_categories": {}},
@@ -246,6 +253,9 @@ class DiscoveryManager:
             # 2. RSS Feed Discovery + Article Fetching
             print("Running RSS feed discovery...")
             rss_sources = self._get_rss_sources()
+            rss_feeds_skipped_rights = getattr(
+                self, "_rss_feeds_skipped_rights", 0
+            )
             rss_feeds_attempted = len(rss_sources)
             run.sources_attempted += len(rss_sources)
             
@@ -260,19 +270,60 @@ class DiscoveryManager:
                     )
 
                     rss_feeds_completed = len(rss_results)
-                    rss_fetch_attempts = sum(len(articles) for articles in rss_results.values())
+                    article_results = {
+                        source_name: [
+                            article
+                            for article in articles
+                            if not (
+                                article.diagnostic
+                                and article.diagnostic.get("stage") == "feed"
+                            )
+                        ]
+                        for source_name, articles in rss_results.items()
+                    }
+                    rss_fetch_attempts = sum(
+                        len(articles) for articles in article_results.values()
+                    )
                     rss_fetch_successes = sum(
                         article.success
-                        for articles in rss_results.values()
+                        for articles in article_results.values()
                         for article in articles
                     )
                     rss_fetch_failures = rss_fetch_attempts - rss_fetch_successes
-                    rss_feeds_with_errors = sum(
-                        any(not article.success for article in articles)
-                        for articles in rss_results.values()
-                    )
+                    for articles in rss_results.values():
+                        has_error = False
+                        for article in articles:
+                            diagnostic = article.diagnostic or {}
+                            if diagnostic.get("stage") == "feed":
+                                status = diagnostic.get("status", "unknown")
+                                outcomes = rss_feed_diagnostics["outcomes"]
+                                outcomes[status] = outcomes.get(status, 0) + 1
+                                rss_feed_diagnostics["records_rejected"] += int(
+                                    diagnostic.get("records_rejected", 0)
+                                )
+                                if diagnostic.get("error_category"):
+                                    category = diagnostic["error_category"]
+                                    errors = rss_feed_diagnostics["error_categories"]
+                                    errors[category] = errors.get(category, 0) + 1
+                                    has_error = True
+                            elif diagnostic.get("stage") == "record":
+                                rss_feed_diagnostics["records_rejected"] += 1
+                            elif diagnostic.get("error_category"):
+                                category = diagnostic["error_category"]
+                                errors = rss_feed_diagnostics["error_categories"]
+                                errors[category] = errors.get(category, 0) + 1
+                                has_error = True
+                            if not article.success and diagnostic.get("stage") != "feed":
+                                has_error = True
+                        rss_feeds_with_errors += int(has_error)
+
                     for source_name, articles in rss_results.items():
                         for article in articles:
+                            if (
+                                article.diagnostic
+                                and article.diagnostic.get("stage") == "feed"
+                            ):
+                                continue
                             if article.success and article.content:
                                 # Store as source with article content
                                 source = Source(
@@ -308,7 +359,7 @@ class DiscoveryManager:
                     await fetcher.close()
                 except Exception as e:
                     rss_discovery_errors += 1
-                    print(f"RSS discovery error: {e}")
+                    print(f"RSS discovery failed: {request_error_label(e)}")
             
             run.articles_seen = all_gdelt_events + total_rss_articles
             run.candidates_created = all_gdelt_events + total_rss_articles
@@ -327,17 +378,19 @@ class DiscoveryManager:
                 "rss_feeds_attempted": rss_feeds_attempted,
                 "rss_feeds_completed": rss_feeds_completed,
                 "rss_feeds_with_errors": rss_feeds_with_errors,
+                "rss_feeds_skipped_rights": rss_feeds_skipped_rights,
                 "rss_fetch_attempts": rss_fetch_attempts,
                 "rss_fetch_successes": rss_fetch_successes,
                 "rss_fetch_failures": rss_fetch_failures,
                 "rss_discovery_errors": rss_discovery_errors,
+                "rss_feed_diagnostics": rss_feed_diagnostics,
                 "sources_created": all_sources_created,
             }
             
         except Exception as e:
             run.finished_at = datetime.utcnow()
             run.status = "failed"
-            run.errors.append(str(e))
+            run.errors.append(request_error_label(e))
             self.run_store.update(run.id, run.model_dump(mode="json"))
             raise
         finally:
@@ -345,14 +398,31 @@ class DiscoveryManager:
     
     def _get_rss_sources(self) -> List:
         """Get enabled RSS feed sources from config."""
-        from app.config import load_sources
         all_sources = load_sources()
+        source_rights = load_source_rights()
         rss_sources = []
+        skipped_rights = 0
         for category, sources in all_sources.items():
             if category == "rss_feeds":
                 for source in sources:
                     if source.enabled:
-                        rss_sources.append(source)
+                        rights = source_rights.get(source.name, {})
+                        processing_cleared = (
+                            rights.get("rights_review") == "reviewed"
+                            and rights.get("current_event_processing")
+                            in {"allowed", "allowed_with_attribution"}
+                            and rights.get("commercial_use")
+                            in {"allowed", "allowed_with_attribution"}
+                            and rights.get("display_rights")
+                            in {"allowed", "allowed_with_attribution"}
+                            and rights.get("storage_retention_constraints")
+                            in {"allowed", "allowed_with_attribution"}
+                        )
+                        if processing_cleared:
+                            rss_sources.append(source)
+                        else:
+                            skipped_rights += 1
+        self._rss_feeds_skipped_rights = skipped_rights
         return sorted(rss_sources, key=lambda s: -s.priority)
     
     def _get_reliefweb_sources(self) -> List:
