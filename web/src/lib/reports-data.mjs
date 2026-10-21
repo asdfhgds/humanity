@@ -39,6 +39,16 @@ const VIOLENCE_TYPES = [
 ];
 const reportCache = new Map();
 
+export function reportCanonicalUrl(pathname, basePath, site) {
+  const normalizedBase = basePath.replace(/\/$/, "");
+  const routePath =
+    normalizedBase &&
+    (pathname === normalizedBase || pathname.startsWith(`${normalizedBase}/`))
+      ? pathname.slice(normalizedBase.length) || "/"
+      : pathname;
+  return new URL(`${normalizedBase}${routePath}`, site).href;
+}
+
 function percent(part, total) {
   return total === 0 ? null : Number(((part / total) * 100).toFixed(1));
 }

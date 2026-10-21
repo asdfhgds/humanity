@@ -3,7 +3,10 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { buildResearchReports } from "../src/lib/reports-data.mjs";
+import {
+  buildResearchReports,
+  reportCanonicalUrl,
+} from "../src/lib/reports-data.mjs";
 
 const webDirectory = dirname(dirname(fileURLToPath(import.meta.url)));
 const researchDirectory = join(webDirectory, "public", "data", "research");
@@ -138,4 +141,24 @@ test("year-to-year comparisons report record counts, not fatality sums", async (
     }),
   );
   assert.equal("fatalities" in report.data.comparison[0], false);
+});
+
+test("article canonicals do not duplicate the GitHub Pages base path", () => {
+  const site = new URL("https://asdfhgds.github.io");
+  assert.equal(
+    reportCanonicalUrl(
+      "/humanity/reports/ged-recorded-events-2024-2025/",
+      "/humanity/",
+      site,
+    ),
+    "https://asdfhgds.github.io/humanity/reports/ged-recorded-events-2024-2025/",
+  );
+  assert.equal(
+    reportCanonicalUrl(
+      "/reports/ged-recorded-events-2024-2025/",
+      "",
+      new URL("https://humanity.example"),
+    ),
+    "https://humanity.example/reports/ged-recorded-events-2024-2025/",
+  );
 });

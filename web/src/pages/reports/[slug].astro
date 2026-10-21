@@ -1,7 +1,10 @@
 ---
 import { resolve } from "node:path";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { loadResearchReports } from "../../lib/reports-data.mjs";
+import {
+  loadResearchReports,
+  reportCanonicalUrl,
+} from "../../lib/reports-data.mjs";
 
 export async function getStaticPaths() {
   const reports = await loadResearchReports(resolve(process.cwd(), "public"));
@@ -15,7 +18,7 @@ const { report } = Astro.props;
 const { index, data } = report;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const site = Astro.site || new URL("https://humanity.example");
-const canonicalUrl = new URL(`${basePath}${Astro.url.pathname}`, site).href;
+const canonicalUrl = reportCanonicalUrl(Astro.url.pathname, basePath, site);
 const publishedAt = `${report.publishedAt}T00:00:00Z`;
 const jsonLd = {
   "@context": "https://schema.org",

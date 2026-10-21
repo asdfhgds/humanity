@@ -61,6 +61,11 @@ export interface ResearchReport {
 export const REPORT_CATALOG: Array<
   Omit<ResearchReport, "datasetVersion" | "data" | "index">
 >;
+export function reportCanonicalUrl(
+  pathname: string,
+  basePath: string,
+  site: URL,
+): string;
 export function buildResearchReports(
   index: unknown,
   feeds: Map<number, unknown> | Record<string, unknown>,
