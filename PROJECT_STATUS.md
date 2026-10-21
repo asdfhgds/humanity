@@ -1,8 +1,8 @@
 # HUMANITY Project Status
 
-## Phase 4 editorial research reports (2026-10-21; implementation pending review)
+## Phase 4 editorial research reports (2026-10-21; deployed)
 
-- Verified remote `master` at `f9ef892999d16abbf7a3302bf9bfa9f49786d5e0`,
+- Started from remote `master` at `f9ef892999d16abbf7a3302bf9bfa9f49786d5e0`,
   including merged PR #26 research summaries and PR #27 delivery-status
   correction. Implemented on isolated branch `phase4-editorial-engine`; the
   unrelated unstaged publisher edit in the original worktree was not changed
@@ -31,15 +31,38 @@
   metric. Build generation fails closed on unavailable/malformed data,
   index/partition mismatches, duplicate IDs, records assigned to the wrong
   year, or missing attribution/source links.
+- PR [#28](https://github.com/asdfhgds/humanity/pull/28), commit
+  `577955d`, passed Python and frontend/build/link-audit CI run
+  [39593941463](https://github.com/asdfhgds/humanity/actions/runs/39593941463)
+  and merged as `6d4cbfd7bc4aa51c0a44179e1294fef223d7ac80`. The initial
+  deployment completed in Pages run
+  [39594187196](https://github.com/asdfhgds/humanity/actions/runs/39594187196).
+  Live verification found the article canonical URL duplicated the Pages base
+  path. Follow-up PR
+  [#29](https://github.com/asdfhgds/humanity/pull/29) added a regression
+  fix and passed both checks in run
+  [39595117108](https://github.com/asdfhgds/humanity/actions/runs/39595117108);
+  it merged as `afe27d5555cc914893daef02f13af47da7e03576`.
+- Confirmed Pages deployment
+  [39607132261](https://github.com/asdfhgds/humanity/actions/runs/39607132261)
+  completed successfully from the corrected master commit. Live HTTP checks
+  returned 200 for `/reports/`, all three article routes, `/research/`, the
+  GED index, and the 1989 and 2024 partitions. The article canonical is now
+  exactly `https://asdfhgds.github.io/humanity/reports/ged-recorded-events-2024-2025/`;
+  the Article JSON-LD and attribution are present. The index reports version
+  26.1 and 417,968 records; the sampled year partitions report 2,659 and
+  30,066 records. Existing event and global-stat endpoints still return 200
+  with zero events; historical GED rows were not converted to news.
 - Production-mode build (`GITHUB_ACTIONS=true`) generated 22 pages, including
-  all three report articles. Built site size: 282,456,468 bytes. Static
-  link/fragment/asset audit passed. Browser inspection of the built artifact
-  through a Pages-style `/humanity/` path confirmed the index, article
-  statistics, country table, metadata, attribution, and filtered links. Local
-  checks passed: 140 Python tests; 21 frontend tests including real GED
-  partition calculations and malformed/stale/mismatched-data cases; Astro
-  check (45 files, zero diagnostics); all four workflow YAML files parsed;
-  targeted Prettier and `git diff --check`.
+  all three report articles. Measured site size before the canonical-only fix:
+  282,456,468 bytes. Static link/fragment/asset audit passed. Browser
+  inspection of the built artifact through a Pages-style `/humanity/` path
+  confirmed the report index, article statistics, country table, dates,
+  attribution, metadata, and filtered links. Local checks passed: 140 Python
+  tests; 22 frontend tests including real GED calculations, stale/malformed/
+  mismatched partitions, duplicate IDs, and canonical paths; Astro check
+  (45 files, zero diagnostics); all four workflow YAML files parsed; targeted
+  Prettier and `git diff --check`.
 - This release adds no current-event article generator, provider-neutral
   Gemini adapter, source connector, generated live-news content, or AI-assisted
   article prose. Existing extraction, source independence, provenance,
@@ -53,9 +76,13 @@
   discovery hypothesis. The next low-risk validation is an observed usability
   session of these public tasks; there is no enquiry form, paid account, or
   payment flow.
-- PR, fresh CI, merge, and deployment are not yet completed. Only reviewed
-  static historical analyses may be included in this release; current-event
-  publishing remains held behind the existing policy.
+- The three historical research reports are deployed. Current-event
+  generation remains held behind the existing pipeline and publication policy;
+  the public feed is empty and the previously observed Gemini provider outage
+  remains unresolved. No live provider request was made during this work.
+  Article-page dates and source attribution are visible. The pilot next step is
+  an observed usability session with researchers, not signup, payment, or an
+  unreviewed service offer.
 
 ## Phase 3.2 research-summary delivery (2026-10-20; deployed)
 
