@@ -14,6 +14,7 @@ import httpx
 from bs4 import BeautifulSoup
 import feedparser
 
+from app.diagnostics import request_error_label
 from app.utils import canonicalize_url, clean_text, is_likely_paywall
 from app.config import SourceConfig, get_settings
 from app.models.schemas import Source, SourceType
@@ -33,6 +34,7 @@ class FetchResult:
     content_type: Optional[str] = None
     final_url: Optional[str] = None
     paywall_detected: bool = False
+    diagnostic: Optional[Dict[str, Any]] = None
 
 
 @dataclass
@@ -218,6 +220,25 @@ class SourceFetcher:
         else:
             return await self._fetch_generic(source_config)
 
+    @staticmethod
+    def _diagnostic_result(
+        status: str,
+        *,
+        success: bool,
+        error_category: Optional[str] = None,
+        status_code: Optional[int] = None,
+        **details: Any,
+    ) -> FetchResult:
+        diagnostic = {"stage": "feed", "status": status, **details}
+        if error_category:
+            diagnostic["error_category"] = error_category
+        return FetchResult(
+            success=success,
+            error=error_category,
+            status_code=status_code,
+            diagnostic=diagnostic,
+        )
+
     async def _fetch_rss(
         self, source_config: SourceConfig, max_records: Optional[int] = None
     ) -> List[FetchResult]:
@@ -226,26 +247,69 @@ class SourceFetcher:
         
         # Check robots.txt
         if not await self.robots_cache.can_fetch(self.client, str(source_config.url)):
-            return [FetchResult(success=False, error="Blocked by robots.txt", status_code=403)]
+            return [
+                self._diagnostic_result(
+                    "blocked_by_robots",
+                    success=False,
+                    error_category="robots_denied",
+                    status_code=403,
+                )
+            ]
         
         # Check cache
         cached = await self.request_cache.get("GET", str(source_config.url))
         if cached:
             feed_data = cached.text
         else:
-            await self.rate_limiter.acquire(urlparse(str(source_config.url)).netloc)
-            response = await self.client.get(str(source_config.url))
+            try:
+                await self.rate_limiter.acquire(urlparse(str(source_config.url)).netloc)
+                response = await self.client.get(str(source_config.url))
+            except Exception as error:
+                category = request_error_label(error)
+                return [
+                    self._diagnostic_result(
+                        category, success=False, error_category=category
+                    )
+                ]
             if response.status_code != 200:
-                return [FetchResult(success=False, error=f"HTTP {response.status_code}", status_code=response.status_code)]
+                category = "rate_limited" if response.status_code == 429 else "http_error"
+                return [
+                    self._diagnostic_result(
+                        category,
+                        success=False,
+                        error_category=f"{category}_{response.status_code}",
+                        status_code=response.status_code,
+                    )
+                ]
             feed_data = response.text
             await self.request_cache.set("GET", str(source_config.url), response)
         
         feed = feedparser.parse(feed_data)
+        entries = list(feed.entries)
+        bozo = bool(getattr(feed, "bozo", False))
+        if bozo and not entries:
+            feed_status = "malformed_response"
+        elif bozo:
+            feed_status = "partial_parse"
+        elif not entries:
+            feed_status = "valid_zero_results"
+        else:
+            feed_status = "valid_results"
+        feed_diagnostic = self._diagnostic_result(
+            feed_status,
+            success=not bozo,
+            error_category="malformed_response" if bozo else None,
+            entries_seen=len(entries),
+            records_rejected=0,
+        )
+        results.append(feed_diagnostic)
         
         entry_limit = 50 if max_records is None else min(50, max(0, max_records))
-        for entry in feed.entries[:entry_limit]:
+        for entry in entries[:entry_limit]:
             article_url = entry.get('link', '')
-            if not article_url:
+            if not article_url or urlparse(article_url).scheme not in ("http", "https"):
+                if feed_diagnostic.diagnostic is not None:
+                    feed_diagnostic.diagnostic["records_rejected"] += 1
                 continue
             
             # Try to get full article content
@@ -254,15 +318,23 @@ class SourceFetcher:
                 results.append(article_result)
             else:
                 # Fallback to feed entry data
+                fallback_content = entry.get('summary', '') or entry.get('description', '')
                 results.append(FetchResult(
-                    success=True,
-                    content=entry.get('summary', '') or entry.get('description', ''),
+                    success=bool(fallback_content),
+                    content=fallback_content,
                     title=entry.get('title', ''),
                     published_at=self._parse_date(entry.get('published', '') or entry.get('updated', '')),
                     author=entry.get('author', ''),
                     final_url=article_url,
-                    paywall_detected=False
+                    paywall_detected=False,
+                    diagnostic=article_result.diagnostic,
                 ))
+                if not fallback_content:
+                    results[-1].diagnostic = {
+                        "stage": "record",
+                        "status": "rejected_validation",
+                        "reason": "missing_content",
+                    }
         
         return results
 
@@ -359,12 +431,32 @@ class SourceFetcher:
             try:
                 response = await self.client.get(url)
                 if response.status_code != 200:
-                    return FetchResult(success=False, error=f"HTTP {response.status_code}", status_code=response.status_code)
+                    category = "rate_limited" if response.status_code == 429 else "http_error"
+                    return FetchResult(
+                        success=False,
+                        error=f"{category}_{response.status_code}",
+                        status_code=response.status_code,
+                        diagnostic={
+                            "stage": "article",
+                            "status": category,
+                            "error_category": f"{category}_{response.status_code}",
+                        },
+                    )
                 html = response.text
                 final_url = str(response.url)
                 await self.request_cache.set("GET", url, response)
-            except Exception as e:
-                return FetchResult(success=False, error=str(e), status_code=0)
+            except Exception as error:
+                category = request_error_label(error)
+                return FetchResult(
+                    success=False,
+                    error=category,
+                    status_code=0,
+                    diagnostic={
+                        "stage": "article",
+                        "status": category,
+                        "error_category": category,
+                    },
+                )
         
         # Parse article
         return self._extract_article(html, url, final_url)
@@ -510,10 +602,12 @@ async def fetch_from_multiple_sources(
             try:
                 return config.name, await fetcher.fetch(config, max_records=max_records)
             except Exception as error:
+                category = request_error_label(error)
                 return config.name, [
-                    FetchResult(
+                    fetcher._diagnostic_result(
+                        category,
                         success=False,
-                        error=f"Source fetch failed ({type(error).__name__})",
+                        error_category=category,
                     )
                 ]
             finally:

@@ -1,5 +1,50 @@
 # HUMANITY Project Status
 
+## Phase 5 current-event reporting diagnostics (2026-10-21; verified blocker)
+
+- Started on isolated branch `phase5-current-events` from the latest remote
+  `master`, verified at `9740446a1df874027a0aeeb3ae3fe48daff24a21`. PR #30 and
+  its deployed research baseline are present. The unrelated unstaged
+  `app/publishing/publisher.py` edit remains untouched in the separate
+  original worktree.
+- No new event draft was created, and no production ingestion, publisher,
+  Gemini call, or public feed was used. A bounded direct read-only check found
+  the configured GDELT master index timed out over both its configured HTTP
+  URL and an HTTPS control request (4-second connect / 8-second overall
+  timeout); the failure surfaced as `ReadTimeout`, not DNS. This establishes
+  a network/read-timeout limitation for this environment, not an upstream
+  outage. The configured UN News RSS endpoint returned HTTP 200, 33,792 bytes,
+  and `application/rss+xml`, but its feed and publisher rights are pending in
+  `config/source_rights.yaml`; response accessibility does not grant content
+  processing or retention rights, so it was not used as reporting evidence.
+- Local Gemini configuration has no credentials configured; the configured
+  model name is `gemini-flash-latest` and the installed `google-genai` SDK is
+  1.18.0. No provider request was made. Earlier operational notes record
+  provider server/quota failures, but this turn cannot establish the current
+  remote provider state. GDELT discovery yields dataset metadata/links rather
+  than article bodies for extraction; historical UCDP remains separate and is
+  not current-event evidence. Therefore acceptance outcome is a verified
+  operational/permission blocker, not a successful draft.
+- Implemented safe request categories (DNS, connection, timeout, TLS,
+  malformed response, HTTP/rate limit), RSS valid-empty versus malformed
+  response states, record rejection counts, GDELT row acceptance/rejection
+  counters, invalid-date rejection, bounded retry honoring `Retry-After`, and
+  a temporary-storage `diagnose-discovery` command that never invokes Gemini
+  or publication. RSS ingestion now skips configured feeds until their rights
+  entry explicitly clears processing/display/retention. The next recovery
+  requirements are a completed source-rights review, authorized provider
+  credentials, and a network environment with bounded source access. Existing
+  publication thresholds, workflows, news schedules, and release gates were
+  not changed.
+- Validation: 152 Python tests passed; 22 frontend tests passed; Astro check
+  passed with zero diagnostics; production build generated 22 pages; static
+  link/asset audit passed; all four workflow YAML files parsed; targeted Ruff,
+  Python compilation, and `git diff --check` passed. The existing large
+  MapLibre bundle advisory and legacy datetime deprecation warnings remain.
+  CI/PR completion remains pending; the checks do not authorize or establish
+  a current-event draft. No deployment is needed for this diagnostics-only
+  backend/documentation change.
+
 ## Phase 4 editorial research reports (2026-10-21; deployed)
 
 - Started from remote `master` at `f9ef892999d16abbf7a3302bf9bfa9f49786d5e0`,
